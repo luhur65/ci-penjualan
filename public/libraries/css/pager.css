@@ -1,0 +1,19 @@
+.hover-primary {
+  background: #eaf2ff;
+  border: 1px solid #b7d2ff;
+  color: #186dff;
+}
+
+.pager-handler {
+  white-space: nowrap;
+}
+
+.pager-input {
+  max-width: 50px;
+  min-width: 20px;
+  width: 100%;
+}
+
+.gap-10 {
+  gap: 10px;
+}

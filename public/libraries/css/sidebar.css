@@ -1,0 +1,13 @@
+.sidebar-open #sidebar-overlay {
+	display: block !important;
+}
+
+.nav-link.hover {
+	background-color: rgba(255, 255, 255, 0.1);
+	color: #fff;
+}
+
+.selected-link {
+	background-color: #007bff !important;
+	color: #fff !important;
+}
