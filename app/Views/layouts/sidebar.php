@@ -28,6 +28,17 @@ use App\Helpers\MenuHelper;
     <nav class="mt-2">
       <ul class="nav nav-pills nav-sidebar flex-column nav-child-indent" data-widget="treeview" role="menu" data-accordion="false">
         <!-- Tempat menu list -->
+
+
+        <li class="nav-item">
+          <a href="<?= base_url('logout') ?>" class="nav-link">
+            <i class="nav-icon fas fa-sign-out-alt"></i>
+            <p>
+              Logout
+            </p>
+          </a>
+        </li>
+
       </ul>
     </nav>
 
