@@ -1,0 +1,39 @@
+/* Style untuk Dropdown Lookup */
+.lookup-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background: #ffffff;
+    border: 1px solid #d1d5db; /* Tailwind gray-300 */
+    border-radius: 0.375rem;   /* Tailwind rounded-md */
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    z-index: 50;
+    max-height: 250px;
+    overflow-y: auto;
+    font-size: 0.875rem; /* text-sm */
+    font-family: sans-serif;
+}
+
+.lookup-header {
+    background-color: #f3f4f6; /* gray-100 */
+    padding: 8px 12px;
+    border-bottom: 1px solid #e5e7eb;
+    font-weight: 600;
+    color: #374151;
+}
+
+.lookup-items {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+/* Scrollbar cantik (Opsional) */
+.lookup-dropdown::-webkit-scrollbar {
+    width: 6px;
+}
+.lookup-dropdown::-webkit-scrollbar-thumb {
+    background-color: #ccc;
+    border-radius: 4px;
+}

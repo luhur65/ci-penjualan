@@ -25,6 +25,15 @@ $(document).ready(function () {
 		}
 	);
 
+	$(document).on("submit", "form", function () {
+		$(this)
+			.find('input[type="text"]:not([data-uppercase="false"])')
+			.each(function () {
+				$(this).val($(this).val().toUpperCase());
+			});
+	});
+
+
 	$(document).on("shown.bs.modal", ".modal", function () {
 		$(this).find("form [name]:not([readonly], [disabled])").first().focus();
 		$(this).find("form").data("hasChanged", false);
@@ -156,23 +165,23 @@ function showDialog(state, message, buttons = []) {
 	});
 }
 
-function setHighlight(grid) {
-	let filters;
-	let gridId;
+// function setHighlight(grid) {
+// 	let filters;
+// 	let gridId;
 
-	gridId = $(grid).getGridParam().id;
-	filters = $(grid).jqGrid("getGridParam", "postData").filters;
+// 	gridId = $(grid).getGridParam().id;
+// 	filters = $(grid).jqGrid("getGridParam", "postData").filters;
 
-	if (filters) {
-		$.each(filters, (index, filter) => {
-			let filterText = filter.split(":")[1];
+// 	if (filters) {
+// 		$.each(filters, (index, filter) => {
+// 			let filterText = filter.split(":")[1];
 
-			$(grid)
-				.find(`tbody tr td[aria-describedby=${gridId}_${index}]`)
-				.highlight(filterText);
-		});
-	}
-}
+// 			$(grid)
+// 				.find(`tbody tr td[aria-describedby=${gridId}_${index}]`)
+// 				.highlight(filterText);
+// 		});
+// 	}
+// }
 
 function initSelect2(element, dropdownParent = null) {
 	let options = {
@@ -381,4 +390,34 @@ function clearGridData(grid) {
 		datatype: 'local',
 		data: []
 	}).trigger('reloadGrid')
+}
+
+function setErrorMessages(form, errors) {
+	$.each(errors, (index, error) => {
+		let indexes = index.split(".");
+		let element;
+
+		// Menangani elemen array seperti checkboxes atau select multiple
+		if (indexes.length > 1) {
+			element = form.find(`[name="${indexes[0]}[]"]`)[indexes[1]];  // Array index handling
+		} else {
+			element = form.find(`[name="${indexes[0]}"]`)[0];
+		}
+
+		if ($(element).length > 0 && !$(element).is(":hidden")) {
+			$(element).addClass("is-invalid");
+
+			// Menambahkan invalid-feedback di dalam parent yang sesuai
+			$(`
+         <div class="invalid-feedback">
+            ${error.toLowerCase()}
+          </div>
+      `).appendTo($(element).parent());  // Pastikan parent yang benar
+
+		} else {
+			return showDialog('error', error);
+		}
+	});
+
+	$(".is-invalid").first().focus();
 }

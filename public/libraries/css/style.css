@@ -5,6 +5,12 @@
 	--jqgrid-pager-icon-color: #1d96e8;
 }
 
+/* Mengubah semua teks menjadi uppercase */
+*, 
+input, textarea {
+  text-transform: uppercase !important;
+}
+
 @font-face {
 	font-family: dejavu;
 	src: url("../fonts/dejavu-sans/DejaVuSansMono.ttf");
@@ -70,7 +76,7 @@ html {
 
 /* Modal */
 
-.modal.modal-fullscreen .modal-dialog {
+/* .modal.modal-fullscreen .modal-dialog {
 	width: 95vw;
 	padding: 0;
 	max-width: none;
@@ -84,6 +90,68 @@ html {
 
 .modal.modal-fullscreen .modal-body {
 	overflow-y: auto;
+} */
+
+.modal-lookup .modal-dialog {
+	width: 95vw;
+	padding: 0;
+	max-width: none;
+}
+
+.modal-lookup .modal-content {
+	height: auto;
+	height: 100%;
+	border: none;
+}
+
+.modal-lookup .modal-body {
+	overflow-y: auto;
+}
+
+/* .modal.modal-fullscreen .modal-footer {
+	background: inherit;
+} */
+
+#crudModal {
+    padding-right: 0px !important;
+    padding-left: 0px !important;
+}
+#crudModal .modal-dialog {
+    max-width: 100%;
+    margin: 0;
+    height: 100%;
+}
+#crudModal .modal-content {
+    height: 100%;
+    border: 0;
+    border-radius: 0;
+    /* padding: 0!important; */
+    background-color: #ffcc99;
+}
+#crudModal .modal-body {
+    overflow-y: auto;
+    height: calc(100vh - 81px);
+    /* height: calc(92vh); */
+    /* height: 100%; */
+    border: 0;
+    border-radius: 0;
+    padding-bottom: 4rem;
+}
+#crudModal .modal-footer {
+    position: sticky;
+    bottom: 0;
+    border: 0;
+    border-radius: 0;
+    background-color: #dcdcdc;
+    z-index: 9999;
+}
+
+#crudModal .modal-header .modal-title {
+    position: sticky;
+    top: 0;
+    border: 0;
+    border-radius: 0;
+    z-index: 9999;
 }
 
 /* JqGrid */
