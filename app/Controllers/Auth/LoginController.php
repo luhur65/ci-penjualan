@@ -58,44 +58,58 @@ class LoginController extends BaseController
         }
 
         // TODO: Implement user authentication logic here
-        $userModel = new User();
-        $user = $userModel->where('username', $username)->first();
+        // $userModel = new User();
+        // $user = $userModel->where('username', $username)->first();
 
-        if (!$user) {
-            return redirect()->back()->withInput()->with('error', 'Username tidak ditemukan');
+        // if (!$user) {
+        //     return redirect()->back()->withInput()->with('error', 'Username tidak ditemukan');
+        // }
+
+        // if (password_verify($password, $user['password'])) {
+        $response = $client->post($this->apiConfig->apiURL . '/token', [
+            'form_params' => [
+                'username' => $username,
+                'password' => $password,
+            ],
+            'headers' => [
+                'Content-Type' => 'application/x-www-form-urlencoded'
+            ],
+            'http_errors' => false, // Jangan lempar exception untuk status code 4xx/5xx, biar bisa kita tangani manual
+        ]);
+
+        // Cek status code dan body response dari API
+        $statusCode = $response->getStatusCode();
+        $body = json_decode($response->getBody(), true);
+
+        // Cek jika API mengembalikan error (misal 401 Unauthorized)
+        if ($statusCode !== 200) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', $body['messages']['error'] ?? 'Login gagal, silakan coba lagi.');
         }
 
-        if (password_verify($password, $user['password'])) {
+        // Simpan Token dari API ke SESSION Frontend
+        session()->set([
+            'user_data' => [
+                'id' => $body['user']['id'],
+                'username' => $body['user']['username'],
+                'fullname' => $body['user']['fullname'],
+                'email' => $body['user']['email'],
+            ], // Simpan data user yang dikirim API (jika ada)
+            'menu' => $body['menu'], // Simpan menu yang dikirim API (jika ada)
+            'isLoggedIn'    => true,
+            'accessToken'   => $body['access_token'],
+            'refreshToken'  => $body['refresh_token'],
+            'token_expires_at' => time() + $body['expires_in'],
+        ]);
 
-            $response = $client->post($this->apiConfig->apiURL . '/token', [
-                'form_params' => [
-                    'username' => $username,
-                    'password' => $password,
-                ]
-            ]);
+        // return redirect()->to('/dashboard')->with('success', 'Login berhasil!');
+        return redirect()->to('/dashboard');
 
-            $body = json_decode($response->getBody());
+        // } else {
 
-            // Simpan Token dari API ke SESSION Frontend
-            session()->set([
-                'user_data'     => [
-                    'id'       => $user['id'],
-                    'fullname' => $user['fullname'],
-                    'email'    => $user['email'],
-                    'username' => $user['username'],
-                ],
-                'isLoggedIn'    => true,
-                'accessToken'   => $body->access_token,
-                'refreshToken'  => $body->refresh_token,
-                'token_expires_at' => time() + $body->expires_in,
-            ]);
-
-            return redirect()->to('/dashboard')->with('success', 'Login berhasil!');
-
-        } else {
-
-            return redirect()->back()->withInput()->with('error', 'Password salah');
-        }
+        //     return redirect()->back()->withInput()->with('error', 'Password salah');
+        // }
     }
 
     /**
