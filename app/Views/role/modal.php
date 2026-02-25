@@ -19,7 +19,7 @@
               </div>
             </div>
             <!-- <input type="text" name="id" class="form-control" hidden> -->
-            <div class="row form-group">
+            <!-- <div class="row form-group">
               <div class="col-12 col-sm-3 col-md-2">
                 <label class="col-form-label">
                   Nama Lengkap <span class="text-danger">*</span>
@@ -28,18 +28,18 @@
               <div class="col-12 col-sm-9 col-md-10">
                 <input type="text" name="fullname" class="form-control">
               </div>
-            </div>
+            </div> -->
             <div class="row form-group">
               <div class="col-12 col-sm-3 col-md-2">
                 <label class="col-form-label">
-                  Username <span class="text-danger">*</span>
+                  Role Name <span class="text-danger">*</span>
                 </label>
               </div>
               <div class="col-12 col-sm-9 col-md-10">
-                <input type="text" name="username" class="form-control">
+                <input type="text" name="rolename" class="form-control">
               </div>
             </div>
-            <div class="row form-group">
+            <!-- <div class="row form-group">
               <div class="col-12 col-sm-3 col-md-2">
                 <label class="col-form-label">
                   Email <span class="text-danger">*</span>
@@ -48,7 +48,7 @@
               <div class="col-12 col-sm-9 col-md-10">
                 <input type="text" name="email" class="form-control">
               </div>
-            </div>
+            </div> -->
             <!-- <div class="row form-group sometimes">
               <div class="col-12 col-sm-3 col-md-2">
                 <label class="col-form-label">
@@ -135,7 +135,7 @@
               </div>
             </div> -->
 
-            <div class="row form-group rolediv">
+            <!-- <div class="row form-group rolediv">
               <div class="col-12 col-sm-3 col-md-2">
                 <label class="col-form-label">
                   Role <span class="text-danger"></span>
@@ -144,7 +144,7 @@
               <div class="col-12 col-sm-9 col-md-10">
                 <select name="role_ids[]" id="multiple" class="select2bs4 form-control" multiple="multiple"></select>
               </div>
-            </div>
+            </div> -->
 
             <div class="row form-group">
               <div class="col-12">
@@ -202,7 +202,7 @@
         }
       });
 
-
+      data.acosIds = JSON.stringify(selectedRows);
       // const data = [];
       // form.find('[name]').each(function() {
       //   const el = $(this);
@@ -268,19 +268,19 @@
       switch (action) {
         case 'add':
           method = 'POST';
-          url = `${API_URL}/users`;
+          url = `${API_URL}/roles`;
           break;
         case 'edit':
           method = 'PATCH';
-          url = `${API_URL}/users/${userId}`;
+          url = `${API_URL}/roles/${userId}`;
           break;
         case 'delete':
           method = 'DELETE';
-          url = `${API_URL}/users/${userId}`;
+          url = `${API_URL}/roles/${userId}`;
           break;
         default:
           method = 'POST';
-          url = `${API_URL}/users`;
+          url = `${API_URL}/roles`;
       }
 
       // console.log(action, url, method);
@@ -301,7 +301,7 @@
         // Success handling
         form.trigger('reset');
         $('#crudModal').modal('hide');
-        // selectedRows = [];
+        selectedRows = [];
         const id = response.data.id;
 
         $('#jqGrid').jqGrid('setGridParam', {
@@ -322,7 +322,7 @@
 
       } catch (error) {
         if (error.status !== 422) {
-          showDialog('error', error.responseJSON?.message || 'Terjadi kesalahan');
+          showDialog('error', error.responseJSON?.message || getErrorMessage(error));
           // $('.is-invalid').removeClass('is-invalid');
           // $('.invalid-feedback').remove();
         }
@@ -341,8 +341,45 @@
 
   });
 
+  function clearSelectedRows() {
+    selectedRows = []
+    $('#acoGrid').trigger('reloadGrid')
+  }
+
+  async function selectAllRows() {
+    const response = await ajaxWithRefresh({
+      url: `${API_URL}/acos`,
+      method: 'GET',
+      dataType: 'JSON',
+      data: {
+        limit: 0,
+        role_id: $('#crudForm').find('[name=id]').val()
+      }
+    });
+
+    selectedRows = response.data.map((aco) => aco.id);
+
+    $('#acoGrid').trigger('reloadGrid');
+  }
+
+  function checkboxHandler(element) {
+    let value = $(element).val();
+
+    if (element.checked) {
+      selectedRows.push($(element).val())
+      $(element).parents('tr').addClass('bg-light-blue')
+    } else {
+      $(element).parents('tr').removeClass('bg-light-blue')
+      for (var i = 0; i < selectedRows.length; i++) {
+        if (selectedRows[i] == value) {
+          selectedRows.splice(i, 1);
+        }
+      }
+    }
+  }
+
   // function create
-  function createUser() {
+  function createRole() {
 
     let form = $('#crudForm')
 
@@ -351,7 +388,7 @@
     form.trigger('reset')
     form.find('#btnSubmit').html(`<i class="fa fa-save"></i>Save`)
     form.data('action', 'add')
-    $('#crudModalTitle').text('Add User')
+    $('#crudModalTitle').text('Add Role')
 
     $('#crudModal').modal('show')
     $('.modal-loader').addClass('d-none')
@@ -359,14 +396,14 @@
   }
 
   // function update
-  async function updateUser(userId) {
+  async function updateRole(roleId) {
 
     const form = $('#crudForm');
     form.data('action', 'edit');
     form.trigger('reset');
     form.find('#btnSubmit').html(`<i class="fa fa-save"></i> Save`);
     form.find(`.sometimes`).hide();
-    $('#crudModalTitle').text('Edit User');
+    $('#crudModalTitle').text('Edit Role');
     $('.is-invalid').removeClass('is-invalid');
     $('.invalid-feedback').remove();
 
@@ -374,17 +411,18 @@
 
     try {
       // Tunggu semua async task selesai
-      await setRoleOptions(form);
-      await showUser(form, userId);
+      // await setRoleOptions(form);
+      await showRole(form, roleId);
+      loadAcoGrid(roleId);
 
       // Load ACO grid
-      // $('#acoGrid').jqGrid('setGridParam', {
-      //   url: `${apiUrl}acos/getuseracl`,
-      //   postData: {
-      //     user_id: userId
-      //   },
-      //   datatype: "json"
-      // }).trigger('reloadGrid');
+      $('#acoGrid').jqGrid('setGridParam', {
+        url: `${API_URL}/acos`,
+        postData: {
+          role_id: roleId
+        },
+        datatype: "json"
+      }).trigger('reloadGrid');
 
       // Tampilkan modal
       $('#crudModal').modal('show');
@@ -392,7 +430,7 @@
 
     } catch (error) {
       // console.error(error);
-      showDialog('error', error.responseJSON?.message || 'Terjadi kesalahan');
+      showDialog('error', getErrorMessage(error));
     } finally {
       $('.modal-loader').addClass('d-none');
 
@@ -401,7 +439,7 @@
   }
 
   // function delete
-  async function deleteUser(userId) {
+  async function deleteRole(roleId) {
 
     const form = $('#crudForm');
     form.data('action', 'delete');
@@ -418,9 +456,8 @@
 
     try {
       // Tunggu semua async task selesai
-      await setRoleOptions(form);
-      await showUser(form, userId);
-
+      // await setRoleOptions(form);
+      await showRole(form, roleId);
 
 
       // Tampilkan modal
@@ -429,7 +466,7 @@
 
     } catch (error) {
       // console.error(error);
-      showDialog('error', error.responseJSON?.message || 'Terjadi kesalahan');
+      showDialog('error', getErrorMessage(error));
     } finally {
       $('.modal-loader').addClass('d-none');
 
@@ -493,56 +530,239 @@
 
   }
 
-  async function setRoleOptions(relatedForm) {
-    try {
-      // Kosongkan select
-      relatedForm.find('[name="role_ids[]"]').empty();
+  // async function setRoleOptions(relatedForm) {
+  //   try {
+  //     // Kosongkan select
+  //     relatedForm.find('[name="role_ids[]"]').empty();
 
-      // Ambil data roles dari API
-      const response = await ajaxWithRefresh({
-        url: `${API_URL}/roles`,
-        method: 'GET',
-        dataType: 'JSON'
-      });
+  //     // Ambil data roles dari API
+  //     const response = await ajaxWithRefresh({
+  //       url: `${API_URL}/role`,
+  //       method: 'GET',
+  //       dataType: 'JSON'
+  //     });
 
-      // Tambahkan option ke select
-      response.data.forEach(role => {
-        const option = new Option(role.rolename, role.id);
-        relatedForm.find('[name="role_ids[]"]').append(option);
-      });
+  //     // Tambahkan option ke select
+  //     response.data.forEach(role => {
+  //       const option = new Option(role.rolename, role.id);
+  //       relatedForm.find('[name="role_ids[]"]').append(option);
+  //     });
 
-      // Trigger change di akhir sekali saja
-      relatedForm.find('[name="role_ids[]"]').trigger('change');
+  //     // Trigger change di akhir sekali saja
+  //     relatedForm.find('[name="role_ids[]"]').trigger('change');
 
-    } catch (error) {
-      console.error('Error loading roles:', error);
-      throw error; // agar bisa ditangkap di caller
-    }
+  //   } catch (error) {
+  //     console.error('Error loading roles:', error);
+  //     throw error; // agar bisa ditangkap di caller
+  //   }
+  // }
+
+
+  async function showRole(form, roleId) {
+    const response = await ajaxWithRefresh({
+      url: `${API_URL}/roles/${roleId}`,
+      method: 'GET',
+      dataType: 'JSON'
+    });
+
+    // Populate form fields
+    populateForm(form, response.data);
+
+    // Populate roles
+    // const roleIds = response.roles.map(role => role.role_id);
+    // form.find(`[name="role_ids[]"]`).val(roleIds).trigger('change');
+
+    // console.log(roleIds);
+    // try {
+
   }
 
+  function gridAcoColModel() {
+    return [{
+        label: '',
+        name: '',
+        width: 40,
+        align: 'center',
+        sortable: false,
+        clear: false,
+        stype: 'input',
+        searchable: false,
+        searchoptions: {
+          type: 'checkbox',
+          clearSearch: false,
+          dataInit: function(element) {
+            $(element).removeClass('form-control')
+            $(element).parent().addClass('text-center')
+            $(element).on('click', function() {
+              $(element).attr('disabled', true)
+              if ($(this).is(':checked')) {
+                selectAllRows()
+              } else {
+                clearSelectedRows()
+              }
+            })
+          }
+        },
+        formatter: (value, rowOptions, rowData) => {
+          return `<input type="checkbox" name="aco_ids[]" value="${rowData.id}" onchange="checkboxHandler(this)">`
+        },
+      },
+      {
+        label: 'CLASS',
+        name: 'class',
+        align: 'left',
+        width: 150,
+        // width: (detectDeviceType() == "desktop") ? lg_dekstop_3 : lg_mobile_3,
+      },
+      {
+        label: 'METHOD',
+        name: 'method',
+        align: 'left',
+        width: 150,
+        // width: (detectDeviceType() == "desktop") ? md_dekstop_2 : md_mobile_2,
+      },
+      {
+        label: 'KETERANGAN',
+        name: 'keterangan',
+        align: 'left',
+        width: 200,
+        // width: (detectDeviceType() == "desktop") ? md_dekstop_2 : md_mobile_2,
+      },
+      {
+        label: 'Nama',
+        name: 'nama',
+        width: 200,
+        // width: (detectDeviceType() == "desktop") ? lg_dekstop_2 : lg_mobile_2,
+      },
+      // {
+      //   label: 'Status',
+      //   name: 'status',
+      //   width: (detectDeviceType() == "desktop") ? sm_dekstop_3 : sm_mobile_3,
+      //   stype: 'select',
+      //   searchoptions: {
+      //     value: `<?php
+                      //             $i = 1;
 
-  async function showUser(form, userId) {
-    try {
-      const response = await ajaxWithRefresh({
-        url: `${API_URL}/users/${userId}`,
-        method: 'GET',
-        dataType: 'JSON'
-      });
+                      //             foreach ($data['combostatus'] as $status) :
+                      //               echo "$status[param]:$status[parameter]";
+                      //               if ($i !== count($data['combostatus'])) {
+                      //                 echo ';';
+                      //               }
+                      //               $i++;
+                      //             endforeach;
 
-      // Populate form fields
-      populateForm(form, response.data);
+                      //             
+                      ?>
+      //   `,
+      //     dataInit: function(element) {
+      //       $(element).select2({
+      //         width: 'resolve',
+      //         theme: "bootstrap4"
+      //       });
+      //     }
+      //   },
+      // },
+    ];
+  }
 
-      // Populate roles
-      const roleIds = response.roles.map(role => role.role_id);
-      form.find(`[name="role_ids[]"]`).val(roleIds).trigger('change');
+  function loadAcoGrid(roleId) {
+    $('#acoGrid')
+      .jqGrid({
+        styleUI: 'Bootstrap4',
+        datatype: "local",
+        // url: `${apiUrl}acos`,
+        // postData: {
+        //   role_id: roleId
+        // },
+        colModel: gridAcoColModel(),
+        autowidth: true,
+        shrinkToFit: false,
+        height: 350,
+        rownumbers: true,
+        rownumWidth: 45,
+        rowList: [10, 20, 50, 0],
+        rowNum: 10,
+        page: 1,
+        viewrecords: true,
+        prmNames: {
+          sort: 'sortIndex',
+          order: 'sortOrder',
+          rows: 'limit'
+        },
+        jsonReader: {
+          root: 'data',
+          total: 'attributes.totalPages',
+          records: 'attributes.totalRows',
+        },
+        loadBeforeSend: function(jqXHR) {
+          jqXHR.setRequestHeader('Authorization', `Bearer ${ACCESS_TOKEN}`)
 
-      console.log(roleIds);
+          setGridLastRequest($(this), jqXHR)
+        },
+        onSelectRow: function(id, status, event) {
+          activeGrid = $(this)
+          indexRow = $(this).jqGrid('getCell', id, 'rn') - 1
+          page = $(this).jqGrid('getGridParam', 'page')
+          let rows = $(this).jqGrid('getGridParam', 'postData').limit
+          if (indexRow >= rows) indexRow = (indexRow - rows * (page - 1))
+        },
+        ondblClickRow: function(id, status, event) {
+          $(this).find(`tr#${id}`).find(`[name="aco_ids[]"]`).click()
+        },
+        loadComplete: function(data) {
+          let grid = $(this)
 
-    } catch (error) {
-      // Error handling
-      const msg = error.responseJSON;
-      showDialog('error', msg.messages.error);
-      throw error; // biar bisa ditangkap di caller
-    }
+          changeJqGridRowListText()
+
+          // $(document).unbind('keydown')
+          // setCustomBindKeys($(this))
+          // initResize($(this))
+
+          $.each(selectedRows, function(key, value) {
+            $(grid).find('tbody tr').each(function(row, tr) {
+              if ($(this).find(`td input:checkbox`).val() == value) {
+                $(this).addClass('bg-light-blue')
+                $(this).find(`td input:checkbox`).prop('checked', true)
+              }
+            })
+          });
+
+          if (triggerClick) {
+            if (id != '') {
+              indexRow = parseInt($('#acoGrid').jqGrid('getInd', id)) - 1
+              $(`#acoGrid [id="${$('#acoGrid').getDataIDs()[indexRow]}"]`).click()
+              id = ''
+            } else if (indexRow != undefined) {
+              $(`#acoGrid [id="${$('#acoGrid').getDataIDs()[indexRow]}"]`).click()
+            }
+
+            if ($('#acoGrid').getDataIDs()[indexRow] == undefined) {
+              $(`#acoGrid [id="` + $('#acoGrid').getDataIDs()[0] + `"]`).click()
+            }
+
+            triggerClick = false
+          } else {
+            $('#acoGrid').setSelection($('#acoGrid').getDataIDs()[indexRow])
+          }
+          $('#gs_').attr('disabled', false)
+          setHighlight($(this))
+        }
+      })
+      .jqGrid('filterToolbar', {
+        stringResult: true,
+        searchOnEnter: false,
+        defaultSearch: 'cn',
+        groupOp: 'AND',
+        disabledKeys: [17, 33, 34, 35, 36, 37, 38, 39, 40],
+        beforeSearch: function() {
+          abortGridLastRequest($(this))
+
+          clearGlobalSearch($('#acoGrid'))
+        },
+      })
+      .customPager()
+
+    // loadClearFilter($('#acoGrid'))
+    // loadGlobalSearch($('#acoGrid'))
   }
 </script>

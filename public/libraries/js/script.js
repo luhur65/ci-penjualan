@@ -183,6 +183,20 @@ function showDialog(state, message, buttons = []) {
 // 	}
 // }
 
+// function initSelect2(element, dropdownParent = null) {
+// 	let options = {
+// 		width: "100%",
+// 		theme: "bootstrap4",
+// 		dropdownParent: dropdownParent,
+// 	};
+
+// 	$(element)
+// 		.select2(options)
+// 		.on("select2:open", function (event) {
+// 			document.querySelector(".select2-search__field").focus();
+// 		});
+// }
+
 function initSelect2(element, dropdownParent = null) {
 	let options = {
 		width: "100%",
@@ -192,8 +206,13 @@ function initSelect2(element, dropdownParent = null) {
 
 	$(element)
 		.select2(options)
-		.on("select2:open", function (event) {
-			document.querySelector(".select2-search__field").focus();
+		.on("select2:open", function () {
+			setTimeout(() => {
+				let searchField = document.querySelector(
+					'.select2-container--open .select2-search__field'
+				);
+				if (searchField) searchField.focus();
+			}, 0);
 		});
 }
 
@@ -403,21 +422,22 @@ function setErrorMessages(form, errors) {
 		} else {
 			element = form.find(`[name="${indexes[0]}"]`)[0];
 		}
-
-		if ($(element).length > 0 && !$(element).is(":hidden")) {
+		
+		if ($(element).length > 0) { // Hapus cek :hidden karena select asli disembunyikan Select2
 			$(element).addClass("is-invalid");
 
-			// Menambahkan invalid-feedback di dalam parent yang sesuai
-			$(`
-         <div class="invalid-feedback">
-            ${error.toLowerCase()}
-          </div>
-      `).appendTo($(element).parent());  // Pastikan parent yang benar
+			let errorElement = `<div class="invalid-feedback d-block">${error.toLowerCase()}</div>`;
 
-		} else {
-			return showDialog('error', error);
+			// Cek apakah ini elemen Select2
+			if ($(element).hasClass("select2-hidden-accessible")) {
+					// Letakkan setelah container Select2
+					$(element).next(".select2-container").after(errorElement);
+			} else {
+					// Standar input
+					$(element).after(errorElement);
+			}
 		}
 	});
-
+ 
 	$(".is-invalid").first().focus();
 }

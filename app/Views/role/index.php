@@ -14,7 +14,7 @@
 
 
 <?= $this->section('scripts'); ?>
-<?= $this->include('user/modal'); ?>
+<?= $this->include('role/modal'); ?>
 
 <script>
   let indexRow = 0;
@@ -30,9 +30,9 @@
   let rowNum = 10;
   let selectedId = null;
   let selectedRows = [];
-  let sortname = 'fullname';
+  let sortname = 'rolename';
   let sortorder = 'asc';
-  const urlMaster = '/users';
+  const urlMaster = '/roles';
   const masterGrid = '#jqGrid';
   const gridPager = '#jqGridPager';
   const detailGrid = '#detailItem';
@@ -46,19 +46,9 @@
         width: 30
       },
       {
-        label: 'NAMA LENGKAP',
-        name: 'fullname',
+        label: 'NAMA ROLE',
+        name: 'rolename',
         width: 100
-      },
-      {
-        label: 'NAMA PENGGUNA',
-        name: 'username',
-        width: 100
-      },
-      {
-        label: 'EMAIL',
-        name: 'email',
-        width: 100,
       },
       {
         label: 'UPDATED AT',
@@ -95,7 +85,7 @@
         sortname: sortname,
         sortorder: sortorder,
         rowNum: rowNum,
-        caption: "Data User",
+        caption: "Data Role",
         onSelectRow: function(id) {
           activeGrid = $(this)
           indexRow = $(this).jqGrid('getCell', id, 'rn') - 1
@@ -215,7 +205,7 @@
       caption: 'Tambah',
       buttonicon: 'fa-fw fa-plus-circle',
       onClickButton: function() {
-        createUser();
+        createRole();
 
       },
       position: 'first',
@@ -230,7 +220,7 @@
       buttonicon: 'fa-fw fa-pencil-alt',
       onClickButton: function() {
         selectedId = $("#jqGrid").jqGrid('getGridParam', 'selrow')
-        updateUser(selectedId);
+        updateRole(selectedId);
 
       },
       position: 'last',
@@ -245,7 +235,7 @@
       buttonicon: 'fa-fw fa-trash-alt',
       onClickButton: function() {
         selectedId = $("#jqGrid").jqGrid('getGridParam', 'selrow')
-        deleteUser(selectedId);
+        deleteRole(selectedId);
 
       },
       position: 'last',
@@ -273,6 +263,12 @@
         theme: 'bootstrap4',
         width: '100%',
       })
+  })
+
+  $('#crudModal').on('hidden.bs.modal', () => {
+    activeGrid = '#jqGrid'
+    selectedRows = []
+    $('#crudModal').find('.modal-body').html(modalBody)
   })
 </script>
 

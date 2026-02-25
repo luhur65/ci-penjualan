@@ -54,5 +54,10 @@ abstract class BaseController extends Controller
         // Preload any models, libraries, etc, here.
 
         // E.g.: $this->session = service('session');
+
+        // Browser back control
+        // $this->response->setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+        // $this->response->setHeader('Pragma', 'no-cache');
+        // $this->response->setHeader('Expires', '0');
     }
 }

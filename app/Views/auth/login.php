@@ -19,7 +19,7 @@
 <body class="hold-transition login-page">
   <div class="login-box">
     <div class="login-logo">
-      <?= getenv('app.name'); ?>
+      <!-- <?= getenv('app.name'); ?> -->
     </div>
 
     <div class="card">
@@ -64,12 +64,12 @@
 
           <div class="row">
             <div class="col-8">
-              <div class="icheck-primary">
+              <!-- <div class="icheck-primary">
                 <input type="checkbox" id="remember">
                 <label for="remember">
                   Remember Me
                 </label>
-              </div>
+              </div> -->
             </div>
             <div class="col-4">
               <button type="submit" class="btn btn-primary btn-block">Sign In</button>
@@ -78,14 +78,14 @@
         </form>
 
         <p class="mb-1">
-          <a href="#">I forgot my password</a>
+          <!-- <a href="#">I forgot my password</a> -->
         </p>
       </div>
     </div>
 
     <div class="text-center mt-3 text-muted">
       <p>Copyright &copy; <?= Date("Y") ?></p>
-      <p>Halaman ini dimuat selama <strong id="elapsedTime"></strong> detik</p>
+      <!-- <p>Halaman ini dimuat selama <strong id="elapsedTime"></strong> detik</p> -->
       <!-- <small>Default credentials: admin / admin</small> -->
     </div>
   </div>

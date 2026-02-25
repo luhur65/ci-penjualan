@@ -8,6 +8,12 @@ class User extends Migration
 {
     public function up()
     {
+
+        // ALTER TABLE users
+        // ADD COLUMN menu TEXT
+        // CHARACTER SET utf8mb4
+        // COLLATE utf8mb4_unicode_ci;
+
         $this->forge->addField([
             'id' => [
                 'type' => 'BIGINT',
@@ -30,15 +36,23 @@ class User extends Migration
             'password' => [
                 'type' => 'VARCHAR',
                 'constraint' => 255,
+                'null' => true,
+            ],
+            'menu' => [
+                'type' => 'TEXT',
+                'null' => true,
             ],
             'created_at' => [
                 'type' => 'DATETIME',
+                'null' => true,
             ],
             'updated_at' => [
                 'type' => 'DATETIME',
+                'null' => true,
             ],
             'deleted_at' => [
                 'type' => 'DATETIME',
+                'null' => true,
             ],
         ]);
 

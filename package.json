@@ -1,0 +1,27 @@
+{
+  "name": "belajarci4",
+  "version": "1.0.0",
+  "description": "CodeIgniter is a PHP full-stack web framework that is light, fast, flexible and secure. More information can be found at the [official site](https://codeigniter.com).",
+  "main": "Socket.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/luhur65/ci-penjualan.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/luhur65/ci-penjualan/issues"
+  },
+  "homepage": "https://github.com/luhur65/ci-penjualan#readme",
+  "dependencies": {
+    "express": "^4.22.1"
+  }
+}

@@ -285,3 +285,34 @@ html {
 	border: 2px dashed #1d96e8;
 	border-radius: 5px;
 }
+
+/* Select2 */
+.select2-container {
+  z-index: 2100 !important;
+}
+.select2-dropdown {
+  z-index: 3100 !important;
+}
+
+/* CHECKBOX POSITION */
+.checkbox-selectall{
+	margin:0 3px 11px!important;
+}
+
+
+.ui-jqgrid .ui-jqgrid-btable tbody tr.jqgrow td {
+	padding-left: 1px !important;
+	padding-right: 1px !important;
+}
+
+@media (min-width: 900px) { 
+	.checkbox-jqgrid{
+		margin:0 10px!important;
+	}
+	#sidebarButton {
+		padding-left: 1.5rem !important;
+		padding-right: 1.5rem !important;
+		font-size: 1.4rem;
+	}
+}
+

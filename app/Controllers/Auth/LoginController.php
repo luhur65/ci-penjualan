@@ -2,9 +2,7 @@
 
 namespace App\Controllers\Auth;
 
-use App\Models\User;
 use App\Controllers\BaseController;
-use CodeIgniter\HTTP\ResponseInterface;
 use App\Libraries\ApiClient;
 
 class LoginController extends BaseController

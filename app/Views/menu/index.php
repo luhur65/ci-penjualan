@@ -48,13 +48,17 @@
         width: 250,
         align: 'left',
         formatter: (value, options, rowData) => {
-          let totalParent = rowData.menukode.length
 
-          for (let i = 0; i < totalParent - 1; i++) {
-            value = `· ${value}`
+          // Hitung level berdasarkan jumlah titik
+          let level = rowData.menukode.split('.').length - 1
+
+          let indent = ''
+
+          for (let i = 0; i < level; i++) {
+            indent += '· '
           }
 
-          return value
+          return indent + value
         }
       },
       {
@@ -181,7 +185,7 @@
       caption: ' Tambah',
       buttonicon: 'fa-fw fa-plus-circle',
       onClickButton: function() {
-        addMenu();
+        createMenu();
 
       },
       position: 'first',
@@ -190,7 +194,50 @@
       cursor: "pointer",
     });
 
+    // tombol edit
+    grid.jqGrid('navButtonAdd', '#jqGridPager', {
+      caption: 'Ubah',
+      buttonicon: 'fa-fw fa-pencil-alt',
+      onClickButton: function() {
+        selectedId = $("#jqGrid").jqGrid('getGridParam', 'selrow')
+        updateMenu(selectedId);
+
+      },
+      position: 'last',
+      title: 'Edit',
+      id: "EditHeader",
+      cursor: "pointer",
+    });
+
+    // tombol hapus
+    grid.jqGrid('navButtonAdd', '#jqGridPager', {
+      caption: 'Hapus',
+      buttonicon: 'fa-fw fa-trash-alt',
+      onClickButton: function() {
+        selectedId = $("#jqGrid").jqGrid('getGridParam', 'selrow')
+        deleteMenu(selectedId);
+
+      },
+      position: 'last',
+      title: 'Delete',
+      id: "DeleteHeader",
+      cursor: "pointer",
+    });
+
   });
+
+  $('#crudModal').on('shown.bs.modal', () => {
+    let form = $('#crudForm')
+
+    // setFormBindKeys(form)
+
+    activeGrid = null
+
+    // getMaxLength(form)
+    initSelect2(form.find('select'), $('#crudModal'))
+    // initDatepicker()
+    // initLookup()
+  })
 </script>
 
 <?= $this->endSection(); ?>

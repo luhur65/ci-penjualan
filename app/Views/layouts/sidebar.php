@@ -1,8 +1,4 @@
-<?php
 
-use App\Helpers\MenuHelper;
-
-?>
 <aside class="main-sidebar sidebar-dark-primary elevation-4">
   <div class="sidebar">
     <div class="user-panel mt-3 pb-3 mb-3 d-flex">
@@ -10,7 +6,9 @@ use App\Helpers\MenuHelper;
         <img src="<?= base_url('public/libraries/adminlte/dist/img/user2-160x160.jpg') ?>" class="img-circle elevation-2" alt="User Image">
       </div>
       <div class="info">
-        <a href="#" class="d-block"><?=  session()->get('user')['username'] ?? 'Dharma' ?></a>
+        <a href="#" class="d-block">
+          <?=  session()->get('user')['username'] ?? 'Dharma' ?>
+        </a>
       </div>
     </div>
 
@@ -28,7 +26,7 @@ use App\Helpers\MenuHelper;
     <nav class="mt-2">
       <ul class="nav nav-pills nav-sidebar flex-column nav-child-indent" data-widget="treeview" role="menu" data-accordion="false">
         <!-- Tempat menu list -->
-
+        <?= session()->get('menu') ?>
 
         <li class="nav-item">
           <a href="<?= base_url('logout') ?>" class="nav-link">

@@ -10,13 +10,13 @@
     <div class="row">
       <!-- card box -->
       
-        <div class="card">
+        <!-- <div class="card">
           <div class="card-body">
             <h2>2</h2>
             <h3>Pengguna Aktif</h3>
 
           </div>
-        </div>
+        </div> -->
         
     </div>
   </section>

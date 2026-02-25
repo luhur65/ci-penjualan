@@ -121,11 +121,15 @@
   <!-- Dropzone -->
   <script src="<?= base_url('public/libraries/adminlte/plugins/dropzone/min/dropzone.min.js') ?>"></script>
 
+  <!-- Socket IO -->
+  <!-- <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script> -->
+
   <script src="<?= base_url('public/libraries/js/extended-jqgrid.js?version=' . config('App')->version) ?>"></script>
   <script src="<?= base_url('public/libraries/js/navbar.js?version=' . config('App')->version) ?>"></script>
   <script src="<?= base_url('public/libraries/js/sidebar.js?version=' . config('App')->version) ?>"></script>
   <script src="<?= base_url('public/libraries/js/script.js?version=' . config('App')->version) ?>"></script>
   <script src="<?= base_url('public/my-component/LookupComponent.js?version=' . config('App')->version) ?>"></script>
+  <!-- <script src="<?= base_url('public/my-component/Socket.js?version=' . config('App')->version) ?>"></script> -->
   <!-- Custom JS -->
   <script>
     const APP_URL = `<?= base_url() ?>`
@@ -254,14 +258,38 @@
     }
 
     // Untuk refresh token async await
-    function ajaxWithRefresh(options) {
-      return $.ajax(options).catch(error => {
-        if (error.status === 401) {
-          return handleTokenExpired(options); // ini mengembalikan Promise baru
-        }
-        return Promise.reject(error); // error selain 401 tetap reject
-      });
+    function ajaxWithRefresh(options, slowThreshold = 2000) { // threshold dalam ms
+      const start = performance.now();
+
+      return $.ajax(options)
+        .then(response => {
+          const duration = performance.now() - start;
+          if (duration > slowThreshold) {
+            console.warn(`Request lambat: ${duration.toFixed(0)} ms`, options.url);
+          }
+          return response;
+        })
+        .catch(error => {
+          const duration = performance.now() - start;
+          if (duration > slowThreshold) {
+            console.warn(`Request lambat (error): ${duration.toFixed(0)} ms`, options.url);
+          }
+
+          if (error.status === 401) {
+            return handleTokenExpired(options);
+          }
+
+          return Promise.reject(error);
+        });
     }
+    // function ajaxWithRefresh(options) {
+    //   return $.ajax(options).catch(error => {
+    //     if (error.status === 401) {
+    //       return handleTokenExpired(options); // ini mengembalikan Promise baru
+    //     }
+    //     return Promise.reject(error); // error selain 401 tetap reject
+    //   });
+    // }
 
 
     function createJqGrid(config = {}) {
@@ -278,10 +306,10 @@
         iconSet: 'fontAwesome',
         colModel: config.colModel,
         autowidth: true,
-        // height: 'auto',
+        height: 'auto',
         height: 350,
         rowNum: 10,
-        // rowList: [10, 20, 30],
+        rowList: [10, 20, 30],
         rownumbers: true,
         sortname: 'id',
         sortorder: 'asc',
@@ -289,8 +317,8 @@
         gridview: true,
         page: config.page || 1,
         pager: config.pagerId,
-        scroll: true, // set the scroll property to 1 to enable paging with scrollbar - virtual loading of records
-        emptyrecords: 'Scroll to bottom to retrieve new page', // the message will be displayed at the bottom 
+        // scroll: true, // set the scroll property to 1 to enable paging with scrollbar - virtual loading of records
+        // emptyrecords: 'Scroll to bottom to retrieve new page', // the message will be displayed at the bottom 
         jsonReader: {
           root: 'data',
           total: 'attributes.totalPages',
@@ -497,6 +525,63 @@
         }
       });
     }
+
+    /**
+     * Ambil pesan error yang paling manusiawi
+     * @param {Object} error - error object
+     * @returns {string} - pesan error
+     */
+    function getErrorMessage(error) {
+      if (!error) return 'Unknown error';
+
+      if (error.status === 0) {
+        return 'Koneksi kamu offline!';
+      }
+
+      if (error.responseJSON) {
+        return (
+          error.responseJSON.message ||
+          error.responseJSON.messages?.error ||
+          'Terjadi kesalahan pada server'
+        );
+      }
+
+      if (error.responseText) {
+        return error.responseText;
+      }
+
+      if (error.message) {
+        return error.message;
+      }
+
+      return 'Terjadi kesalahan';
+    }
+    // function getErrorMessage(error) {
+    //   if (!error) return 'Unknown error';
+
+    //   // Axios style error (paling umum)
+    //   if (error.response) {
+    //     return (
+    //       error.response.data?.message ||
+    //       error.response.data?.error ||
+    //       error.response.statusText ||
+    //       `HTTP ${error.response.status}` ||
+    //       'Ada masalah saat memuat data, coba lagi'
+    //     );
+    //   }
+
+    //   // Network error
+    //   if (error.request) {
+    //     return 'Tidak ada respon dari server';
+    //   }
+
+    //   // Error biasa (throw new Error)
+    //   if (error.message) {
+    //     return error.message;
+    //   }
+
+    //   return String(error);
+    // }
   </script>
   <?= $this->renderSection('scripts') ?>
 </body>
