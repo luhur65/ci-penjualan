@@ -316,3 +316,8 @@ html {
 	}
 }
 
+/* disable button on td <table> */
+.disabled-btn {
+  pointer-events: none;
+  opacity: 0.5;
+}

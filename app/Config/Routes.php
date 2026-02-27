@@ -24,6 +24,10 @@ $routes->group('', ['filter' => 'guest'], function ($routes) {
 
 $routes->get('/logout', [LoginController::class, 'logout'], ['filter' => 'authenticated'], ['as' => 'logout.index']);
 $routes->get('/refresh', [LoginController::class, 'refreshToken'], ['as' => 'token.refresh']);
+$routes->get('/reset-password', [LoginController::class, 'resetPasswordForm'], ['as' => 'reset-password.index']);
+$routes->get('/reset-password/success', function() {
+    return view('reset-password/success');
+});
 
 // Protected Routes
 $routes->group('', ['filter' => 'authenticated', 'csrf' => true], function ($routes) {

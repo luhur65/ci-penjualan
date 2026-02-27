@@ -61,6 +61,9 @@
             </div>
           </div>
 
+          <a href="javascript:void(0)" id="forgotPassword">
+            <p>Lupa Password?</p>
+          </a>
 
           <div class="row">
             <div class="col-8">
@@ -77,9 +80,6 @@
           </div>
         </form>
 
-        <p class="mb-1">
-          <!-- <a href="#">I forgot my password</a> -->
-        </p>
       </div>
     </div>
 
@@ -97,6 +97,9 @@
   <!-- AdminLTE App -->
   <script src="<?= base_url('public/libraries/adminlte/dist/js/adminlte.min.js') ?>"></script>
   <script>
+    const API_URL = `<?= config('Api')->apiURL ?>`
+    let isRequestInProgress = false;
+
     document.addEventListener('DOMContentLoaded', function() {
       const togglePassword = document.querySelector('#togglePassword');
       const password = document.querySelector('input[name="password"]');
@@ -108,6 +111,87 @@
         // toggle the eye / eye slash icon
         this.classList.toggle('fa-eye-slash');
       });
+
+
+      $('#forgotPassword').on('click', function(e) {
+        e.preventDefault();
+
+
+        if (isRequestInProgress) {
+          // If a request is already in progress, ignore this click
+          return;
+        }
+
+        const username = $('input[name="username"]').val().trim();
+
+        // validasi sederhana di client
+        if (!username) {
+          showNotification('warning', 'Username wajib diisi untuk reset password.');
+          $('input[name="username"]').focus();
+          return;
+        }
+
+        const data = {};
+        data.username = username;
+
+        isRequestInProgress = true;
+
+        $.ajax({
+          url: `${API_URL}/forgot-password`,
+          method: 'POST',
+          dataType: 'json',
+          contentType: 'application/json',
+          data: JSON.stringify(data),
+          success: function(res) {
+            // res.message dari backend
+            showNotification('success', res.message || 'Jika username terdaftar, link reset sudah dikirim ke email.');
+
+            isRequestInProgress = false;
+          },
+          error: function(xhr) {
+            // default message
+            let msg = 'Terjadi kesalahan. Coba lagi.';
+
+            // kalau backend balikin JSON error validasi
+            if (xhr.status === 422 && xhr.responseJSON) {
+              if (xhr.responseJSON.errors && xhr.responseJSON.errors.username) {
+                msg = xhr.responseJSON.errors.username;
+              } else if (xhr.responseJSON.message) {
+                msg = xhr.responseJSON.message;
+              }
+            } else if (xhr.responseJSON && xhr.responseJSON.message) {
+              msg = xhr.responseJSON.message;
+            }
+
+            showNotification('danger', msg);
+
+            isRequestInProgress = false;
+
+            $('#forgotPassword').on('click', arguments.callee); // Restore the event handler
+            $('#forgotPassword').css('pointer-events', 'auto');
+          }
+        });
+      });
+
+      function showNotification(type, message) {
+        // remove previous notification
+        $('.alert').remove();
+
+        // create new notification
+        const notification = $('<div class="alert alert-' + type + ' alert-dismissible">' +
+          '<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>' +
+          message +
+          '</div>');
+
+        // append to login box
+        $('.login-box-msg').after(notification);
+
+        // auto remove notification after 3 seconds
+        setTimeout(function() {
+          notification.remove();
+        }, 3000);
+      }
+
     });
   </script>
 </body>

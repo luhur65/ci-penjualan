@@ -93,12 +93,14 @@ class LoginController extends BaseController
                 'username' => $body['user']['username'],
                 'fullname' => $body['user']['fullname'],
                 'email' => $body['user']['email'],
+                'role' => $body['user']['role'],
             ], // Simpan data user yang dikirim API (jika ada)
             'menu' => $body['menu'], // Simpan menu yang dikirim API (jika ada)
             'isLoggedIn'    => true,
             'accessToken'   => $body['access_token'],
             'refreshToken'  => $body['refresh_token'],
             'token_expires_at' => time() + $body['expires_in'],
+            'permissions' => $body['permissions'],
         ]);
 
         // return redirect()->to('/dashboard')->with('success', 'Login berhasil!');
@@ -169,4 +171,21 @@ class LoginController extends BaseController
         ]);
         
     }
+
+    public function resetPasswordForm()
+    {
+        // Get the token and user parameters from the query string
+        $token = $this->request->getGet('token');
+        $user = $this->request->getGet('user');
+
+        // You can now use the $token and $user values, for example, to check if the token is valid
+        if ($token && $user) {
+            // Do something with the token and user, like checking if the token is valid and exists
+            return view('auth/reset-password', ['token' => $token, 'user' => $user]);
+        } else {
+            // Handle the case when parameters are missing
+            return redirect()->to('/error')->with('error', 'Invalid reset link.');
+        }
+    }
+
 }
