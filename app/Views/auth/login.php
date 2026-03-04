@@ -14,6 +14,8 @@
 
   <!-- Theme style -->
   <link rel="stylesheet" href="<?= base_url('public/libraries/adminlte/dist/css/adminlte.min.css') ?>">
+
+  <link rel="stylesheet" href="<?= base_url('public/libraries/css/style.css?version=' . config('App')->version) ?>">
 </head>
 
 <body class="hold-transition login-page">
@@ -82,6 +84,10 @@
 
       </div>
     </div>
+    <div class="processing-loader d-none" id="processingLoader">
+      <img src="<?= base_url('public/libraries/images/loading-color.gif?version=' . config('App')->version) ?>" rel="preload">
+      <span>Processing</span>
+    </div>
 
     <div class="text-center mt-3 text-muted">
       <p>Copyright &copy; <?= Date("Y") ?></p>
@@ -99,6 +105,7 @@
   <script>
     const API_URL = `<?= config('Api')->apiURL ?>`
     let isRequestInProgress = false;
+    // let elapsedTime = {elapsed_time}
 
     document.addEventListener('DOMContentLoaded', function() {
       const togglePassword = document.querySelector('#togglePassword');
@@ -112,12 +119,14 @@
         this.classList.toggle('fa-eye-slash');
       });
 
+      // $('#elapsedTime').text(elapsedTime.toFixed(2))
 
       $('#forgotPassword').on('click', function(e) {
         e.preventDefault();
 
 
         if (isRequestInProgress) {
+          $('#processingLoader').removeClass('d-none');
           // If a request is already in progress, ignore this click
           return;
         }
@@ -147,6 +156,7 @@
             showNotification('success', res.message || 'Jika username terdaftar, link reset sudah dikirim ke email.');
 
             isRequestInProgress = false;
+            $('#processingLoader').addClass('d-none');
           },
           error: function(xhr) {
             // default message
@@ -166,6 +176,7 @@
             showNotification('danger', msg);
 
             isRequestInProgress = false;
+            $('#processingLoader').addClass('d-none');
 
             $('#forgotPassword').on('click', arguments.callee); // Restore the event handler
             $('#forgotPassword').css('pointer-events', 'auto');

@@ -43,33 +43,33 @@ class ApiClient
       // RETURN RAW RESPONSE OBJECT
       return $response;
     } catch (\Throwable $th) {
-      if (
-        $th instanceof \CodeIgniter\HTTP\Exceptions\HTTPException
-        && $th->getCode() === 401
-      ) {
+      // if (
+      //   $th instanceof \CodeIgniter\HTTP\Exceptions\HTTPException
+      //   && $th->getCode() === 401
+      // ) {
 
-        // refresh token request
-        // $newToken = $this->client->post($this->baseUri . "/refresh-token", [
-        //   "form_params" => ["refresh_token" => session()->get('refreshToken')]
-        // ]);
-        $newToken = $this->client->post($this->baseUri . "/refresh-token", [
-          'headers' => [
-            'Accept' => 'application/json'
-          ],
-          'form_params' => [
-            'refresh_token' => session()->get('refreshToken')
-          ]
-        ]);
+      //   // refresh token request
+      //   // $newToken = $this->client->post($this->baseUri . "/refresh-token", [
+      //   //   "form_params" => ["refresh_token" => session()->get('refreshToken')]
+      //   // ]);
+      //   $newToken = $this->client->post($this->baseUri . "/refresh-token", [
+      //     'headers' => [
+      //       'Accept' => 'application/json'
+      //     ],
+      //     'form_params' => [
+      //       'refresh_token' => session()->get('refreshToken')
+      //     ]
+      //   ]);
 
-        $json = json_decode($newToken->getBody(), true);
-        session()->set([
-          'accessToken'  => $json['access_token'],
-          'refreshToken' => $json['refresh_token'],
-        ]);
+      //   $json = json_decode($newToken->getBody(), true);
+      //   session()->set([
+      //     'accessToken'  => $json['access_token'],
+      //     'refreshToken' => $json['refresh_token'],
+      //   ]);
 
-        // ulang request
-        return $this->request($method, $endpoint, $data);
-      }
+      //   // ulang request
+      //   return $this->request($method, $endpoint, $data);
+      // }
 
       // if ($response->getStatusCode() === 401) {
       //   return $this->refreshTokenAndRetry($method, $endpoint, $data);
@@ -104,24 +104,4 @@ class ApiClient
     return $this->request('delete', $endpoint, null, $token);
   }
 
-  protected function refreshTokenAndRetry($method, $endpoint, $data = null)
-  {
-    $refreshToken = session()->get('refreshToken');
-    if (!$refreshToken) {
-      throw new \Exception('Refresh token not found.');
-    }
-
-    $response = $this->client->post('/refresh-token', [
-      'form_params' => ['refresh_token' => $refreshToken]
-    ]);
-
-    $json = json_decode($response->getBody(), true);
-
-    session()->set([
-      'accessToken'  => $json['access_token'] ?? '',
-      'refreshToken' => $json['refresh_token'] ?? $refreshToken,
-    ]);
-
-    return $this->request($method, $endpoint, $data, session()->get('accessToken'));
-  }
 }

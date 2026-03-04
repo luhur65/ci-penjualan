@@ -165,7 +165,7 @@
     $.ajaxSetup({
       beforeSend: function(xhr) {
         // Sertakan access token di setiap request
-        xhr.setRequestHeader('Authorization', `'Bearer ${ACCESS_TOKEN}`);
+        xhr.setRequestHeader('Authorization', `Bearer ${ACCESS_TOKEN}`);
       },
       statusCode: {
         422: function(error) {
@@ -210,13 +210,17 @@
       return $.ajax({
         url: `${APP_URL}refresh`, // Endpoint untuk refresh token
         type: "get",
-
+        dataType: "json",
         success: function(response) {
           // Berhasil mendapatkan token baru
           ACCESS_TOKEN = response.access_token;
         },
         error: function(xhr, status, error) {
           console.log("Gagal memperbarui token:", error);
+          // kalau 401, paksa logout
+          if (xhr.status === 401) {
+            logoutUser();
+          }
         }
       });
     }

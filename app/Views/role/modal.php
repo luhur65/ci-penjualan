@@ -568,13 +568,6 @@
     // Populate form fields
     populateForm(form, response.data);
 
-    // Populate roles
-    // const roleIds = response.roles.map(role => role.role_id);
-    // form.find(`[name="role_ids[]"]`).val(roleIds).trigger('change');
-
-    // console.log(roleIds);
-    // try {
-
   }
 
   function gridAcoColModel() {

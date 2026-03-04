@@ -14,6 +14,7 @@ use CodeIgniter\Filters\PerformanceMetrics;
 use CodeIgniter\Filters\SecureHeaders;
 use App\Filters\Authenticated;
 use App\Filters\Guest;
+use App\Filters\AclFilter;
 
 class Filters extends BaseFilters
 {
@@ -37,7 +38,8 @@ class Filters extends BaseFilters
         'pagecache'     => PageCache::class,
         'performance'   => PerformanceMetrics::class,
         'authenticated' => Authenticated::class,
-        'guest'         => Guest::class
+        'guest'         => Guest::class,
+        'acl'           => AclFilter::class,
     ];
 
     /**
@@ -60,7 +62,7 @@ class Filters extends BaseFilters
         ],
         'after' => [
             'pagecache',  // Web Page Caching
-            'performance', // Performance Metrics
+            // 'performance', // Performance Metrics
             'toolbar',     // Debug Toolbar
         ],
     ];

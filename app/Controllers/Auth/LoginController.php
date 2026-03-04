@@ -93,9 +93,10 @@ class LoginController extends BaseController
                 'username' => $body['user']['username'],
                 'fullname' => $body['user']['fullname'],
                 'email' => $body['user']['email'],
-                'role' => $body['user']['role'],
+                'roles' => $body['user']['roles'],
             ], // Simpan data user yang dikirim API (jika ada)
-            'menu' => $body['menu'], // Simpan menu yang dikirim API (jika ada)
+            // 'menu' => $body['menu'], // Simpan menu yang dikirim API (jika ada)
+            'menu' => $this->replaceUrlDomain($body['menu']), // Ganti domain menu dari API ke domain sekarang;
             'isLoggedIn'    => true,
             'accessToken'   => $body['access_token'],
             'refreshToken'  => $body['refresh_token'],
@@ -127,49 +128,46 @@ class LoginController extends BaseController
     public function refreshToken()
     {
         $refreshToken = session()->get('refreshToken');
-        
+
         if (!$refreshToken) {
-            // Jika kosong, berarti Session CI4 sudah expired (hilang).
-            // Tidak perlu tanya ke API Backend, percuma.
-            // Langsung bunuh session dan kirim sinyal 400 ke Frontend.
             session()->destroy();
-            return $this->response->setStatusCode(400)->setJSON([
+            return $this->response->setStatusCode(401)->setJSON([
                 'status' => 'error',
                 'message' => 'Sesi sudah habis, silakan login kembali.',
             ]);
         }
 
-        $client = new ApiClient();
-        $response = $client->post('/refresh-token', [
-            'refresh_token' => session()->get('refreshToken')
-        ]);
+        try {
+            $client = new ApiClient();
+            $response = $client->post('/refresh-token', [
+                'refresh_token' => $refreshToken
+            ]);
 
-        // Cek jika API menolak refresh token (misal refresh token juga sudah expired)
-        if ($response->getStatusCode() !== 200) {
-            // Hancurkan session lokal dan kirim sinyal 401 ke JS
+            $body = json_decode($response->getBody());
+
+            session()->set([
+                'accessToken'      => $body->access_token,
+                'refreshToken'     => $body->refresh_token,
+                'token_expires_at' => time() + $body->expires_in,
+            ]);
+
+            return $this->response->setJSON([
+                'access_token'  => $body->access_token,
+                'refresh_token' => $body->refresh_token,
+                'expires_in'    => $body->expires_in,
+            ]);
+        } catch (\Throwable $e) {
+
+            // LOG biar kelihatan di writable/logs
+            log_message('error', 'Refresh FE gagal: ' . $e->getMessage());
+
             session()->destroy();
-            return $this->response->setStatusCode(404)->setJSON([
-                'access_token' => null,
-                'refresh_token' => null,
-                'expires_in' => null,
+
+            return $this->response->setStatusCode(401)->setJSON([
+                'status' => 'error',
+                'message' => 'Refresh token tidak valid atau sudah expired'
             ]);
         }
-
-        $body = json_decode($response->getBody());
-
-        session()->set([
-            'accessToken'   => $body->access_token,
-            'refreshToken'  => $body->refresh_token,
-            'token_expires_at' => time() + $body->expires_in,
-        ]);
-
-        // PENTING: Return JSON ke Frontend (JS)
-        return $this->response->setJSON([
-            'access_token' => $body->access_token,
-            'refresh_token' => $body->refresh_token,
-            'expires_in' => $body->expires_in,
-        ]);
-        
     }
 
     public function resetPasswordForm()
@@ -188,4 +186,11 @@ class LoginController extends BaseController
         }
     }
 
+    private function replaceUrlDomain($menu)
+    {
+        $new_domain = current_url(true)->getScheme() . '://' . current_url(true)->getHost();
+
+        // Ganti localhost menjadi domain sekarang
+        return str_replace(['http://localhost', 'https://localhost'], $new_domain, $menu);
+    }
 }

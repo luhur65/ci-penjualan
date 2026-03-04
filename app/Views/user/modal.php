@@ -301,8 +301,8 @@
         // Success handling
         form.trigger('reset');
         $('#crudModal').modal('hide');
-        // selectedRows = [];
-        const id = response.data.id;
+        selectedRows = [];
+        // const id = response.data.id;
 
         $('#jqGrid').jqGrid('setGridParam', {
           page: 1
@@ -321,8 +321,9 @@
         // if (response.data.grp === 'FORMAT') updateFormat(response.data);
 
       } catch (error) {
+        console.log(error);
         if (error.status !== 422) {
-          showDialog('error', error.responseJSON?.message || 'Terjadi kesalahan');
+          showDialog('error', error.responseJSON?.message || getErrorMessage(error));
           // $('.is-invalid').removeClass('is-invalid');
           // $('.invalid-feedback').remove();
         }
@@ -391,8 +392,8 @@
       $('.rolediv').show()
 
     } catch (error) {
-      // console.error(error);
-      showDialog('error', error.responseJSON?.message || 'Terjadi kesalahan');
+      console.error(error);
+      showDialog('error', getErrorMessage(error));
     } finally {
       $('.modal-loader').addClass('d-none');
 
@@ -429,7 +430,7 @@
 
     } catch (error) {
       // console.error(error);
-      showDialog('error', error.responseJSON?.message || 'Terjadi kesalahan');
+      showDialog('error', getErrorMessage(error));
     } finally {
       $('.modal-loader').addClass('d-none');
 
@@ -522,27 +523,18 @@
 
 
   async function showUser(form, userId) {
-    try {
-      const response = await ajaxWithRefresh({
-        url: `${API_URL}/users/${userId}`,
-        method: 'GET',
-        dataType: 'JSON'
-      });
+    const response = await ajaxWithRefresh({
+      url: `${API_URL}/users/${userId}`,
+      method: 'GET',
+      dataType: 'JSON'
+    });
 
-      // Populate form fields
-      populateForm(form, response.data);
+    // Populate form fields
+    populateForm(form, response.data);
 
-      // Populate roles
-      const roleIds = response.roles.map(role => role.role_id);
-      form.find(`[name="role_ids[]"]`).val(roleIds).trigger('change');
-
-      console.log(roleIds);
-
-    } catch (error) {
-      // Error handling
-      const msg = error.responseJSON;
-      showDialog('error', msg.messages.error);
-      throw error; // biar bisa ditangkap di caller
-    }
+    // Populate roles
+    const roleIds = response.roles.map(role => role.role_id);
+    form.find(`[name="role_ids[]"]`).val(roleIds).trigger('change');
+    
   }
 </script>

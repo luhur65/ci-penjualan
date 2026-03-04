@@ -29,9 +29,12 @@ $routes->get('/reset-password/success', function() {
     return view('reset-password/success');
 });
 
-// Protected Routes
-$routes->group('', ['filter' => 'authenticated', 'csrf' => true], function ($routes) {
+$routes->group('', ['filter' => 'authenticated'], function($routes) {
     $routes->get('dashboard', [DashboardController::class, 'index'], ['as' => 'dashboard.index']);
+});
+
+// Protected Routes
+$routes->group('', ['filter' => ['authenticated', 'acl'], 'csrf' => true], function ($routes) {
 
     $routes->get('/user', [UserController::class, 'index'], ['as' => 'users.index']);
     $routes->get('/role', [RoleController::class, 'index'], ['as' => 'roles.index']);

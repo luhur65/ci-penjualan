@@ -32,6 +32,13 @@
   const masterGrid = '#jqGrid';
   const gridPager = '#jqGridPager';
   const detailGrid = '#detailItem';
+  const accessRights = {
+    canAdd: <?= has_permission('menu', 'create') ? 'true' : 'false' ?>,
+    canEdit: <?= has_permission('menu', 'update') ? 'true' : 'false' ?>,
+    canDelete: <?= has_permission('menu', 'delete') ? 'true' : 'false' ?>,
+    canExport: <?= has_permission('menu', 'export') ? 'true' : 'false' ?>,
+    canReport: <?= has_permission('menu', 'report') ? 'true' : 'false' ?>,
+  };
 
   function getBaseColModel() {
     return [{
@@ -180,49 +187,8 @@
       }
     });
 
-    // tombol tambah
-    grid.jqGrid('navButtonAdd', '#jqGridPager', {
-      caption: ' Tambah',
-      buttonicon: 'fa-fw fa-plus-circle',
-      onClickButton: function() {
-        createMenu();
+    LoadButtonJqgrid(grid);
 
-      },
-      position: 'first',
-      title: 'Add',
-      id: "AddHeader",
-      cursor: "pointer",
-    });
-
-    // tombol edit
-    grid.jqGrid('navButtonAdd', '#jqGridPager', {
-      caption: 'Ubah',
-      buttonicon: 'fa-fw fa-pencil-alt',
-      onClickButton: function() {
-        selectedId = $("#jqGrid").jqGrid('getGridParam', 'selrow')
-        updateMenu(selectedId);
-
-      },
-      position: 'last',
-      title: 'Edit',
-      id: "EditHeader",
-      cursor: "pointer",
-    });
-
-    // tombol hapus
-    grid.jqGrid('navButtonAdd', '#jqGridPager', {
-      caption: 'Hapus',
-      buttonicon: 'fa-fw fa-trash-alt',
-      onClickButton: function() {
-        selectedId = $("#jqGrid").jqGrid('getGridParam', 'selrow')
-        deleteMenu(selectedId);
-
-      },
-      position: 'last',
-      title: 'Delete',
-      id: "DeleteHeader",
-      cursor: "pointer",
-    });
 
   });
 
@@ -238,6 +204,92 @@
     // initDatepicker()
     // initLookup()
   })
+
+  function LoadButtonJqgrid(grid) {
+
+    if (accessRights.canAdd) {
+      // tombol tambah
+      grid.jqGrid('navButtonAdd', '#jqGridPager', {
+        caption: ' Tambah',
+        buttonicon: 'fa-fw fa-plus-circle',
+        onClickButton: function() {
+          createMenu();
+  
+        },
+        position: 'first',
+        title: 'Add',
+        id: "AddHeader",
+        cursor: "pointer",
+      });
+    }
+
+    if (accessRights.canEdit) {
+      // tombol edit
+      grid.jqGrid('navButtonAdd', '#jqGridPager', {
+        caption: 'Ubah',
+        buttonicon: 'fa-fw fa-pencil-alt',
+        onClickButton: function() {
+          selectedId = $("#jqGrid").jqGrid('getGridParam', 'selrow')
+          updateMenu(selectedId);
+  
+        },
+        position: 'last',
+        title: 'Edit',
+        id: "EditHeader",
+        cursor: "pointer",
+      });
+    }
+
+    if (accessRights.canDelete) {
+      // tombol hapus
+      grid.jqGrid('navButtonAdd', '#jqGridPager', {
+        caption: 'Hapus',
+        buttonicon: 'fa-fw fa-trash-alt',
+        onClickButton: function() {
+          selectedId = $("#jqGrid").jqGrid('getGridParam', 'selrow')
+          deleteMenu(selectedId);
+  
+        },
+        position: 'last',
+        title: 'Delete',
+        id: "DeleteHeader",
+        cursor: "pointer",
+      });
+    }
+
+    if (accessRights.canReport) {
+      // tombol report
+      grid.jqGrid('navButtonAdd', '#jqGridPager', {
+        caption: 'Report',
+        buttonicon: 'fa-fw fa-file-alt',
+        onClickButton: function() {
+          reportMenu();
+  
+        },
+        position: 'last',
+        title: 'Report',
+        id: "ReportHeader",
+        cursor: "pointer",
+      });
+    }
+
+    if (accessRights.canExport) {
+      // tombol export
+      grid.jqGrid('navButtonAdd', '#jqGridPager', {
+        caption: 'Export',
+        buttonicon: 'fa-fw fa-file-export',
+        onClickButton: function() {
+          exportMenu();
+  
+        },
+        position: 'last',
+        title: 'Export',
+        id: "ExportHeader",
+        cursor: "pointer",
+      });
+    }
+
+  }
 </script>
 
 <?= $this->endSection(); ?>
