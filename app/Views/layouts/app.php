@@ -23,10 +23,10 @@
   <link rel="stylesheet" href="<?= base_url('public/libraries/adminlte/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css') ?>">
 
   <!-- JqGrid -->
-  <link rel="stylesheet" href="<?= base_url('public/libraries/jqgrid/582/css/ui.jqgrid-bootstrap4.css') ?>" />
+  <link rel="stylesheet" href="<?= base_url('public/libraries/jqgrid/570/css/ui.jqgrid-bootstrap4.css') ?>" />
 
   <!-- Jquery UI -->
-  <link rel="stylesheet" href="<?= base_url('public/libraries/jquery-ui/1.13.1/jquery-ui.min.css') ?>">
+  <link rel="stylesheet" href="<?= base_url('public/libraries/jquery-ui/cupertino/jquery-ui.min.css') ?>">
 
   <!-- Dropzone -->
   <link rel="stylesheet" href="<?= base_url('public/libraries/adminlte/plugins/dropzone/min/dropzone.min.css') ?>">
@@ -87,11 +87,14 @@
   <!-- jQuery -->
   <script src="<?= base_url('public/libraries/adminlte/plugins/jquery/jquery.min.js') ?>"></script>
 
+  <!-- jQuery UI -->
+  <script src="<?= base_url('public/libraries/jquery-ui/1.13.1/jquery-ui.min.js') ?>"></script>
+
   <!-- Highlight -->
   <script src="<?= base_url('public/libraries/js/highlight.js') ?>"></script>
 
   <!-- Bootstrap 4 -->
-  <script src="<?= base_url('public/libraries/adminlte/plugins/bootstrap/js/bootstrap.min.js') ?>"></script>
+  <script src="<?= base_url('public/libraries/adminlte/plugins/bootstrap/js/bootstrap.bundle.min.js') ?>"></script>
 
   <!-- ChartJS -->
   <script src="<?= base_url('public/libraries/adminlte/plugins/chart.js/Chart.min.js') ?>"></script>
@@ -106,8 +109,8 @@
   <script src="<?= base_url('public/libraries/adminlte/plugins/select2/js/select2.min.js') ?>"></script>
 
   <!-- JqGrid -->
-  <script src="<?= base_url('public/libraries/jqgrid/582/js/i18n/grid.locale-en.js') ?>" type="text/javascript"></script>
-  <script src="<?= base_url('public/libraries/jqgrid/582/js/jquery.jqGrid.min.js') ?>" type="text/javascript"></script>
+  <script src="<?= base_url('public/libraries/jqgrid/570/js/i18n/grid.locale-en.js') ?>" type="text/javascript"></script>
+  <script src="<?= base_url('public/libraries/jqgrid/570/js/jquery.jqGrid.min.js') ?>" type="text/javascript"></script>
 
   <!-- Autonumeric -->
   <script src="<?= base_url('public/libraries/autonumeric/4.5.4/autonumeric.min.js') ?>" type="text/javascript"></script>
@@ -309,13 +312,15 @@
         styleUI: 'Bootstrap4',
         iconSet: 'fontAwesome',
         colModel: config.colModel,
-        autowidth: true,
-        height: 'auto',
-        height: 350,
+        autowidth: false,
+        height: 320,
         rowNum: 10,
+        rownumWidth: 45,
         rowList: [10, 20, 30],
+        toolbar: [true, "top"],
         rownumbers: true,
         sortname: 'id',
+        sortable: true,
         sortorder: 'asc',
         viewrecords: true,
         gridview: true,
@@ -329,42 +334,24 @@
           records: 'attributes.totalRows',
         },
         loadBeforeSend: function(jqXHR) {
-          // if ($(this).jqGrid("getGridParam", "page") > $(this).jqGrid("getGridParam", "lastpage")) {
-          //   return false;
-          // }
           jqXHR.setRequestHeader('Authorization', `Bearer ${ACCESS_TOKEN}`);
+          setGridLastRequest($(this), jqXHR)
         }
       };
 
       // Merge default options + user config
       const finalOptions = $.extend(true, {}, defaultOptions, config.options || {});
 
-      $.jgrid.extend({
-        nextPageIfPossible: function() {
-          var grid = this[0];
-          var p = grid.p;
-
-          // Jika sudah di lastpage, JANGAN PERNAH naikan page
-          if (p.page >= p.lastpage) {
-            return false;
-          }
-
-          // default behaviour
-          p.page++;
-          $(grid).trigger("reloadGrid");
-        }
-      });
-
       const grid = $(config.gridId).jqGrid(finalOptions);
 
       // default nav
-      grid.jqGrid('navGrid', config.pagerId, {
-        edit: false,
-        add: false,
-        del: false,
-        search: false,
-        refresh: false
-      });
+      // grid.jqGrid('navGrid', config.pagerId, {
+      //   edit: false,
+      //   add: false,
+      //   del: false,
+      //   search: false,
+      //   refresh: false
+      // });
 
       // default filter toolbar
       grid.jqGrid("setLabel", "rn", "No.");
@@ -378,7 +365,6 @@
         beforeSearch: function() {
           abortGridLastRequest($(this))
           $('#left-nav').find(`button:not(#add)`).attr('disabled', 'disabled')
-          // clearGlobalSearch($('#jqGrid'))
         },
       });
 
@@ -418,6 +404,7 @@
 
     // Clear filter kolom
     function clearColumnSearch(grid) {
+      grid.jqGrid("clearFilterToolbar");
       grid.jqGrid("setGridParam", {
         postData: {
           filters: ""
@@ -430,20 +417,22 @@
       const url = config.url;
 
       // Tambahkan HTML kolom search
-      // console.log("#t_" + $.jgrid.jqID(grid[0].id))
-      $(".ui-jqgrid-titlebar").html(
-        $(`<form class="form-inline">
-            <div class='ui-jqgrid-titlebar'>
-              <label for="${$.jgrid.jqID(
-                    grid[0].id
-                    )}_searchText" style="font-weight: normal !important;">
-                  Search :
-                  <input type="text" class="form-control form-control-sm global-search ml-3" id="${$.jgrid.jqID(
-                    grid[0].id
-                    )}_searchText" placeholder="Search" autocomplete="off">
-              </label>
-            </div>
-          </form>`)
+      $("#t_" + $.jgrid.jqID(grid[0].id)).html(
+        $(
+          `
+            <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between w-100 px-2 py-1">
+                <form class="form-inline">
+                    <div class="form-group w-100 px-2" id="titlesearch">
+                        <label for="searchText" style="font-weight: normal !important;">Search : </label>
+                        <input type="text" class="form-control form-control-sm global-search" id="${$.jgrid.jqID(grid[0].id)}_searchText" placeholder="Search" autocomplete="off">
+                    </div>
+                </form>
+                <div class="px-2 d-flex align-items-center">
+                    <div id="searchDetail_${$.jgrid.jqID(grid[0].id)}" class="px-2"></div>
+                    <div id="infoContainer_${$.jgrid.jqID(grid[0].id)}" class="px-2"></div>
+                </div>
+            </div>`
+        )
       );
 
       // Event input
@@ -560,32 +549,44 @@
 
       return 'Terjadi kesalahan';
     }
-    // function getErrorMessage(error) {
-    //   if (!error) return 'Unknown error';
 
-    //   // Axios style error (paling umum)
-    //   if (error.response) {
-    //     return (
-    //       error.response.data?.message ||
-    //       error.response.data?.error ||
-    //       error.response.statusText ||
-    //       `HTTP ${error.response.status}` ||
-    //       'Ada masalah saat memuat data, coba lagi'
-    //     );
-    //   }
 
-    //   // Network error
-    //   if (error.request) {
-    //     return 'Tidak ada respon dari server';
-    //   }
+    /** 
+     * Membersihkan input search toolbar dari karakter khusus
+     * @param {jQuery} grid - grid element
+     * @param {Object} data - object key:value untuk diisi ke form
+     * @param {Array} specialFields - array field yang perlu simpan data-current-value
+     */
+    $(document).on("input blur", ".ui-search-toolbar input", function() {
+      let val = $(this).val();
 
-    //   // Error biasa (throw new Error)
-    //   if (error.message) {
-    //     return error.message;
-    //   }
+      if (!val) return;
 
-    //   return String(error);
-    // }
+      val = val
+        .replace(/&nbsp;/gi, " ") // HTML nbsp
+        .replace(/\u00A0/g, " ") // unicode nbsp
+        .replace(/[\u200B-\u200D]/g, "") // zero width chars
+        .replace(/\uFEFF/g, "") // BOM
+        .replace(/\s+/g, " ") // multiple space -> single
+        .trim(); // remove leading/trailing space
+
+      $(this).val(val);
+    });
+
+    /**
+     * Hide or show button based on access rights
+     * @param {Object} accessRights - object key:value for button ids and access rights
+     */
+    function PermissionButton(accessRights) {
+      // Loop akan otomatis membaca kunci (add, edit, dll) dan nilainya (true/false)
+      for (const [buttonId, hasAccess] of Object.entries(accessRights)) {
+        if (hasAccess) {
+          $(`#${buttonId}`).show();
+        } else {
+          $(`#${buttonId}`).hide();
+        }
+      }
+    }
   </script>
   <?= $this->renderSection('scripts') ?>
 </body>

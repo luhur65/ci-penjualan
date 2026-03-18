@@ -17,3 +17,28 @@
 .gap-10 {
   gap: 10px;
 }
+
+.item-menu {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  line-height: 1.1;
+  overflow: hidden;
+}
+
+@media (min-width: 767px) {
+  .modalLainnya {
+    padding-right: 0px !important;
+    padding-left: 0px !important;
+  }
+
+  .modalLainnya .modal-dialog {
+    max-width: 50%;
+  }
+
+  .item-menu {
+    height: 40px;
+    padding: 5px;
+  }
+}

@@ -233,12 +233,12 @@
       // });
 
       // Tambahkan grid info / tambahan
+      data.page = parseInt($('#jqGrid').getGridParam('page'));
+      data.limit = parseInt($('#jqGrid').getGridParam('rowNum'));
       data.sortIndex = $('#jqGrid').getGridParam('sortname');
       data.sortOrder = $('#jqGrid').getGridParam('sortorder');
       data.filters = $('#jqGrid').getGridParam('postData').filters;
       data.indexRow = indexRow;
-      data.page = page;
-      data.limit = limit;
       // data.push({
       //   name: 'sortIndex',
       //   value: $('#jqGrid').getGridParam('sortname')
@@ -302,29 +302,15 @@
         form.trigger('reset');
         $('#crudModal').modal('hide');
         selectedRows = [];
-        const id = response.data.id;
+        id = response.data.id;
 
         $('#jqGrid').jqGrid('setGridParam', {
-          page: 1
+          page: response.data.page
         }).trigger('reloadGrid');
-        // $('#userRoleGrid').trigger('reloadGrid', {
-        //   postData: {
-        //     proses: 'reload'
-        //   }
-        // });
-        // $('#userAclGrid').trigger('reloadGrid', {
-        //   postData: {
-        //     proses: 'reload'
-        //   }
-        // });
-
-        // if (response.data.grp === 'FORMAT') updateFormat(response.data);
 
       } catch (error) {
         if (error.status !== 422) {
-          showDialog('error', error.responseJSON?.message || getErrorMessage(error));
-          // $('.is-invalid').removeClass('is-invalid');
-          // $('.invalid-feedback').remove();
+          showDialog('error', getErrorMessage(error));
         }
 
       } finally {
@@ -389,6 +375,8 @@
     form.find('#btnSubmit').html(`<i class="fa fa-save"></i>Save`)
     form.data('action', 'add')
     $('#crudModalTitle').text('Add Role')
+    $('.is-invalid').removeClass('is-invalid');
+    $('.invalid-feedback').remove();
 
     $('#crudModal').modal('show')
     $('.modal-loader').addClass('d-none')
@@ -456,7 +444,6 @@
 
     try {
       // Tunggu semua async task selesai
-      // await setRoleOptions(form);
       await showRole(form, roleId);
 
 
@@ -567,6 +554,7 @@
 
     // Populate form fields
     populateForm(form, response.data);
+    selectedRows = response.acos.map((aco) => aco.aco_id); // get aco_id from response
 
   }
 
@@ -659,6 +647,10 @@
   }
 
   function loadAcoGrid(roleId) {
+
+    let sortname = 'class';
+    let sortorder = 'asc';
+
     $('#acoGrid')
       .jqGrid({
         styleUI: 'Bootstrap4',
@@ -676,6 +668,8 @@
         rowList: [10, 20, 50, 0],
         rowNum: 10,
         page: 1,
+        sortname: sortname,
+        sortorder: sortorder,
         viewrecords: true,
         prmNames: {
           sort: 'sortIndex',
@@ -756,6 +750,6 @@
       .customPager()
 
     // loadClearFilter($('#acoGrid'))
-    // loadGlobalSearch($('#acoGrid'))
+    initGlobalSearch($('#acoGrid'), urlMaster)
   }
 </script>

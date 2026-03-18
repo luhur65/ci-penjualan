@@ -164,24 +164,25 @@ function showDialog(state, message, buttons = []) {
 		buttons: buttons,
 	});
 }
+  
 
-// function setHighlight(grid) {
-// 	let filters;
-// 	let gridId;
+function setHighlight(grid) {
+	let filters;
+	let gridId;
 
-// 	gridId = $(grid).getGridParam().id;
-// 	filters = $(grid).jqGrid("getGridParam", "postData").filters;
+	gridId = $(grid).getGridParam().id;
+	filters = $(grid).jqGrid("getGridParam", "postData").filters;
 
-// 	if (filters) {
-// 		$.each(filters, (index, filter) => {
-// 			let filterText = filter.split(":")[1];
+	if (filters) {
+		$.each(filters, (index, filter) => {
+			let filterText = filter.split(":")[1];
 
-// 			$(grid)
-// 				.find(`tbody tr td[aria-describedby=${gridId}_${index}]`)
-// 				.highlight(filterText);
-// 		});
-// 	}
-// }
+			$(grid)
+				.find(`tbody tr td[aria-describedby=${gridId}_${index}]`)
+				.highlight(filterText);
+		});
+	}
+}
 
 // function initSelect2(element, dropdownParent = null) {
 // 	let options = {
@@ -416,28 +417,417 @@ function setErrorMessages(form, errors) {
 		let indexes = index.split(".");
 		let element;
 
-		// Menangani elemen array seperti checkboxes atau select multiple
 		if (indexes.length > 1) {
-			element = form.find(`[name="${indexes[0]}[]"]`)[indexes[1]];  // Array index handling
+			element = form.find(`[name="${indexes[0]}[]"]`)[indexes[1]];
 		} else {
 			element = form.find(`[name="${indexes[0]}"]`)[0];
 		}
 		
-		if ($(element).length > 0) { // Hapus cek :hidden karena select asli disembunyikan Select2
+		if ($(element).length > 0) {
 			$(element).addClass("is-invalid");
 
 			let errorElement = `<div class="invalid-feedback d-block">${error.toLowerCase()}</div>`;
 
-			// Cek apakah ini elemen Select2
 			if ($(element).hasClass("select2-hidden-accessible")) {
-					// Letakkan setelah container Select2
-					$(element).next(".select2-container").after(errorElement);
+				$(element).next(".select2-container").after(errorElement);
 			} else {
-					// Standar input
-					$(element).after(errorElement);
+				$(element).after(errorElement);
 			}
 		}
 	});
  
 	$(".is-invalid").first().focus();
+}
+
+/**
+ * Set Home, End, PgUp, PgDn
+ * to move grid page
+ */
+let topSelected = 0;
+let bottomSelected = 12;
+function setCustomBindKeys(grid) {
+	setSidebarBindKeys();
+
+	$(document).on("keydown", function (e) {
+		if (!sidebarIsOpen && activeGrid) {
+			if (
+				e.keyCode == 33 ||
+				e.keyCode == 34 ||
+				e.keyCode == 35 ||
+				e.keyCode == 36 ||
+				e.keyCode == 38 ||
+				e.keyCode == 40 ||
+				e.keyCode == 13
+			) {
+				e.preventDefault();
+
+				var gridIds = $(activeGrid).getDataIDs();
+				var selectedRow = $(activeGrid).getGridParam("selrow");
+				var currentPage = $(activeGrid).getGridParam("page");
+				var lastPage = $(activeGrid).getGridParam("lastpage");
+				var currentIndex = 0;
+				var row = $(activeGrid).jqGrid("getGridParam", "postData").rows;
+
+				for (var i = 0; i < gridIds.length; i++) {
+					if (gridIds[i] == selectedRow) currentIndex = i;
+				}
+
+				if (triggerClick == false) {
+					if (33 === e.keyCode) {
+						if (currentPage > 1) {
+							$(activeGrid)
+								.jqGrid("setGridParam", {
+									page: parseInt(currentPage) - 1,
+								})
+								.trigger("reloadGrid");
+
+							triggerClick = true;
+						}
+						$(activeGrid).triggerHandler("jqGridKeyUp"),
+							e.preventDefault();
+					}
+					if (34 === e.keyCode) {
+						if (currentPage !== lastPage) {
+							$(activeGrid)
+								.jqGrid("setGridParam", {
+									page: parseInt(currentPage) + 1,
+								})
+								.trigger("reloadGrid");
+
+							triggerClick = true;
+						}
+						$(activeGrid).triggerHandler("jqGridKeyUp"),
+							e.preventDefault();
+					}
+					if (35 === e.keyCode) {
+						if (currentPage !== lastPage) {
+							$(activeGrid)
+								.jqGrid("setGridParam", {
+									page: lastPage,
+								})
+								.trigger("reloadGrid");
+							if (e.ctrlKey) {
+								if (
+									$(activeGrid).jqGrid(
+										"getGridParam",
+										"selrow"
+									) !==
+									$("#customer")
+										.find(">tbody>tr.jqgrow")
+										.filter(":last")
+										.attr("id")
+								) {
+									$(activeGrid)
+										.jqGrid(
+											"setSelection",
+											$(activeGrid)
+												.find(">tbody>tr.jqgrow")
+												.filter(":last")
+												.attr("id")
+										)
+										.trigger("reloadGrid");
+								}
+							}
+
+							triggerClick = true;
+						}
+						if (e.ctrlKey) {
+							if (
+								$(activeGrid).jqGrid(
+									"getGridParam",
+									"selrow"
+								) !==
+								$("#customer")
+									.find(">tbody>tr.jqgrow")
+									.filter(":last")
+									.attr("id")
+							) {
+								$(activeGrid)
+									.jqGrid(
+										"setSelection",
+										$(activeGrid)
+											.find(">tbody>tr.jqgrow")
+											.filter(":last")
+											.attr("id")
+									)
+									.trigger("reloadGrid");
+							}
+						}
+						$(activeGrid).triggerHandler("jqGridKeyUp"),
+							e.preventDefault();
+					}
+					if (36 === e.keyCode) {
+						if (currentPage > 1) {
+							if (e.ctrlKey) {
+								if (
+									$(activeGrid).jqGrid(
+										"getGridParam",
+										"selrow"
+									) !==
+									$("#customer")
+										.find(">tbody>tr.jqgrow")
+										.filter(":first")
+										.attr("id")
+								) {
+									$(activeGrid).jqGrid(
+										"setSelection",
+										$(activeGrid)
+											.find(">tbody>tr.jqgrow")
+											.filter(":first")
+											.attr("id")
+									);
+								}
+							}
+							$(activeGrid)
+								.jqGrid("setGridParam", {
+									page: 1,
+								})
+								.trigger("reloadGrid");
+
+							triggerClick = true;
+						}
+						$(activeGrid).triggerHandler("jqGridKeyUp"),
+							e.preventDefault();
+					}
+					if (38 === e.keyCode) {
+						if (currentIndex - 1 >= 0) {
+							$(activeGrid)
+								.resetSelection()
+								.setSelection(gridIds[currentIndex - 1]);
+
+							var selInRow = $(activeGrid).getGridParam("selrow");
+
+							indexRowSelect = $(activeGrid).jqGrid(
+								"getInd",
+								selInRow
+							);
+
+							var currentRowHeight =
+								$(activeGrid).getGridParam("rowHeight") || 26;
+
+							var currentScrollTop = $(activeGrid)
+								.closest(".ui-jqgrid-bdiv")
+								.scrollTop();
+							var recordScrollUp =
+								$(activeGrid).getGridParam("reccount") - 10;
+							if (indexRowSelect < recordScrollUp) {
+								$(activeGrid)
+									.closest(".ui-jqgrid-bdiv")
+									.scrollTop(
+										currentScrollTop - currentRowHeight - 2
+									);
+							}
+						}
+					}
+					if (40 === e.keyCode) {
+						if (currentIndex + 1 < gridIds.length) {
+							$(activeGrid)
+								.resetSelection()
+								.setSelection(gridIds[currentIndex + 1]);
+							var currentRowHeight =
+								$(activeGrid).getGridParam("rowHeight") || 26;
+
+							var selInRow = $(activeGrid).getGridParam("selrow");
+							indexRowSelect = $(activeGrid).jqGrid(
+								"getInd",
+								selInRow
+							);
+
+							var currentScrollTop = $(activeGrid)
+								.closest(".ui-jqgrid-bdiv")
+								.scrollTop();
+
+							var recordsAll =
+								$(activeGrid).getGridParam("records");
+							if (indexRowSelect > 12) {
+								$(activeGrid)
+									.closest(".ui-jqgrid-bdiv")
+									.scrollTop(
+										currentScrollTop + currentRowHeight + 2
+									);
+							}
+						}
+					}
+					if (13 === e.keyCode) {
+						let rowId = $(activeGrid).getGridParam("selrow");
+						let ondblClickRowHandler = $(activeGrid).jqGrid(
+							"getGridParam",
+							"ondblClickRow"
+						);
+
+						if (ondblClickRowHandler) {
+							ondblClickRowHandler.call($(activeGrid)[0], rowId);
+						}
+					}
+				}
+
+				$(".ui-jqgrid-bdiv").find("tbody").animate({
+					scrollTop: 200,
+				});
+				// $(".table-success").position().top > 300;
+			}
+		}
+	});
+}
+
+
+function setSidebarBindKeys() {
+	$(document).on("keydown", (event) => {
+		if (event.keyCode === 77 && event.altKey) {
+			event.preventDefault();
+
+			$("#sidebarButton").click();
+		}
+
+		if (sidebarIsOpen) {
+			let allowedKeyCodes = [37, 38, 39, 40];
+
+			if (allowedKeyCodes.includes(event.keyCode)) {
+				event.preventDefault();
+
+				$("#search").val("");
+
+				if ($(".nav-link.active, .nav-link.hover").length <= 0) {
+					$(".main-sidebar nav .nav-link").first().addClass("hover");
+				}
+
+				switch (event.keyCode) {
+					case 37:
+						setUpOneLevelMenu();
+
+						break;
+					case 38:
+						setPreviousMenuHover();
+
+						break;
+					case 39:
+						setDownOneLevelMenu();
+
+						break;
+					case 40:
+						setNextMenuHover();
+
+						break;
+					default:
+						break;
+				}
+			} else if (event.keyCode === 13) {
+				let hoveredElement = $(".nav-link.hover");
+
+				if (hoveredElement.length > 0) {
+					if (hoveredElement.siblings("ul").length > 0) {
+						setDownOneLevelMenu();
+					} else {
+						hoveredElement[0].click();
+					}
+				}
+			}
+		}
+	});
+}
+
+function setNextMenuHover() {
+	let currentElement = $(".nav-link.hover").first();
+
+	if (currentElement.length <= 0) {
+		currentElement = $(".nav-link.selected-link");
+	}
+
+	if (currentElement.length <= 0) {
+		currentElement = $(".nav-link.active");
+	}
+
+	let nextElement = currentElement
+		.parent(".nav-item")
+		.next()
+		.find(".nav-link")
+		.first();
+
+	if (nextElement.length > 0) {
+		currentElement.removeClass("selected-link hover");
+		nextElement.addClass("hover");
+	}
+}
+
+function setPreviousMenuHover() {
+	let currentElement = $(".nav-link.hover").first();
+
+	if (currentElement.length <= 0) {
+		currentElement = $(".nav-link.selected-link");
+	}
+
+	if (currentElement.length <= 0) {
+		currentElement = $(".nav-link.active");
+	}
+
+	let nextElement = currentElement
+		.parent(".nav-item")
+		.prev()
+		.find(".nav-link")
+		.first();
+
+	if (nextElement.length > 0) {
+		currentElement.removeClass("selected-link hover");
+		nextElement.addClass("hover");
+	}
+}
+
+function setUpOneLevelMenu() {
+	let currentElement = $(".nav-link.hover").first();
+
+	if (currentElement.length <= 0) {
+		currentElement = $(".nav-link.selected-link");
+	}
+
+	if (currentElement.length <= 0) {
+		currentElement = $(".nav-link.active");
+	}
+
+	let upOneLevelElement = currentElement.parents().eq(2);
+
+	if (upOneLevelElement.length > 0) {
+		currentElement.removeClass("selected-link hover");
+		upOneLevelElement.removeClass("menu-is-opening menu-open");
+		upOneLevelElement.find(".nav-link").first().addClass("hover");
+	}
+}
+
+function setDownOneLevelMenu() {
+	let currentElement = $(".nav-link.hover").first();
+
+	if (currentElement.length <= 0) {
+		currentElement = $(".nav-link.selected-link");
+	}
+
+	if (currentElement.length <= 0) {
+		currentElement = $(".nav-link.active");
+	}
+
+	let downOneLevelElement = currentElement
+		.siblings("ul")
+		.css({
+			display: "",
+		})
+		.find(".nav-link")
+		.first();
+
+	if (downOneLevelElement.length > 0) {
+		currentElement.removeClass("selected-link hover");
+		currentElement.parent(".nav-item").addClass("menu-open");
+		downOneLevelElement.addClass("hover");
+	}
+}
+
+function fillSearchMenuInput() {
+	let currentElement = $(".nav-link.hover").first();
+
+	if (currentElement.length <= 0) {
+		currentElement = $(".nav-link.selected-link");
+	}
+
+	if (currentElement.length <= 0) {
+		currentElement = $(".nav-link.active");
+	}
+
+	$("#search").val(currentElement.attr("id"));
 }

@@ -119,10 +119,20 @@
               </div>
               <div class="col-12 col-sm-9 col-md-10">
                 <input type="hidden" name="statusaktif">
-                <input type="text" name="statusaktifnama" id="statusaktifnama" class="form-control lg-form statusaktif-lookup">
+                <input type="text" name="statusaktiftext" id="statusaktiftext" class="form-control lg-form">
 
               </div>
             </div> -->
+            <div class="row form-group statusaktif">
+              <div class="col-12 col-sm-3 col-md-2">
+                <label class="col-form-label">
+                  Status Aktif <span class="text-danger">*</span>
+                </label>
+              </div>
+              <div class="col-12 col-sm-9 col-md-10">
+                <select name="statusaktif" id="statusaktif" class="select2bs4 form-select"></select>
+              </div>
+            </div>
             <!-- <div class="row form-group">
               <div class="col-12 col-sm-3 col-md-2">
                 <label class="col-form-label">
@@ -187,6 +197,8 @@
       let action = form.data('action');
       let formData = form.serialize();
       let userId = form.find('[name=id]').val()
+      // const selectedId = $('#jqGrid').jqGrid('getGridParam', 'selrow');
+      // const localIndex = $('#jqGrid').jqGrid('getInd', selectedId) - 1;
 
       // Ambil semua elemen dengan name
       const data = {};
@@ -233,12 +245,12 @@
       // });
 
       // Tambahkan grid info / tambahan
+      data.page = parseInt($('#jqGrid').getGridParam('page'));
+      data.limit = parseInt($('#jqGrid').getGridParam('rowNum'));
       data.sortIndex = $('#jqGrid').getGridParam('sortname');
       data.sortOrder = $('#jqGrid').getGridParam('sortorder');
       data.filters = $('#jqGrid').getGridParam('postData').filters;
       data.indexRow = indexRow;
-      data.page = page;
-      data.limit = limit;
       // data.push({
       //   name: 'sortIndex',
       //   value: $('#jqGrid').getGridParam('sortname')
@@ -302,10 +314,10 @@
         form.trigger('reset');
         $('#crudModal').modal('hide');
         selectedRows = [];
-        // const id = response.data.id;
+        id = response.data.id;
 
         $('#jqGrid').jqGrid('setGridParam', {
-          page: 1
+          page: response.data.page
         }).trigger('reloadGrid');
         // $('#userRoleGrid').trigger('reloadGrid', {
         //   postData: {
@@ -321,11 +333,8 @@
         // if (response.data.grp === 'FORMAT') updateFormat(response.data);
 
       } catch (error) {
-        console.log(error);
         if (error.status !== 422) {
-          showDialog('error', error.responseJSON?.message || getErrorMessage(error));
-          // $('.is-invalid').removeClass('is-invalid');
-          // $('.invalid-feedback').remove();
+          showDialog('error', getErrorMessage(error));
         }
 
       } finally {
@@ -343,7 +352,7 @@
   });
 
   // function create
-  function createUser() {
+  async function createUser() {
 
     let form = $('#crudForm')
 
@@ -353,6 +362,10 @@
     form.find('#btnSubmit').html(`<i class="fa fa-save"></i>Save`)
     form.data('action', 'add')
     $('#crudModalTitle').text('Add User')
+    $('.is-invalid').removeClass('is-invalid');
+    $('.invalid-feedback').remove();
+
+    await setStatusAktifOptions(form);
 
     $('#crudModal').modal('show')
     $('.modal-loader').addClass('d-none')
@@ -376,6 +389,7 @@
     try {
       // Tunggu semua async task selesai
       await setRoleOptions(form);
+      await setStatusAktifOptions(form);
       await showUser(form, userId);
 
       // Load ACO grid
@@ -392,7 +406,7 @@
       $('.rolediv').show()
 
     } catch (error) {
-      console.error(error);
+      // console.error(error);
       showDialog('error', getErrorMessage(error));
     } finally {
       $('.modal-loader').addClass('d-none');
@@ -420,9 +434,8 @@
     try {
       // Tunggu semua async task selesai
       await setRoleOptions(form);
+      await setStatusAktifOptions(form);
       await showUser(form, userId);
-
-
 
       // Tampilkan modal
       $('#crudModal').modal('show');
@@ -521,6 +534,39 @@
     }
   }
 
+  async function setStatusAktifOptions(relatedForm) {
+    try {
+      // Kosongkan select
+      relatedForm.find('[name="statusaktif"]').empty();
+      // relatedForm.find('[name="statusaktif"]').append(
+      //   new Option('-- PILIH STATUS AKTIF --', '', false, true)
+      // ).trigger('change')
+
+      // Ambil data roles dari API
+      const response = await ajaxWithRefresh({
+        url: `${API_URL}/parameter/lookup`,
+        method: 'GET',
+        dataType: 'JSON',
+        data: {
+          grp: 'STATUS AKTIF',
+          subgrp: 'STATUS AKTIF'
+        }
+      });
+
+      // Tambahkan option ke select
+      response.data.forEach(response => {
+        const option = new Option(response.text, response.id);
+        relatedForm.find('[name="statusaktif"]').append(option);
+      });
+
+      // Trigger change di akhir sekali saja
+      relatedForm.find('[name="statusaktif"]').trigger('change');
+
+    } catch (error) {
+      console.error('Error loading roles:', error);
+      throw error; // agar bisa ditangkap di caller
+    }
+  }
 
   async function showUser(form, userId) {
     const response = await ajaxWithRefresh({
@@ -535,6 +581,6 @@
     // Populate roles
     const roleIds = response.roles.map(role => role.role_id);
     form.find(`[name="role_ids[]"]`).val(roleIds).trigger('change');
-    
+
   }
 </script>

@@ -3,10 +3,7 @@
 <?= $this->section('content') ?>
 
 <div class="container-fluid">
-  <div class="col-12">
-    <table id="jqGrid"></table>
-    <div id="jqGridPager"></div>
-  </div>
+  <table id="jqGrid"></table>
 </div>
 
 <?= $this->include('menu/modal') ?>
@@ -21,11 +18,11 @@
   let id = "";
   let triggerClick = true;
   let highlightSearch;
-  let totalRecord
-  let limit
-  let postData
-  let autoNumericElements = []
-  let rowNum = 10
+  let totalRecord;
+  let limit = 10;
+  let postData;
+  let autoNumericElements = [];
+  let rowNum = 10;
   let sortname = 'menukode';
   let sortorder = 'asc';
   const urlMaster = '/menu';
@@ -33,11 +30,11 @@
   const gridPager = '#jqGridPager';
   const detailGrid = '#detailItem';
   const accessRights = {
-    canAdd: <?= has_permission('menu', 'create') ? 'true' : 'false' ?>,
-    canEdit: <?= has_permission('menu', 'update') ? 'true' : 'false' ?>,
-    canDelete: <?= has_permission('menu', 'delete') ? 'true' : 'false' ?>,
-    canExport: <?= has_permission('menu', 'export') ? 'true' : 'false' ?>,
-    canReport: <?= has_permission('menu', 'report') ? 'true' : 'false' ?>,
+    add: <?= has_permission('menu', 'create') ? 'true' : 'false' ?>,
+    edit: <?= has_permission('menu', 'update') ? 'true' : 'false' ?>,
+    delete: <?= has_permission('menu', 'delete') ? 'true' : 'false' ?>,
+    report: <?= has_permission('menu', 'report') ? 'true' : 'false' ?>,
+    export: <?= has_permission('menu', 'export') ? 'true' : 'false' ?>,
   };
 
   function getBaseColModel() {
@@ -70,8 +67,10 @@
       },
       {
         label: 'MENU PARENT',
-        name: 'menu_parent',
-        stype: 'select',
+        name: 'parent_name',
+        align: 'left',
+        width: 250,
+        // stype: 'select',
         // searchoptions: {
         //   value: `
         //           $i = 1;
@@ -103,32 +102,38 @@
       {
         label: 'MENU ICON',
         name: 'menu_icon',
-        align: 'left'
+        align: 'left',
+        width: 200
       },
       {
         label: 'HEADER MENU',
         name: 'aco_id',
-        align: 'left'
+        align: 'left',
+        width: 200
       },
       {
         label: 'LINK',
         name: 'link',
-        align: 'left'
-      },
-      {
-        label: 'MENU EXE',
-        name: 'menuexe',
-        align: 'left'
+        align: 'left',
+        width: 200
       },
       {
         label: 'KODE MENU',
         name: 'menukode',
-        align: 'left'
+        align: 'left',
+        width: 200
+      },
+      {
+        label: 'MODIFIED BY',
+        name: 'modifiedby',
+        align: 'left',
+        width: 150
       },
       {
         label: 'CREATED AT',
         name: 'created_at',
         align: 'right',
+        width: 200,
         formatter: "date",
         formatoptions: {
           srcformat: "ISO8601Long",
@@ -139,6 +144,7 @@
         label: 'UPDATED AT',
         name: 'updated_at',
         align: 'right',
+        width: 200,
         formatter: "date",
         formatoptions: {
           srcformat: "ISO8601Long",
@@ -151,43 +157,125 @@
   $(document).ready(function() {
 
     const grid = createJqGrid({
-      gridId: masterGrid,
-      pagerId: gridPager,
-      url: urlMaster,
-      page: page,
-      colModel: getBaseColModel(),
-      options: {
-        sortname: sortname,
-        sortorder: sortorder,
-        rowNum: rowNum,
-        caption: "Data User",
-        onSelectRow: function(id) {
-          activeGrid = $(this)
-          indexRow = $(this).jqGrid('getCell', id, 'rn') - 1
-          page = $(this).jqGrid('getGridParam', 'page')
-          let rows = $(this).jqGrid('getGridParam', 'postData').limit
-          if (indexRow >= rows) indexRow = (indexRow - rows * (page - 1))
-        },
-        gridComplete: function(data) {
-          console.log("Grid selesai load");
-          var page = $(this).jqGrid("getGridParam", "page");
-          var last = $(this).jqGrid("getGridParam", "lastpage");
-          if (page > last) return false;
+        gridId: masterGrid,
+        pagerId: gridPager,
+        url: urlMaster,
+        page: page,
+        colModel: getBaseColModel(),
+        options: {
+          sortname: sortname,
+          sortorder: sortorder,
+          rowNum: rowNum,
+          onSelectRow: function(id) {
+            activeGrid = $(this)
+            indexRow = $(this).jqGrid('getCell', id, 'rn') - 1
+            limit = $(this).jqGrid('getGridParam', 'rowNum')
+            page = $(this).jqGrid('getGridParam', 'page')
+            // let rows = $(this).jqGrid('getGridParam', 'postData').limit
+            // if (indexRow >= rows) indexRow = (indexRow - rows * (page - 1))
+          },
+          loadComplete: function(data) {
+            changeJqGridRowListText();
+            triggerClick = true;
 
-          if (indexRow > $(this).getDataIDs().length - 1) {
-            indexRow = $(this).getDataIDs().length - 1;
+            $(document).unbind('keydown')
+            setCustomBindKeys($(this))
+
+            let ids = $(this).getDataIDs();
+            let selectedRowId = ids[0];
+
+            if (ids.length > 0) {
+              if (triggerClick) {
+
+                if (id != '') {
+                  // Mencari indeks lokal menggunakan ID terdekat dari Backend
+                  let localIndex = parseInt($(masterGrid).jqGrid('getInd', id)) - 1;
+
+                  if (!isNaN(localIndex) && localIndex >= 0 && localIndex < ids.length) {
+                    indexRow = localIndex;
+                  }
+                  // Jika getInd gagal, indexRow akan otomatis menggunakan nilai terakhirnya 
+                  // yang sudah merupakan indeks lokal (0-9).
+                  id = '';
+                }
+
+                // Amankan indexRow agar tidak melebihi jumlah data yang ada di halaman saat ini
+                // (Mencegah error saat menghapus baris terakhir)
+                if (indexRow >= ids.length) {
+                  indexRow = ids.length > 0 ? ids.length - 1 : 0;
+                }
+
+                selectedRowId = ids[indexRow];
+                $(`${masterGrid} tr[id="${selectedRowId}"]`).click();
+                triggerClick = false;
+
+              } else {
+                if (indexRow >= ids.length) indexRow = ids.length - 1;
+                selectedRowId = ids[indexRow];
+                $(masterGrid).setSelection(selectedRowId);
+              }
+
+              setHighlight($(this));
+
+              setTimeout(() => {
+                // $(`${masterGrid} tr[id="${selectedRowId}"]`).focus();
+              }, 50);
+            }
           }
-
-          // set selection
-          $(this).setSelection($(this).getDataIDs()[indexRow])
-
-          // highlight pencarian
-          setHighlight($(this));
         }
-      }
-    });
-
-    LoadButtonJqgrid(grid);
+      })
+      .loadClearFilter()
+      .clearGlobalSearch()
+      .customPager({
+        buttons: [{
+            id: 'add',
+            innerHTML: '<i class="fa fa-plus"></i> ADD',
+            class: 'btn btn-primary btn-md mr-1',
+            onClick: () => {
+              createMenu()
+            }
+          },
+          {
+            id: 'edit',
+            innerHTML: '<i class="fa fa-pen"></i> EDIT',
+            class: 'btn btn-success btn-md mr-1',
+            onClick: () => {
+              selectedId = $("#jqGrid").jqGrid('getGridParam', 'selrow')
+              updateMenu(selectedId)
+            }
+          },
+          {
+            id: 'delete',
+            innerHTML: '<i class="fa fa-trash"></i> DELETE',
+            class: 'btn btn-danger btn-md mr-1',
+            onClick: () => {
+              selectedId = $("#jqGrid").jqGrid('getGridParam', 'selrow')
+              deleteMenu(selectedId)
+            }
+          },
+          {
+            id: 'report',
+            innerHTML: '<i class="fa fa-print"></i> REPORT',
+            class: 'btn btn-info btn-md mr-1',
+            onClick: () => {
+              // $('#rangeModal').data('action', 'report')
+              // $('#rangeModal').find('button:submit').html(`Report`)
+              // $('#rangeModal').modal('show')
+            }
+          },
+          {
+            id: 'export',
+            innerHTML: '<i class="fa fa-file-export"></i> EXPORT',
+            class: 'btn btn-warning btn-md mr-1',
+            onClick: () => {
+              // $('#rangeModal').data('action', 'export')
+              // $('#rangeModal').find('button:submit').html(`Export`)
+              // $('#rangeModal').modal('show')
+            }
+          },
+        ]
+      })
+      .permissions(accessRights);
 
 
   });
@@ -204,92 +292,6 @@
     // initDatepicker()
     // initLookup()
   })
-
-  function LoadButtonJqgrid(grid) {
-
-    if (accessRights.canAdd) {
-      // tombol tambah
-      grid.jqGrid('navButtonAdd', '#jqGridPager', {
-        caption: ' Tambah',
-        buttonicon: 'fa-fw fa-plus-circle',
-        onClickButton: function() {
-          createMenu();
-  
-        },
-        position: 'first',
-        title: 'Add',
-        id: "AddHeader",
-        cursor: "pointer",
-      });
-    }
-
-    if (accessRights.canEdit) {
-      // tombol edit
-      grid.jqGrid('navButtonAdd', '#jqGridPager', {
-        caption: 'Ubah',
-        buttonicon: 'fa-fw fa-pencil-alt',
-        onClickButton: function() {
-          selectedId = $("#jqGrid").jqGrid('getGridParam', 'selrow')
-          updateMenu(selectedId);
-  
-        },
-        position: 'last',
-        title: 'Edit',
-        id: "EditHeader",
-        cursor: "pointer",
-      });
-    }
-
-    if (accessRights.canDelete) {
-      // tombol hapus
-      grid.jqGrid('navButtonAdd', '#jqGridPager', {
-        caption: 'Hapus',
-        buttonicon: 'fa-fw fa-trash-alt',
-        onClickButton: function() {
-          selectedId = $("#jqGrid").jqGrid('getGridParam', 'selrow')
-          deleteMenu(selectedId);
-  
-        },
-        position: 'last',
-        title: 'Delete',
-        id: "DeleteHeader",
-        cursor: "pointer",
-      });
-    }
-
-    if (accessRights.canReport) {
-      // tombol report
-      grid.jqGrid('navButtonAdd', '#jqGridPager', {
-        caption: 'Report',
-        buttonicon: 'fa-fw fa-file-alt',
-        onClickButton: function() {
-          reportMenu();
-  
-        },
-        position: 'last',
-        title: 'Report',
-        id: "ReportHeader",
-        cursor: "pointer",
-      });
-    }
-
-    if (accessRights.canExport) {
-      // tombol export
-      grid.jqGrid('navButtonAdd', '#jqGridPager', {
-        caption: 'Export',
-        buttonicon: 'fa-fw fa-file-export',
-        onClickButton: function() {
-          exportMenu();
-  
-        },
-        position: 'last',
-        title: 'Export',
-        id: "ExportHeader",
-        cursor: "pointer",
-      });
-    }
-
-  }
 </script>
 
 <?= $this->endSection(); ?>

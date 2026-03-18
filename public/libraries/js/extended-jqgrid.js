@@ -171,15 +171,15 @@ $.jgrid.extend({
 
 					// end
 					if (event.which == 35) {
-						if (currentPage !== lastPage) {
+						if (currentPage < lastPage) { // Perbaiki logika: Hanya jalan jika belum di halaman terakhir
 							$(element)
 								.jqGrid("setGridParam", {
-									page: $(element).getGridParam("lastpage"),
+									page: lastPage,
 								})
 								.trigger("reloadGrid");
-
-							event.preventDefault();
 						}
+
+						event.preventDefault(); // [KUNCI PERBAIKAN]: Taruh di luar agar kursor tidak pernah lompat ke akhir teks!
 
 						$(element).jqGrid("setGridParam", {
 							triggerClick: false,
@@ -188,17 +188,15 @@ $.jgrid.extend({
 
 					// home
 					if (event.which == 36) {
-						if (currentPage > 1) {
-							if (currentPage !== lastPage) {
-								$(element)
-									.jqGrid("setGridParam", {
-										page: 1,
-									})
-									.trigger("reloadGrid");
-
-								event.preventDefault();
-							}
+						if (currentPage > 1) { // Perbaiki logika: Hanya jalan jika tidak sedang di halaman 1
+							$(element)
+								.jqGrid("setGridParam", {
+									page: 1,
+								})
+								.trigger("reloadGrid");
 						}
+
+						event.preventDefault(); // [KUNCI PERBAIKAN]: Taruh di luar agar kursor tidak pernah lompat ke awal teks!
 
 						$(element).jqGrid("setGridParam", {
 							triggerClick: false,
@@ -284,6 +282,32 @@ $.jgrid.extend({
 						triggerClick: true,
 					});
 				}
+
+				// arrow up
+        if (event.which == 38) {
+          let selrow = $(element).jqGrid('getGridParam', 'selrow');
+          let ids = $(element).getDataIDs();
+          let index = ids.indexOf(selrow);
+          if (index > 0) {
+            $(element).jqGrid('setSelection', ids[index - 1], true, event);
+            // Pindahkan fokus ke baris yang baru terpilih
+            $(`#${$.jgrid.jqID(element.id)} tr[id="${ids[index - 1]}"]`).focus();
+          }
+          event.preventDefault();
+        }
+
+        // arrow down
+        if (event.which == 40) {
+          let selrow = $(element).jqGrid('getGridParam', 'selrow');
+          let ids = $(element).getDataIDs();
+          let index = ids.indexOf(selrow);
+          if (index < ids.length - 1) {
+            $(element).jqGrid('setSelection', ids[index + 1], true, event);
+            // Pindahkan fokus ke baris yang baru terpilih
+            $(`#${$.jgrid.jqID(element.id)} tr[id="${ids[index + 1]}"]`).focus();
+          }
+          event.preventDefault();
+        }
 			});
 		});
 
@@ -637,7 +661,7 @@ $.jgrid.extend({
 			}
 
 			$(`#gbox_${$(this).getGridParam().id}`).after(`
-				<div class="col-12 bg-white grid-pager overflow-x-hidden mt-2">
+				<div class="bg-white grid-pager overflow-x-hidden mt-2">
 					<div class="row d-flex align-items-center text-center text-lg-left">
 						<div class="col-12 col-lg-6">
 							${
@@ -677,7 +701,7 @@ $.jgrid.extend({
 							<div class="row d-flex align-items-center justify-content-center justify-content-lg-end pr-2">
 								<div id="${pagerHandlerId}" class="pager-handler d-flex align-items-center justify-content-center mx-2">
 								</div>
-								<div id="${pagerInfoId}" class="pager-info">
+								<div id="${pagerInfoId}" class="pager-info mr-2">
 								</div>
 							</div>
 						</div>
@@ -696,4 +720,15 @@ $.jgrid.extend({
 
 		return this;
 	},
+	permissions: function(permissions) {
+		// Loop akan otomatis membaca kunci (add, edit, dll) dan nilainya (true/false)
+		for (const [buttonId, hasAccess] of Object.entries(permissions)) {
+			if (hasAccess) {
+				$(`#${buttonId}`).show();
+			} else {
+				$(`#${buttonId}`).hide();
+			}
+		}	
+		return this;
+	}
 });

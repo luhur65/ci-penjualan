@@ -79,6 +79,8 @@ class LoginController extends BaseController
         $statusCode = $response->getStatusCode();
         $body = json_decode($response->getBody(), true);
 
+        // \dd($body, $statusCode, $response); // Debug
+
         // Cek jika API mengembalikan error (misal 401 Unauthorized)
         if ($statusCode !== 200) {
             return redirect()->back()

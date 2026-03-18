@@ -7,7 +7,7 @@
       </div>
       <div class="info">
         <a href="#" class="d-block">
-          <?=  session()->get('user')['username'] ?? 'Dharma' ?>
+          <?=  session()->get('user_data')['username'] ?? 'Dharma' ?>
         </a>
       </div>
     </div>

@@ -6,6 +6,7 @@ use App\Controllers\DashboardController;
 use App\Controllers\MenuController;
 use App\Controllers\UserController;
 use App\Controllers\RoleController;
+use App\Controllers\PenjualanController;
 
 /**
  * @var RouteCollection $routes
@@ -29,15 +30,17 @@ $routes->get('/reset-password/success', function() {
     return view('reset-password/success');
 });
 
+// Protected Routes without ACL Filter but must be authenticated
 $routes->group('', ['filter' => 'authenticated'], function($routes) {
     $routes->get('dashboard', [DashboardController::class, 'index'], ['as' => 'dashboard.index']);
 });
 
-// Protected Routes
+// Protected Routes with ACL Filter
 $routes->group('', ['filter' => ['authenticated', 'acl'], 'csrf' => true], function ($routes) {
 
     $routes->get('/user', [UserController::class, 'index'], ['as' => 'users.index']);
     $routes->get('/role', [RoleController::class, 'index'], ['as' => 'roles.index']);
     $routes->get('/menu', [MenuController::class, 'index'], ['as' => 'menu.index']);
+    $routes->get('/penjualan', [PenjualanController::class, 'index'], ['as' => 'penjualan.index']);
 
 });
