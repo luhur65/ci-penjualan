@@ -145,10 +145,16 @@
         url: urlMaster,
         page: page,
         colModel: getBaseColModel(),
+        lazyLoad: true,
+        lazyLoadOptions: {
+          rowsPerPage: 50,
+          windowPages: 3,
+          gapPage: 30
+        },
         options: {
           sortname: sortname,
           sortorder: sortorder,
-          rowNum: rowNum,
+          rowNum: 50,
           // caption: "Data User",
           onSelectRow: function(id) {
             activeGrid = $(this)
