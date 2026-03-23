@@ -316,19 +316,39 @@
         selectedRows = [];
         id = response.data.id;
 
-        $('#jqGrid').jqGrid('setGridParam', {
-          page: response.data.page
-        }).trigger('reloadGrid');
-        // $('#userRoleGrid').trigger('reloadGrid', {
-        //   postData: {
-        //     proses: 'reload'
-        //   }
-        // });
-        // $('#userAclGrid').trigger('reloadGrid', {
-        //   postData: {
-        //     proses: 'reload'
-        //   }
-        // });
+        let payload = response.data;
+        let grid = $('#jqGrid');
+        let loader = grid.data('lazyLoader');
+
+        if (loader) {
+          let postData = grid.jqGrid('getGridParam', 'postData');
+
+          loader.loadGridData(postData, payload.page, loader.rowsPerPage, 'down', 'jump', function() {
+            setTimeout(() => {
+              grid.jqGrid('setSelection', payload.id, true);
+
+              let bDiv = grid.parents('.ui-jqgrid-bdiv');
+              let selectedRow = grid.find(`tr#${payload.id}`);
+
+              if (selectedRow.length > 0) {
+                let scrollPos = selectedRow.position().top + bDiv.scrollTop() - (bDiv.height() / 2) + (selectedRow.height() / 2);
+                bDiv.scrollTop(scrollPos);
+              } else if (data.indexRow !== undefined) {
+                // Fallback for delete: scroll to the approximate row index position
+                let rowHeight = grid.find('tr[id]').height() || 30;
+                let localIndex = data.indexRow % loader.rowsPerPage;
+                let approximateScrollPos = (localIndex * rowHeight) - (bDiv.height() / 2);
+
+                bDiv.scrollTop(Math.max(0, approximateScrollPos));
+              }
+            }, 100);
+          });
+        } else {
+          // Fallback jqGrid non-lazy load
+          $('#jqGrid').jqGrid('setGridParam', {
+            page: response.data.page
+          }).trigger('reloadGrid');
+        }
 
         // if (response.data.grp === 'FORMAT') updateFormat(response.data);
 
