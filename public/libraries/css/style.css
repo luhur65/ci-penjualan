@@ -438,27 +438,24 @@ input[type=text]:focus,input[type=password]:focus, .select2-selection:focus {
 }
 
 #crudModal .modal-dialog {
-    width: 66.666667%; /* Equivalent to col-md-8 */
-    max-width: none;
+    max-width: 66.666667%; /* Equivalent to col-md-8 */
     margin: 1.75rem auto; /* Provide vertical breathing room */
 }
 
 @media (max-width: 768px) {
     #crudModal .modal-dialog {
-        width: 100%;
+        max-width: 95%;
         margin: 0.5rem auto;
     }
 }
 
 #crudModal .modal-content {
     border: 0;
-    border-radius: 0.3rem; /* Return default bootstrap radius or custom */
     background-color: #ffcc99;
 }
 
 #crudModal .modal-body {
     border: 0;
-    border-radius: 0;
     padding-bottom: 1.5rem;
 }
 

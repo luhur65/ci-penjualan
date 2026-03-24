@@ -1,15 +1,14 @@
 <div class="modal" id="crudModal" tabindex="-1" aria-labelledby="crudModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-    <form action="#" id="crudForm">
-      <div class="modal-content">
-
+    <div class="modal-content">
+      <form action="#" id="crudForm">
         <div class="modal-header">
           <p class="modal-title" id="crudModalTitle"></p>
           <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
           </button>
         </div>
-        <form action="" method="post">
-          <div class="modal-body">
+        <div class="modal-body">
             <div class="row form-group">
               <div class="col-12 col-sm-3 col-md-2" style="display:none">
                 <label class="col-form-label">ID</label>
@@ -163,20 +162,19 @@
 
               </div>
             </div>
-          </div>
-          <div class="modal-footer justify-content-start">
-            <button type="submit" id="btnSubmit" class="btn btn-primary">
-              <i class="fa fa-check"></i>
-              Save
-            </button>
-            <button type="button" class="btn btn-secondary" data-dismiss="modal">
-              <i class="fa fa-times"></i>
-              Cancel
-            </button>
-          </div>
-        </form>
-      </div>
-    </form>
+        </div>
+        <div class="modal-footer justify-content-start">
+          <button type="submit" id="btnSubmit" class="btn btn-primary">
+            <i class="fa fa-check"></i>
+            Save
+          </button>
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">
+            <i class="fa fa-times"></i>
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
 </div>
 
