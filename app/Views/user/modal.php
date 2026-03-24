@@ -1,4 +1,4 @@
-<div class="modal modal-fullscreen" id="crudModal" tabindex="-1" aria-labelledby="crudModalLabel" aria-hidden="true">
+<div class="modal" id="crudModal" tabindex="-1" aria-labelledby="crudModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <form action="#" id="crudForm">
       <div class="modal-content">
