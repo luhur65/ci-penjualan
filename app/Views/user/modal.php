@@ -1,5 +1,5 @@
 <div class="modal fade" id="crudModal" tabindex="-1" aria-labelledby="crudModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+  <div class="modal-dialog modal-dialog-scrollable">
     <form action="#" id="crudForm">
       <div class="modal-content">
         <div class="modal-header">
