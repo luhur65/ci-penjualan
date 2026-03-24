@@ -454,9 +454,23 @@ input[type=text]:focus,input[type=password]:focus, .select2-selection:focus {
     background-color: #ffcc99;
 }
 
+/* Because the user has double forms wrapping the content,
+   Bootstrap's native flexbox logic for modal-dialog-scrollable breaks.
+   We must force the nested form to behave like the content wrapper,
+   and the inner modal-body to scroll correctly. */
+#crudModal .modal-dialog-scrollable #crudForm > .modal-content {
+    max-height: 100%;
+}
+#crudModal .modal-dialog-scrollable #crudForm > .modal-content > form {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
 #crudModal .modal-body {
     border: 0;
     padding-bottom: 1.5rem;
+    overflow-y: auto;
 }
 
 #crudModal .modal-footer {
