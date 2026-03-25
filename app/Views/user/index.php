@@ -362,36 +362,8 @@
 
     // });
 
-    // Global Keyboard Shortcuts
-    $(document).keydown(function(e) {
-      // Pastikan modal tidak sedang terbuka agar tidak bentrok dengan form input
-      if ($('.modal.show').length > 0) return;
-
-      if (e.altKey) {
-        let key = e.key.toLowerCase();
-
-        if (key === 'a' && accessRights.add) {
-          e.preventDefault();
-          createUser();
-        } else if (key === 'e' && accessRights.edit) {
-          e.preventDefault();
-          selectedId = $("#jqGrid").jqGrid('getGridParam', 'selrow');
-          if (selectedId) {
-            updateUser(selectedId);
-          } else {
-            showDialog('error', 'Silakan pilih baris data terlebih dahulu.');
-          }
-        } else if (key === 'd' && accessRights.delete) {
-          e.preventDefault();
-          selectedId = $("#jqGrid").jqGrid('getGridParam', 'selrow');
-          if (selectedId) {
-            deleteUser(selectedId);
-          } else {
-            showDialog('error', 'Silakan pilih baris data terlebih dahulu.');
-          }
-        }
-      }
-    });
+    // Pasang Global Keyboard Shortcuts
+    UIManager.setupKeyboardShortcuts();
 
   });
 
