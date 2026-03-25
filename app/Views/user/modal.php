@@ -303,7 +303,7 @@
       $('#processingLoader').removeClass('d-none');
 
       try {
-        const response = await ajaxWithRefresh({
+        const response = await HttpManager.ajaxWithRefresh({
           url: url,
           method: method,
           dataType: 'JSON',
@@ -355,7 +355,7 @@
 
       } catch (error) {
         if (error.status !== 422) {
-          showDialog('error', getErrorMessage(error));
+          showDialog('error', UIManager.getErrorMessage(error));
         }
 
       } finally {
@@ -428,7 +428,7 @@
 
     } catch (error) {
       // console.error(error);
-      showDialog('error', getErrorMessage(error));
+      showDialog('error', UIManager.getErrorMessage(error));
     } finally {
       $('.modal-loader').addClass('d-none');
 
@@ -464,7 +464,7 @@
 
     } catch (error) {
       // console.error(error);
-      showDialog('error', getErrorMessage(error));
+      showDialog('error', UIManager.getErrorMessage(error));
     } finally {
       $('.modal-loader').addClass('d-none');
 
@@ -534,7 +534,7 @@
       relatedForm.find('[name="role_ids[]"]').empty();
 
       // Ambil data roles dari API
-      const response = await ajaxWithRefresh({
+      const response = await HttpManager.ajaxWithRefresh({
         url: `${API_URL}/roles`,
         method: 'GET',
         dataType: 'JSON'
@@ -564,7 +564,7 @@
       // ).trigger('change')
 
       // Ambil data roles dari API
-      const response = await ajaxWithRefresh({
+      const response = await HttpManager.ajaxWithRefresh({
         url: `${API_URL}/parameter/lookup`,
         method: 'GET',
         dataType: 'JSON',
@@ -590,14 +590,14 @@
   }
 
   async function showUser(form, userId) {
-    const response = await ajaxWithRefresh({
+    const response = await HttpManager.ajaxWithRefresh({
       url: `${API_URL}/users/${userId}`,
       method: 'GET',
       dataType: 'JSON'
     });
 
     // Populate form fields
-    populateForm(form, response.data);
+    UIManager.populateForm(form, response.data);
 
     // Populate roles
     const roleIds = response.roles.map(role => role.role_id);

@@ -139,7 +139,7 @@
 
   $(document).ready(function() {
 
-    const grid = createJqGrid({
+    const gridManager = new JqGridManager({
         gridId: masterGrid,
         pagerId: gridPager,
         url: urlMaster,
@@ -207,7 +207,7 @@
                 $(masterGrid).setSelection(selectedRowId);
               }
 
-              setHighlight($(this));
+              JqGridManager.setHighlight($(this));
 
               setTimeout(() => {
                 // $(`${masterGrid} tr[id="${selectedRowId}"]`).focus();
@@ -268,6 +268,8 @@
         ]
       })
       .permissions(accessRights);
+
+    const grid = gridManager.grid;
 
     // grid.jqGrid({
     //   url: API_URL + urlMaster,
