@@ -31,6 +31,9 @@
   <!-- Dropzone -->
   <link rel="stylesheet" href="<?= base_url('public/libraries/adminlte/plugins/dropzone/min/dropzone.min.css') ?>">
 
+  <!-- Bootstrap Datepicker -->
+  <!-- <link rel="stylesheet" href="<?= base_url('public/libraries/bootstrap/dist/css/bootstrap.min.css') ?>"> -->
+
   <!-- Custom CSS -->
   <link rel="stylesheet" href="<?= base_url('public/libraries/css/pager.css?version=' . config('App')->version) ?>">
   <link rel="stylesheet" href="<?= base_url('public/libraries/css/sidebar.css?version=' . config('App')->version) ?>">
@@ -131,6 +134,7 @@
   <script src="<?= base_url('public/libraries/js/navbar.js?version=' . config('App')->version) ?>"></script>
   <script src="<?= base_url('public/libraries/js/sidebar.js?version=' . config('App')->version) ?>"></script>
   <script src="<?= base_url('public/libraries/js/script.js?version=' . config('App')->version) ?>"></script>
+  <script src="<?= base_url('public/my-component/JqGridVirtualDOM.js?version=' . config('App')->version) ?>"></script>
   <script src="<?= base_url('public/my-component/LookupComponent.js?version=' . config('App')->version) ?>"></script>
   <!-- <script src="<?= base_url('public/my-component/Socket.js?version=' . config('App')->version) ?>"></script> -->
   <!-- Custom JS -->
@@ -305,24 +309,29 @@
         return;
       }
 
+      const isLazy = config.lazyLoad === true;
+
       const defaultOptions = {
-        url: API_URL + config.url,
+        url: isLazy ? '' : API_URL + config.url,
         mtype: "GET",
-        datatype: "JSON",
+        datatype: isLazy ? "local" : "JSON",
         styleUI: 'Bootstrap4',
         iconSet: 'fontAwesome',
         colModel: config.colModel,
-        autowidth: false,
+        autowidth: true,
+        shrinkToFit: false,
         height: 320,
-        rowNum: 10,
+        rowNum: isLazy ? (config.lazyLoadOptions?.rowsPerPage || 50) : 10,
+        pgtext: isLazy ? null : "{0}",
+        pgbuttons: isLazy ? false : true,
         rownumWidth: 45,
-        rowList: [10, 20, 30],
+        rowList: isLazy ? [] : [10, 20, 30],
         toolbar: [true, "top"],
         rownumbers: true,
         sortname: 'id',
         sortable: true,
         sortorder: 'asc',
-        viewrecords: true,
+        viewrecords: !isLazy,
         gridview: true,
         page: config.page || 1,
         pager: config.pagerId,
@@ -334,8 +343,10 @@
           records: 'attributes.totalRows',
         },
         loadBeforeSend: function(jqXHR) {
-          jqXHR.setRequestHeader('Authorization', `Bearer ${ACCESS_TOKEN}`);
-          setGridLastRequest($(this), jqXHR)
+          if (!isLazy) {
+            jqXHR.setRequestHeader('Authorization', `Bearer ${ACCESS_TOKEN}`);
+            setGridLastRequest($(this), jqXHR);
+          }
         }
       };
 
@@ -353,6 +364,21 @@
       //   refresh: false
       // });
 
+      if (isLazy) {
+        $(config.pagerId).hide();
+
+        // Buat instance LazyLoader
+        let lazyLoader = new JqGridLazyLoader(
+          config.gridId,
+          API_URL + config.url,
+          ACCESS_TOKEN,
+          config.lazyLoadOptions || {}
+        );
+
+        // Simpan instance-nya ke memori elemen grid agar bisa dipanggil dari filterToolbar
+        grid.data('lazyLoader', lazyLoader);
+      }
+
       // default filter toolbar
       grid.jqGrid("setLabel", "rn", "No.");
       grid.jqGrid('filterToolbar', {
@@ -363,13 +389,56 @@
         groupOp: 'AND',
         disabledKeys: [17, 33, 34, 35, 36, 37, 38, 39, 40],
         beforeSearch: function() {
-          abortGridLastRequest($(this))
-          $('#left-nav').find(`button:not(#add)`).attr('disabled', 'disabled')
+          if (!isLazy) abortGridLastRequest($(this));
+
+          $('#left-nav').find(`button:not(#add)`).attr('disabled', 'disabled');
+
+          if (isLazy) {
+            let loader = grid.data('lazyLoader');
+            if (loader) {
+              loader.loadGridData(grid.jqGrid('getGridParam', 'postData'), 1, loader.rowsPerPage, 'down', 'reload');
+            }
+            return true;
+          }
         },
+      });
+
+      $.jgrid.extend({
+        // Kita tidak lagi butuh pageNumber atau rowIndex lokal. Kita hanya butuh offset absolut!
+        jumpToAbsoluteOffset: function(absoluteOffset, rowIdToSelect) {
+          return this.each(function() {
+            var grid = $(this);
+
+            // 1. Dapatkan tinggi 1 baris (Misal 30px atau 32px, sesuaikan dengan aslinya)
+            // Kita ambil dari baris pertama yang ada di layar sebagai sampel
+            var rowHeight = grid.find('tr.jqgrow').first().height() || 32;
+
+            // 2. KALKULASI MATEMATIKA (Tanpa perlu mencari elemen <tr>)
+            // Piksel target = posisi absolut dikali tinggi baris
+            var targetPixel = absoluteOffset * rowHeight;
+
+            // 3. LOMPATAN BUTA! Putar scrollbar langsung ke target piksel.
+            grid.parents('.ui-jqgrid-bdiv').scrollTop(targetPixel);
+
+            // 4. BIAKAN MESIN BEKERJA
+            // Saat scrollTop berubah, VirtualScrollController (CCTV) akan otomatis mendeteksi, 
+            // menembak AJAX ke Backend, dan merender 50 baris di koordinat tersebut.
+
+            // 5. TUNGGU & SOROT
+            // Kita beri jeda sejenak (misal 500ms) agar AJAX selesai dan elemen <tr> dirender, 
+            // baru kita berikan efek sorotan biru (setSelection).
+            setTimeout(() => {
+              if (rowIdToSelect) {
+                grid.jqGrid('setSelection', rowIdToSelect, true);
+              }
+            }, 800); // Sesuaikan durasi timeout dengan rata-rata kecepatan API Anda
+          });
+        }
       });
 
       // Tambahkan Global Search otomatis
       initGlobalSearch(grid, config);
+
 
       return grid;
     }

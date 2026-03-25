@@ -24,7 +24,7 @@
   let limit = 10;
   let postData;
   let autoNumericElements = [];
-  let rowNum = 10;
+  let rowNum = 50;
   let selectedId = null;
   let selectedRows = [];
   let sortname = 'fullname';
@@ -145,6 +145,12 @@
         url: urlMaster,
         page: page,
         colModel: getBaseColModel(),
+        lazyLoad: true,
+        lazyLoadOptions: {
+          rowsPerPage: 50,
+          windowPages: 3,
+          gapPage: 30
+        },
         options: {
           sortname: sortname,
           sortorder: sortorder,
@@ -166,6 +172,9 @@
 
             $(document).unbind('keydown')
             setCustomBindKeys($(this))
+
+            // Pintasan Keyboard Global
+            setupKeyboardShortcuts();
 
             let ids = $(this).getDataIDs();
             let selectedRowId = ids[0];
@@ -254,106 +263,12 @@
             innerHTML: '<i class="fa fa-file-export"></i> EXPORT',
             class: 'btn btn-warning mr-1',
             onClick: () => {
-              // $('#rangeModal').data('action', 'export')
-              // $('#rangeModal').find('button:submit').html(`Export`)
-              // $('#rangeModal').modal('show')
+              exportExcel()
             }
           },
         ]
       })
       .permissions(accessRights);
-
-    // grid.jqGrid({
-    //   url: API_URL + urlMaster,
-    //   mtype: "GET",
-    //   styleUI: 'Bootstrap4',
-    //   iconSet: 'fontAwesome',
-    //   datatype: "JSON",
-    //   colModel: getBaseColModel(),
-    //   cmTemplate: {
-    //     required: true
-    //   },
-    //   autowidth: true,
-    //   height: 'auto',
-    //   rowNum: 10,
-    //   rowList: [10, 20, 30],
-    //   rownumbers: true,
-    //   sortname: sortname,
-    //   viewrecords: true,
-    //   gridview: true,
-    //   sortorder: sortorder,
-    //   caption: "Data User",
-    //   pager: "#jqGridPager",
-    //   jsonReader: {
-    //     root: 'data',
-    //     total: 'attributes.totalPages',
-    //     records: 'attributes.totalRows',
-    //   },
-    //   // onSelectRow: function(id) {
-    //   //   jQuery("#detailItem").jqGrid('setGridParam', {
-    //   //     url: "penjualan/" + id + "/detail",
-    //   //     page: 1
-    //   //   });
-    //   //   jQuery("#detailItem").trigger('reloadGrid');
-
-    //   // },
-    //   loadBeforeSend: function(jqXHR) {
-    //     jqXHR.setRequestHeader('Authorization', `Bearer ${ACCESS_TOKEN}`);
-    //     // setGridLastRequest($(this), jqXHR);
-    //   },
-    //   gridComplete: function(response) {
-    //     const ids = $(this).jqGrid('getDataIDs');
-    //     console.log(ids);
-
-    //     // if (selectId) {
-    //     //   selectRow(selectId);
-    //     //   detailTable(selectId);
-
-    //     // } else {
-    //     //   selectRow(ids[0]);
-    //     //   detailTable(ids[0]);
-
-    //     // }
-
-    //     // Highlight pencarian
-    //     // higligthPencarian($(this));
-    //     // Setup navigasi untuk grid master
-    //     // initializeGridNavigation(masterGrid);
-
-    //   }
-    // });
-
-    // setting default untuk seluruh action bawaan jqgrid
-    // grid.jqGrid('navGrid', '#jqGridPager', {
-    //   edit: false,
-    //   add: false,
-    //   del: false,
-    //   search: false,
-    //   refresh: false
-    // });
-
-    // grid.jqGrid('filterToolbar', {
-    //   autosearch: true,
-    //   stringResult: true,
-    //   searchOnEnter: false,
-    //   defaultSearch: "cn",
-    //   multipleSearch: true,
-    //   beforeSearch: function() {
-    //     const postData = $(this).getGridParam("postData");
-    //     delete postData.global_search;
-
-    //     $(this).setGridParam({
-    //       search: true,
-    //       page: 1,
-    //       postData: {
-    //         _search: true,
-    //       }
-    //     }).trigger('reloadGrid');
-
-    //   }
-
-    // });
-
 
 
   });
@@ -374,9 +289,11 @@
       .select2({
         theme: 'bootstrap4',
         width: '100%',
+        dropdownParent: $('#crudModal')
       })
-  })
 
+    
+  })
 </script>
 
 <?= $this->endSection(); ?>
