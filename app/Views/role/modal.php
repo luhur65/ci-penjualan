@@ -290,7 +290,7 @@
       $('#processingLoader').removeClass('d-none');
 
       try {
-        const response = await ajaxWithRefresh({
+        const response = await HttpManager.ajaxWithRefresh({
           url: url,
           method: method,
           dataType: 'JSON',
@@ -310,7 +310,7 @@
 
       } catch (error) {
         if (error.status !== 422) {
-          showDialog('error', getErrorMessage(error));
+          showDialog('error', UIManager.getErrorMessage(error));
         }
 
       } finally {
@@ -418,7 +418,7 @@
 
     } catch (error) {
       // console.error(error);
-      showDialog('error', getErrorMessage(error));
+      showDialog('error', UIManager.getErrorMessage(error));
     } finally {
       $('.modal-loader').addClass('d-none');
 
@@ -453,7 +453,7 @@
 
     } catch (error) {
       // console.error(error);
-      showDialog('error', getErrorMessage(error));
+      showDialog('error', UIManager.getErrorMessage(error));
     } finally {
       $('.modal-loader').addClass('d-none');
 
@@ -546,14 +546,14 @@
 
 
   async function showRole(form, roleId) {
-    const response = await ajaxWithRefresh({
+    const response = await HttpManager.ajaxWithRefresh({
       url: `${API_URL}/roles/${roleId}`,
       method: 'GET',
       dataType: 'JSON'
     });
 
     // Populate form fields
-    populateForm(form, response.data);
+    UIManager.populateForm(form, response.data);
     selectedRows = response.acos.map((aco) => aco.aco_id); // get aco_id from response
 
   }

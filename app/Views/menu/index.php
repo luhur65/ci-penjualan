@@ -223,8 +223,11 @@
             }
           }
         }
-      })
-      .loadClearFilter()
+      });
+
+    const grid = gridManager.grid;
+
+    grid.loadClearFilter()
       .clearGlobalSearch()
       .customPager({
         buttons: [{
@@ -276,8 +279,6 @@
         ]
       })
       .permissions(accessRights);
-
-    const grid = gridManager.grid;
 
     // Pasang Global Keyboard Shortcuts
     UIManager.setupKeyboardShortcuts();

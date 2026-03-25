@@ -154,7 +154,7 @@
       $('#processingLoader').removeClass('d-none');
 
       try {
-        const response = await ajaxWithRefresh({
+        const response = await HttpManager.ajaxWithRefresh({
           url: url,
           method: method,
           dataType: 'JSON',
@@ -174,7 +174,7 @@
 
       } catch (error) {
         if (error.status !== 422) {
-          showDialog('error', getErrorMessage(error));
+          showDialog('error', UIManager.getErrorMessage(error));
         }
 
       } finally {
@@ -213,7 +213,7 @@
 
     } catch (error) {
       if (error.status !== 422) {
-        showDialog('error', getErrorMessage(error));
+        showDialog('error', UIManager.getErrorMessage(error));
       }
 
     } finally {
@@ -243,7 +243,7 @@
 
     } catch (error) {
       if (error.status !== 422) {
-        showDialog('error', getErrorMessage(error));
+        showDialog('error', UIManager.getErrorMessage(error));
       }
 
     } finally {
@@ -273,7 +273,7 @@
 
     } catch (error) {
       if (error.status !== 422) {
-        showDialog('error', getErrorMessage(error));
+        showDialog('error', UIManager.getErrorMessage(error));
       }
 
     } finally {
@@ -282,14 +282,14 @@
   }
 
   async function showMenu(form, menuId) {
-    const response = await ajaxWithRefresh({
+    const response = await HttpManager.ajaxWithRefresh({
       url: `${API_URL}/menu/${menuId}`,
       method: 'GET',
       dataType: 'JSON'
     });
 
     // Populate form fields
-    populateForm(form, response.data);
+    UIManager.populateForm(form, response.data);
 
   }
 
@@ -302,7 +302,7 @@
       ).trigger('change')
 
       // Ambil data roles dari API
-      const response = await ajaxWithRefresh({
+      const response = await HttpManager.ajaxWithRefresh({
         url: `${API_URL}/menu/parents`,
         method: 'GET',
         dataType: 'JSON'
@@ -332,7 +332,7 @@
       ).trigger('change')
 
       // Ambil data roles dari API
-      const response = await ajaxWithRefresh({
+      const response = await HttpManager.ajaxWithRefresh({
         url: `${API_URL}/menu/controllers`,
         method: 'GET',
         dataType: 'JSON'

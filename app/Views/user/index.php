@@ -215,8 +215,11 @@
             }
           }
         }
-      })
-      .loadClearFilter()
+      });
+
+    const grid = gridManager.grid;
+
+    grid.loadClearFilter()
       .clearGlobalSearch()
       .customPager({
         buttons: [{

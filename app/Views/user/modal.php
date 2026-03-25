@@ -428,7 +428,8 @@
 
     } catch (error) {
       // console.error(error);
-      showDialog('error', UIManager.getErrorMessage(error));
+        if (typeof showDialog === "function") showDialog('error', UIManager.getErrorMessage(error));
+      if (typeof showDialog === "function") showDialog('error', UIManager.getErrorMessage(error));
     } finally {
       $('.modal-loader').addClass('d-none');
 
