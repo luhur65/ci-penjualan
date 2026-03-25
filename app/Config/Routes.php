@@ -7,6 +7,7 @@ use App\Controllers\MenuController;
 use App\Controllers\UserController;
 use App\Controllers\RoleController;
 use App\Controllers\PenjualanController;
+use App\Controllers\ParameterController;
 
 /**
  * @var RouteCollection $routes
@@ -42,5 +43,6 @@ $routes->group('', ['filter' => ['authenticated', 'acl'], 'csrf' => true], funct
     $routes->get('/role', [RoleController::class, 'index'], ['as' => 'roles.index']);
     $routes->get('/menu', [MenuController::class, 'index'], ['as' => 'menu.index']);
     $routes->get('/penjualan', [PenjualanController::class, 'index'], ['as' => 'penjualan.index']);
+    $routes->get('/parameter', [ParameterController::class, 'index'], ['as' => 'parameter.index']);
 
 });

@@ -91,7 +91,6 @@
   </div>
 </div>
 
-<?= $this->section('scripts') ?>
 <script>
   let modalBody = $('#crudModal').find('.modal-body').html();
 
@@ -352,6 +351,5 @@
       throw error; // agar bisa ditangkap di caller
     }
   }
-  
+
 </script>
-<?= $this->endSection() ?>
