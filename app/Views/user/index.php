@@ -52,22 +52,22 @@
       {
         label: 'NAMA LENGKAP',
         name: 'fullname',
-        width: 200
+        width: (detectDeviceType() == "desktop") ? md_dekstop_2 : sm_mobile_2,
       },
       {
         label: 'NAMA PENGGUNA',
         name: 'username',
-        width: 200
+        width: (detectDeviceType() == "desktop") ? md_dekstop_2 : sm_mobile_2,
       },
       {
         label: 'EMAIL',
         name: 'email',
-        width: 250,
+        width: (detectDeviceType() == "desktop") ? md_dekstop_2 : sm_mobile_2,
       },
       {
         label: 'STATUS AKTIF',
         name: 'statusaktif',
-        width: 150,
+        width: (detectDeviceType() == "desktop") ? sm_dekstop_3 : sm_mobile_3,
         stype: 'select',
         searchoptions: {
           value: "<?= combo_status('STATUS AKTIF', 'STATUS AKTIF'); ?>",
@@ -112,12 +112,12 @@
         label: 'MODIFIED BY',
         name: 'modifiedby',
         align: 'left',
-        width: 100,
+        width: (detectDeviceType() == "desktop") ? sm_dekstop_3 : sm_mobile_3,
       },
       {
         label: 'UPDATED AT',
         name: 'updated_at',
-        width: 200,
+        width: (detectDeviceType() == "desktop") ? sm_dekstop_3 : sm_mobile_3,
         formatter: "date",
         formatoptions: {
           srcformat: "ISO8601Long",
@@ -127,7 +127,7 @@
       {
         label: 'CREATED AT',
         name: 'created_at',
-        width: 200,
+        width: (detectDeviceType() == "desktop") ? sm_dekstop_3 : sm_mobile_3,
         formatter: "date",
         formatoptions: {
           srcformat: "ISO8601Long",
@@ -143,6 +143,7 @@
         gridId: masterGrid,
         pagerId: gridPager,
         url: urlMaster,
+        shrinkToFit: true,
         page: page,
         colModel: getBaseColModel(),
         lazyLoad: true,
@@ -292,7 +293,7 @@
         dropdownParent: $('#crudModal')
       })
 
-    
+
   })
 </script>
 
