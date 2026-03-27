@@ -4,10 +4,10 @@ namespace App\Controllers;
 
 use App\Controllers\BaseController;
 
-class PenjualanController extends BaseController
+class ParameterController extends BaseController
 {
     public function index(): string
     {
-        return view('penjualan/index');
+        return view('parameter/index');
     }
 }

@@ -6,10 +6,9 @@
   <table id="jqGrid"></table>
 </div>
 
-<?= $this->include('menu/modal') ?>
-
 <?= $this->endSection() ?>
 <?= $this->section('scripts'); ?>
+<?= $this->include('menu/modal') ?>
 
 <script>
   let indexRow = 0;
@@ -181,6 +180,9 @@
             $(document).unbind('keydown')
             setCustomBindKeys($(this))
 
+            // Pintasan Keyboard Global
+            setupKeyboardShortcuts();
+
             let ids = $(this).getDataIDs();
             let selectedRowId = ids[0];
 
@@ -276,7 +278,6 @@
         ]
       })
       .permissions(accessRights);
-
 
   });
 

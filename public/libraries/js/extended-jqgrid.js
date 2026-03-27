@@ -435,6 +435,14 @@ $.jgrid.extend({
 	},
 	customPager: function (option = {}) {
 		loadPagerHandler = function (element, grid) {
+			let isLazy = grid.data('lazyLoader') !== undefined;
+
+			if (isLazy) {
+				// Kosongkan area navigasi sepenuhnya
+				$(element).html('');
+				return;
+			}
+
 			$(element).html(`
 			<button type="button" id="${
 				grid.getGridParam().id
@@ -606,6 +614,10 @@ $.jgrid.extend({
 		};
 
 		loadPagerHandlerInfo = function (element, grid) {
+			let isLazy = grid.data('lazyLoader') !== undefined;
+
+			if (isLazy) return;
+
 			let page = grid.getGridParam().page;
 			let totalPage = grid.getGridParam().lastpage;
 
@@ -616,6 +628,9 @@ $.jgrid.extend({
 		};
 
 		loadPagerInfo = function (element, grid) {
+			let isLazy = grid.data('lazyLoader') !== undefined;
+			if (isLazy) return;
+
 			let params = grid.getGridParam();
 			let recordCount = params.reccount;
 			let page = params.page;
@@ -624,11 +639,21 @@ $.jgrid.extend({
 			let firstRow = (page - 1) * perPage + 1;
 			let lastRow = firstRow + recordCount - 1;
 
-			$(element).html(`
-			<div class="text-md-right">
-				View  ${firstRow} - ${lastRow} of ${totalRecords}
-			</div>
-		`);
+			console.log(firstRow, lastRow, totalRecords);
+			if (isLazy) {
+				// Tampilan khusus untuk mode Lazy Loading
+				$(element).html(`
+					<div class="text-md-right font-weight-bold">
+						Total Data : ${totalRecords}
+					</div>
+				`);
+			} else {
+				$(element).html(`
+					<div class="text-md-right">
+						View  ${firstRow} - ${lastRow} of ${totalRecords}
+					</div>
+				`);
+			}
 		};
 
 		if (

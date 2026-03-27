@@ -169,7 +169,7 @@
               <i class="fa fa-check"></i>
               Save
             </button>
-            <button type="button" class="btn btn-secondary" data-dismiss="modal">
+            <button type="button" class="btn btn-outline-primary" data-dismiss="modal">
               <i class="fa fa-times"></i>
               Cancel
             </button>
@@ -315,10 +315,43 @@
         $('#crudModal').modal('hide');
         selectedRows = [];
         id = response.data.id;
+        let payload = response.data;
+        let grid = $(masterGrid);
+        let loader = grid.data('lazyLoader');
 
-        $('#jqGrid').jqGrid('setGridParam', {
-          page: response.data.page
-        }).trigger('reloadGrid');
+        if (loader) {
+          let postData = grid.jqGrid('getGridParam', 'postData');
+
+          loader.loadGridData(postData, payload.page, loader.rowsPerPage, 'down', 'jump', function() {
+            setTimeout(() => {
+              grid.jqGrid('setSelection', payload.id, true);
+
+              let bDiv = grid.parents('.ui-jqgrid-bdiv');
+              let selectedRow = grid.find(`tr#${payload.id}`);
+
+              if (selectedRow.length > 0) {
+                let scrollPos = selectedRow.position().top + bDiv.scrollTop() - (bDiv.height() / 2) + (selectedRow.height() / 2);
+                bDiv.scrollTop(scrollPos);
+              } else if (data.indexRow !== undefined) {
+                // Fallback for delete: scroll to the approximate row index position
+                let rowHeight = grid.find('tr[id]').height() || 30;
+                let localIndex = data.indexRow % loader.rowsPerPage;
+                let approximateScrollPos = (localIndex * rowHeight) - (bDiv.height() / 2);
+
+                bDiv.scrollTop(Math.max(0, approximateScrollPos));
+              }
+            }, 100);
+          });
+        } else {
+          // Fallback jqGrid non-lazy load
+          $('#jqGrid').jqGrid('setGridParam', {
+            page: response.data.page
+          }).trigger('reloadGrid');
+        }
+
+        // $('#jqGrid').jqGrid('setGridParam', {
+        //   page: response.data.page
+        // }).trigger('reloadGrid');
         // $('#userRoleGrid').trigger('reloadGrid', {
         //   postData: {
         //     proses: 'reload'
@@ -449,6 +482,70 @@
 
     }
 
+  }
+
+  async function exportExcel() {
+
+    $('#processingLoader').removeClass('d-none');
+
+    try {
+      // 1. Panggil API menggunakan ajaxWithRefresh yang sudah kita racik sebelumnya
+      const response = await ajaxWithRefresh({
+        url: `${API_URL}/users/export`, // Sesuaikan endpoint CI 4 Anda
+        method: 'GET',
+        // 2. Beri tahu browser bahwa responsnya adalah data mentah biner, bukan JSON!
+        xhrFields: {
+          responseType: 'arraybuffer'
+        },
+        data: {
+          rows: 0,
+          sord: $(masterGrid).jqGrid('getGridParam', 'sortorder'),
+          sidx: $(masterGrid).jqGrid('getGridParam', 'sortname'),
+          filters: $(masterGrid).jqGrid('getGridParam', 'postData').filters,
+        }
+      });
+
+      // 3. Jika berhasil, rakit file Excel dari binary response tersebut
+      if (response !== undefined) {
+        // Tipe MIME standar untuk file .xlsx
+        let blob = new Blob([response], {
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        });
+
+        let link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.download = `LAPORAN USER ${new Date().getTime()}.xlsx`;
+
+        // Simulasikan klik untuk memicu unduhan di browser
+        document.body.appendChild(link);
+        link.click();
+
+        // Bersihkan elemen link yang baru saja dibuat
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(link.href);
+      }
+
+    } catch (error) {
+      console.error("Gagal export excel:", error);
+      // Tangani error, misal jika response 404 atau 400 dari backend
+      let errorMsg = 'Gagal mengekspor data atau data tidak ditemukan.';
+
+      // Jika Backend mengirim JSON (misal {message: "TIDAK ADA DATA"}) padahal settingnya arraybuffer,
+      // ini cara mengekstrak pesannya:
+      if (error.responseJSON) {
+        errorMsg = getErrorMessage(error);
+      } else if (error.responseText) {
+        // Jika terjadi error pada mode arraybuffer, responseText tidak bisa dibaca normal,
+        // tapi kita bisa asumsikan itu adalah error server/tidak ada data
+        errorMsg = 'TIDAK ADA DATA';
+      }
+
+      showDialog('error', errorMsg);
+
+    } finally {
+      // Matikan loader apapun yang terjadi
+      $('#processingLoader').addClass('d-none');
+    }
   }
 
 
