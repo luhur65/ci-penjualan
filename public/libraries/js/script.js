@@ -1,5 +1,44 @@
 let activeGrid;
 
+let sm_dekstop_1 = "50px";
+let sm_dekstop_2 = "100px";
+let sm_dekstop_3 = "150px";
+let sm_dekstop_4 = "200px";
+let md_dekstop_1 = "250px";
+let md_dekstop_2 = "300px";
+let md_dekstop_3 = "350px";
+let md_dekstop_4 = "400px";
+let lg_dekstop_1 = "450px";
+let lg_dekstop_2 = "500px";
+let lg_dekstop_3 = "550px";
+let lg_dekstop_4 = "600px";
+
+let sm_mobile_1 = "150px";
+let sm_mobile_2 = "200px";
+let sm_mobile_3 = "250px";
+let sm_mobile_4 = "300px";
+let md_mobile_1 = "350px";
+let md_mobile_2 = "400px";
+let md_mobile_3 = "450px";
+let md_mobile_4 = "500px";
+let lg_mobile_1 = "550px";
+let lg_mobile_2 = "600px";
+let lg_mobile_3 = "650px";
+let lg_mobile_4 = "700px";
+
+let sm_extendSize_1 = 50;
+let sm_extendSize_2 = 100;
+let sm_extendSize_3 = 150;
+let sm_extendSize_4 = 200;
+let md_extendSize_1 = 250;
+let md_extendSize_2 = 300;
+let md_extendSize_3 = 350;
+let md_extendSize_4 = 400;
+let lg_extendSize_1 = 450;
+let lg_extendSize_2 = 500;
+let lg_extendSize_3 = 550;
+let lg_extendSize_4 = 600;
+
 $(document).ready(function () {
 	$(document).on("show.bs.modal", ".modal", function () {
 		const zIndex = 1040 + 10 * $(".modal:visible").length;
@@ -832,6 +871,20 @@ function fillSearchMenuInput() {
 	$("#search").val(currentElement.attr("id"));
 }
 
+function detectDeviceType() {
+	const ua = navigator.userAgent;
+	if (/(tablet|ipad|playbook|silk)|(android(?!.*mobi))/i.test(ua)) {
+		return "tablet";
+	} else if (
+		/Mobile|Android|iP(hone|od)|IEMobile|BlackBerry|Kindle|Silk-Accelerated|(hpw|web)OS|Opera M(obi|ini)/.test(
+			ua
+		)
+	) {
+		return "mobile";
+	}
+	return "desktop";
+}
+
 /**
  * FUNGSI PINTASAN KEYBOARD (ACCESSIBILITY)
  * Menangani kombinasi ALT+A, ALT+E, ALT+D dengan proteksi Hak Akses
@@ -854,7 +907,7 @@ function setupKeyboardShortcuts() {
 				console.log('Shortcut Terpicu: ALT + A (Add)');
 				$('#add').click(); // Simulasikan klik tombol Add
 			} else {
-				if (typeof showDialog === "function") showDialog('Anda tidak memiliki akses untuk menambah data.');
+				if (typeof showDialog === "function") showDialog('error', 'Anda tidak memiliki akses untuk menambah data.');
 			}
 		}
 
@@ -866,7 +919,7 @@ function setupKeyboardShortcuts() {
 				console.log('Shortcut Terpicu: ALT + E (Edit)');
 				$('#edit').click(); // Simulasikan klik tombol Edit
 			} else {
-				if (typeof showDialog === "function") showDialog('Anda tidak memiliki akses untuk mengubah data.');
+				if (typeof showDialog === "function") showDialog('error', 'Anda tidak memiliki akses untuk mengubah data.');
 			}
 		}
 
@@ -878,7 +931,7 @@ function setupKeyboardShortcuts() {
 				console.log('Shortcut Terpicu: ALT + D (Delete)');
 				$('#delete').click(); // Simulasikan klik tombol Delete
 			} else {
-				if (typeof showDialog === "function") showDialog('Anda tidak memiliki akses untuk menghapus data.');
+				if (typeof showDialog === "function") showDialog('error', 'Anda tidak memiliki akses untuk menghapus data.');
 			}
 		}
 	});
