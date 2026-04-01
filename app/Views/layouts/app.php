@@ -134,7 +134,10 @@
   <script src="<?= base_url('public/libraries/js/navbar.js?version=' . config('App')->version) ?>"></script>
   <script src="<?= base_url('public/libraries/js/sidebar.js?version=' . config('App')->version) ?>"></script>
   <script src="<?= base_url('public/libraries/js/script.js?version=' . config('App')->version) ?>"></script>
+  <script src="<?= base_url('public/my-component/GridPreferenceManager.js?version=' . config('App')->version) ?>"></script>
+  <script src="<?= base_url('public/my-component/ColumnSettingsManager.js?version=' . config('App')->version) ?>"></script>
   <script src="<?= base_url('public/my-component/JqGridVirtualDOM.js?version=' . config('App')->version) ?>"></script>
+  <script src="<?= base_url('public/my-component/DraftFormManager.js?version=' . config('App')->version) ?>"></script>
   <script src="<?= base_url('public/my-component/LookupComponent.js?version=' . config('App')->version) ?>"></script>
   <!-- <script src="<?= base_url('public/my-component/Socket.js?version=' . config('App')->version) ?>"></script> -->
   <!-- Custom JS -->
@@ -146,6 +149,16 @@
     let isRefreshing = false; // Flag untuk mendeteksi apakah refresh sedang berlangsung
     let refreshSubscribers = []; // Menyimpan request yang menunggu token baru
     let lastGridRequest = null;
+
+    var navigatorStorage = navigator.storage;
+
+    navigatorStorage.estimate().then(({
+      quota,
+      usage
+    }) => {
+      console.log(`Used: ${usage} bytes`);
+      console.log(`Total available: ${quota} bytes`);
+    });
 
     // Handler Global 401 Error
     $.ajaxPrefilter(function(options, originalOptions, jqXHR) {
@@ -310,6 +323,7 @@
       }
 
       const isLazy = config.lazyLoad === true;
+      const userBeforeSearch = config.beforeSearch || function() {};
 
       const defaultOptions = {
         url: isLazy ? '' : API_URL + config.url,
@@ -318,8 +332,8 @@
         styleUI: 'Bootstrap4',
         iconSet: 'fontAwesome',
         colModel: config.colModel,
-        autowidth: config.autowidth ?? true,
-        shrinkToFit: config.shrinkToFit ?? true,
+        autowidth: config.autowidth ?? false,
+        shrinkToFit: config.shrinkToFit ?? false,
         height: config.height ?? 375,
         rowNum: isLazy ? (config.lazyLoadOptions?.rowsPerPage || 50) : 10,
         pgtext: isLazy ? null : "{0}",
@@ -343,10 +357,8 @@
           records: 'attributes.totalRows',
         },
         loadBeforeSend: function(jqXHR) {
-          if (!isLazy) {
-            jqXHR.setRequestHeader('Authorization', `Bearer ${ACCESS_TOKEN}`);
-            setGridLastRequest($(this), jqXHR);
-          }
+          jqXHR.setRequestHeader('Authorization', `Bearer ${ACCESS_TOKEN}`);
+          setGridLastRequest($(this), jqXHR);
         }
       };
 
@@ -382,25 +394,57 @@
       // default filter toolbar
       grid.jqGrid("setLabel", "rn", "No.");
       grid.jqGrid('filterToolbar', {
-        // autosearch: true,
         stringResult: true,
         searchOnEnter: false,
         defaultSearch: 'cn',
         groupOp: 'AND',
         disabledKeys: [17, 33, 34, 35, 36, 37, 38, 39, 40],
+
         beforeSearch: function() {
-          if (!isLazy) abortGridLastRequest($(this));
+          const gridEl = $(this);
 
-          $('#left-nav').find(`button:not(#add)`).attr('disabled', 'disabled');
+          let postData = gridEl.jqGrid('getGridParam', 'postData') || {};
 
+          if (!postData.filters || postData.filters === '') {
+            delete postData.filters;
+            postData._search = false;
+          }
+
+          // custom param TANPA overwrite
+          if (config.extraPostData) {
+            const extra = typeof config.extraPostData === 'function' ?
+              config.extraPostData() :
+              config.extraPostData;
+
+            postData = {
+              ...postData,
+              ...extra
+            };
+          }
+
+          // simpan balik
+          gridEl.jqGrid('setGridParam', {
+            page: 1,
+            postData: postData
+          });
+
+          // clear global search kalau ada
+          if (config.clearGlobalSearch) {
+            config.clearGlobalSearch(gridEl);
+          }
+
+          // HANDLE LAZY
           if (isLazy) {
-            let loader = grid.data('lazyLoader');
+            let loader = gridEl.data('lazyLoader');
             if (loader) {
-              loader.loadGridData(grid.jqGrid('getGridParam', 'postData'), 1, loader.rowsPerPage, 'down', 'reload');
+              loader.loadGridData(postData, 1, loader.rowsPerPage, 'down', 'reload');
             }
             return true;
           }
-        },
+
+          // call custom user logic terakhir
+          return userBeforeSearch.call(this);
+        }
       });
 
       $.jgrid.extend({
@@ -626,21 +670,21 @@
      * @param {Object} data - object key:value untuk diisi ke form
      * @param {Array} specialFields - array field yang perlu simpan data-current-value
      */
-    $(document).on("input blur", ".ui-search-toolbar input", function() {
-      let val = $(this).val();
+    // $(document).on("input blur", ".ui-search-toolbar input", function() {
+    //   let val = $(this).val();
 
-      if (!val) return;
+    //   if (!val) return;
 
-      val = val
-        .replace(/&nbsp;/gi, " ") // HTML nbsp
-        .replace(/\u00A0/g, " ") // unicode nbsp
-        .replace(/[\u200B-\u200D]/g, "") // zero width chars
-        .replace(/\uFEFF/g, "") // BOM
-        .replace(/\s+/g, " ") // multiple space -> single
-        .trim(); // remove leading/trailing space
+    //   val = val
+    //     .replace(/&nbsp;/gi, " ") // HTML nbsp
+    //     .replace(/\u00A0/g, " ") // unicode nbsp
+    //     .replace(/[\u200B-\u200D]/g, "") // zero width chars
+    //     .replace(/\uFEFF/g, "") // BOM
+    //     .replace(/\s+/g, " ") // multiple space -> single
+    //     .trim(); // remove leading/trailing space
 
-      $(this).val(val);
-    });
+    //   $(this).val(val);
+    // });
 
     /**
      * Hide or show button based on access rights

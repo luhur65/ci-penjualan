@@ -695,12 +695,37 @@ $.jgrid.extend({
 											.map((button, index) => {
 												let buttonElement = document.createElement("button");
 
-												buttonElement.id =
-													typeof button.id !== "undefined"
-														? button.id
-														: `customButton_${index}`;
+												buttonElement.id = typeof button.id !== "undefined" ? button.id : `customButton_${index}`;
 												buttonElement.className = button.class;
-												buttonElement.innerHTML = button.innerHTML;
+
+												let temp = document.createElement("div");
+												temp.innerHTML = button.innerHTML;
+
+												// ambil text node terakhir
+												let textNode = [...temp.childNodes].find(n => n.nodeType === 3);
+
+												if (textNode && button.shortcut) {
+													let text = textNode.nodeValue;
+													let index = text.toLowerCase().indexOf(button.shortcut.toLowerCase());
+
+													if (index !== -1) {
+														textNode.nodeValue = '';
+														let before = document.createTextNode(text.substring(0, index));
+														let underline = document.createElement("u");
+														underline.textContent = text[index];
+														let after = document.createTextNode(text.substring(index + 1));
+
+														temp.appendChild(before);
+														temp.appendChild(underline);
+														temp.appendChild(after);
+													}
+												}
+
+												buttonElement.innerHTML = temp.innerHTML;
+
+												if (button.shortcut) {
+													buttonElement.setAttribute('data-shortcut', button.shortcut);
+												}
 
 												if (button.onClick) {
 													$(document).on(

@@ -1,0 +1,20 @@
+SELECT `userroles`.`id`, `userroles`.`user_id`, `userroles`.`role_id`, `roles`.`rolename`, `users`.`fullname` as `user`, `userroles`.`modified_by` as `modifiedby`, `userroles`.`created_at`, `userroles`.`updated_at` 
+FROM `userroles` 
+LEFT JOIN `roles` ON `roles`.`id` = `userroles`.`role_id` 
+LEFT JOIN `users` ON `users`.`id` = `userroles`.`user_id` 
+
+WHERE `userroles`.`user_id` = '15920' 
+AND (
+    `roles`.`rolename` LIKE '%U%' ESCAPE '!' 
+    OR `userroles`.`modified_by` LIKE '%U%' ESCAPE '!' 
+    OR DATE_FORMAT(userroles.updated_at, '%d-%m-%Y %H:%i:%s') LIKE '%U%'
+);
+
+SELECT `userroles`.`id`, `userroles`.`user_id`, `userroles`.`role_id`, `roles`.`rolename`, `users`.`fullname` as `user`, `userroles`.`modified_by` as `modifiedby`, `userroles`.`created_at`, `userroles`.`updated_at`
+FROM `userroles`
+LEFT JOIN `roles` ON `roles`.`id` = `userroles`.`role_id`
+LEFT JOIN `users` ON `users`.`id` = `userroles`.`user_id`
+WHERE `userroles`.`user_id` = '15920'
+OR  `roles`.`rolename` LIKE '%U%' ESCAPE '!'
+OR  `userroles`.`modified_by` LIKE '%U%' ESCAPE '!'
+OR DATE_FORMAT(userroles.updated_at, '%d-%m-%Y %H:%i:%s') LIKE '%U%'

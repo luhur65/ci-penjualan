@@ -12,6 +12,7 @@
 
 <?= $this->section('scripts'); ?>
 <?= $this->include('role/modal'); ?>
+<?= $this->include('aco/_grid'); ?>
 
 <script>
   let indexRow = 0;
@@ -29,6 +30,7 @@
   let selectedRows = [];
   let sortname = 'rolename';
   let sortorder = 'asc';
+  const GRID_PREF_KEY = 'role_master_grid';
   const urlMaster = '/roles';
   const masterGrid = '#jqGrid';
   const gridPager = '#jqGridPager';
@@ -83,18 +85,31 @@
     ];
   }
 
-  $(document).ready(function() {
+  $(document).ready(async function() {
+
+    GridPreferenceManager.configure({
+      mode: 'server',
+      serverUrl: API_URL + '/grid-preferences',
+    });
+
+    const savedPrefs = await GridPreferenceManager.load(GRID_PREF_KEY);
+    const finalColModel = GridPreferenceManager.apply(getBaseColModel(), savedPrefs);
 
     const grid = createJqGrid({
       gridId: masterGrid,
       pagerId: gridPager,
       url: urlMaster,
       page: page,
-      colModel: getBaseColModel(),
+      colModel: finalColModel,
       options: {
         sortname: sortname,
         sortorder: sortorder,
         rowNum: rowNum,
+        resizeStop: function(newWidth, index) {
+          const prefs = GridPreferenceManager.extract(masterGrid);
+          GridPreferenceManager.save(GRID_PREF_KEY, prefs);
+          console.log('[Grid] Preferensi tersimpan setelah resize.');
+        },
         onSelectRow: function(id) {
           activeGrid = $(this)
           indexRow = $(this).jqGrid('getCell', id, 'rn') - 1
@@ -145,10 +160,7 @@
             }
 
             setHighlight($(this));
-
-            setTimeout(() => {
-              // $(`${masterGrid} tr[id="${selectedRowId}"]`).focus();
-            }, 50);
+            ColumnSettingsManager.renderBadge(masterGrid);
           }
         }
       }
@@ -206,96 +218,7 @@
     })
     .permissions(accessRights);
 
-    // grid.jqGrid({
-    //   url: API_URL + urlMaster,
-    //   mtype: "GET",
-    //   styleUI: 'Bootstrap4',
-    //   iconSet: 'fontAwesome',
-    //   datatype: "JSON",
-    //   colModel: getBaseColModel(),
-    //   cmTemplate: {
-    //     required: true
-    //   },
-    //   autowidth: true,
-    //   height: 'auto',
-    //   rowNum: 10,
-    //   rowList: [10, 20, 30],
-    //   rownumbers: true,
-    //   sortname: sortname,
-    //   viewrecords: true,
-    //   gridview: true,
-    //   sortorder: sortorder,
-    //   caption: "Data User",
-    //   pager: "#jqGridPager",
-    //   jsonReader: {
-    //     root: 'data',
-    //     total: 'attributes.totalPages',
-    //     records: 'attributes.totalRows',
-    //   },
-    //   // onSelectRow: function(id) {
-    //   //   jQuery("#detailItem").jqGrid('setGridParam', {
-    //   //     url: "penjualan/" + id + "/detail",
-    //   //     page: 1
-    //   //   });
-    //   //   jQuery("#detailItem").trigger('reloadGrid');
-
-    //   // },
-    //   loadBeforeSend: function(jqXHR) {
-    //     jqXHR.setRequestHeader('Authorization', `Bearer ${ACCESS_TOKEN}`);
-    //     // setGridLastRequest($(this), jqXHR);
-    //   },
-    //   gridComplete: function(response) {
-    //     const ids = $(this).jqGrid('getDataIDs');
-    //     console.log(ids);
-
-    //     // if (selectId) {
-    //     //   selectRow(selectId);
-    //     //   detailTable(selectId);
-
-    //     // } else {
-    //     //   selectRow(ids[0]);
-    //     //   detailTable(ids[0]);
-
-    //     // }
-
-    //     // Highlight pencarian
-    //     // higligthPencarian($(this));
-    //     // Setup navigasi untuk grid master
-    //     // initializeGridNavigation(masterGrid);
-
-    //   }
-    // });
-
-    // setting default untuk seluruh action bawaan jqgrid
-    // grid.jqGrid('navGrid', '#jqGridPager', {
-    //   edit: false,
-    //   add: false,
-    //   del: false,
-    //   search: false,
-    //   refresh: false
-    // });
-
-    // grid.jqGrid('filterToolbar', {
-    //   autosearch: true,
-    //   stringResult: true,
-    //   searchOnEnter: false,
-    //   defaultSearch: "cn",
-    //   multipleSearch: true,
-    //   beforeSearch: function() {
-    //     const postData = $(this).getGridParam("postData");
-    //     delete postData.global_search;
-
-    //     $(this).setGridParam({
-    //       search: true,
-    //       page: 1,
-    //       postData: {
-    //         _search: true,
-    //       }
-    //     }).trigger('reloadGrid');
-
-    //   }
-
-    // });
+    ColumnSettingsManager.init(masterGrid, GRID_PREF_KEY, getBaseColModel());
 
   });
 

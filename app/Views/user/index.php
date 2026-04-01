@@ -3,7 +3,31 @@
 <?= $this->section('content') ?>
 
 <div class="container-fluid">
-  <table id="jqGrid"></table>
+  <div class="row mb-3">
+    <div class="col-12">
+      <table id="jqGrid"></table>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-12">
+      <div class="card card-primary card-outline card-outline-tabs">
+        <div class="card-body" style="min-height: 529px">
+          <div id="tabs" style="font-size:12px">
+            <ul class="dejavu">
+              <li><a href="#role-tab">Role</a></li>
+              <li><a href="#acl-tab">Acl</a></li>
+            </ul>
+            <div id="role-tab">
+              <table id="userRoleGrid"></table>
+            </div>
+            <div id="acl-tab">
+              <table id="userAclGrid"></table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 
@@ -12,6 +36,9 @@
 
 <?= $this->section('scripts'); ?>
 <?= $this->include('user/modal'); ?>
+<?= $this->include('user/role/_grid'); ?>
+<?= $this->include('user/acl/_grid'); ?>
+<?= $this->include('aco/_grid'); ?>
 
 <script>
   let indexRow = 0;
@@ -29,6 +56,7 @@
   let selectedRows = [];
   let sortname = 'fullname';
   let sortorder = 'asc';
+  const GRID_PREF_KEY = 'user_master_grid';
   const urlMaster = '/users';
   const masterGrid = '#jqGrid';
   const gridPager = '#jqGridPager';
@@ -40,6 +68,10 @@
     report: <?= has_permission('user', 'report') ? 'true' : 'false' ?>,
     export: <?= has_permission('user', 'export') ? 'true' : 'false' ?>
   };
+  const tabLoaders = {
+    'role-tab': loadUserRoleData,
+    'acl-tab': loadUserAclData,
+  }
 
   function getBaseColModel() {
     return [{
@@ -117,7 +149,7 @@
       {
         label: 'UPDATED AT',
         name: 'updated_at',
-        width: (detectDeviceType() == "desktop") ? sm_dekstop_3 : sm_mobile_3,
+        width: (detectDeviceType() == "desktop") ? sm_dekstop_4 : sm_mobile_4,
         formatter: "date",
         formatoptions: {
           srcformat: "ISO8601Long",
@@ -127,25 +159,35 @@
       {
         label: 'CREATED AT',
         name: 'created_at',
-        width: (detectDeviceType() == "desktop") ? sm_dekstop_3 : sm_mobile_3,
+        width: (detectDeviceType() == "desktop") ? sm_dekstop_4 : sm_mobile_3,
         formatter: "date",
         formatoptions: {
           srcformat: "ISO8601Long",
           newformat: "d-m-Y H:i:s"
         }
       }
+
     ];
   }
 
-  $(document).ready(function() {
+  $(document).ready(async function() {
+    $("#tabs").tabs();
+
+    GridPreferenceManager.configure({
+      mode: 'server',
+      serverUrl: API_URL + '/grid-preferences',
+    });
+
+    const savedPrefs = await GridPreferenceManager.load(GRID_PREF_KEY);
+    const finalColModel = GridPreferenceManager.apply(getBaseColModel(), savedPrefs);
 
     const grid = createJqGrid({
         gridId: masterGrid,
         pagerId: gridPager,
         url: urlMaster,
-        shrinkToFit: true,
+        shrinkToFit: false,
         page: page,
-        colModel: getBaseColModel(),
+        colModel: finalColModel,
         lazyLoad: true,
         lazyLoadOptions: {
           rowsPerPage: 50,
@@ -156,14 +198,26 @@
           sortname: sortname,
           sortorder: sortorder,
           rowNum: rowNum,
-          // caption: "Data User",
+          resizeStop: function(newWidth, index) {
+            const prefs = GridPreferenceManager.extract(masterGrid);
+            GridPreferenceManager.save(GRID_PREF_KEY, prefs);
+            console.log('[Grid] Preferensi tersimpan setelah resize.');
+          },
           onSelectRow: function(id) {
             activeGrid = $(this)
             page = $(masterGrid).jqGrid('getGridParam', 'page')
             limit = $(masterGrid).jqGrid('getGridParam', 'rowNum')
             indexRow = $(masterGrid).jqGrid('getInd', id) - 1;
 
-            // 🔥 ini yang benar (global position)
+
+            let activeTabIndex = $("#tabs").tabs('option', 'active')
+            //Dapatkan ID HTML dari panel tab yang aktif tersebut (misal: "role-tab")
+            let activeTabId = $("#tabs .ui-tabs-panel").eq(activeTabIndex).attr('id');
+            if (tabLoaders[activeTabId]) {
+              tabLoaders[activeTabId](id);
+            }
+
+            // ini yang benar (global position)
             // let localIndex = $(masterGrid).jqGrid('getInd', selectedId) - 1
             // let indexRow = ((page - 1) * limit) + localIndex + 1
           },
@@ -174,9 +228,6 @@
             $(document).unbind('keydown')
             setCustomBindKeys($(this))
 
-            // Pintasan Keyboard Global
-            setupKeyboardShortcuts();
-
             let ids = $(this).getDataIDs();
             let selectedRowId = ids[0];
 
@@ -184,14 +235,8 @@
               if (triggerClick) {
 
                 if (id != '') {
-                  // Mencari indeks lokal menggunakan ID terdekat dari Backend
                   let localIndex = parseInt($(masterGrid).jqGrid('getInd', id)) - 1;
-
-                  if (!isNaN(localIndex) && localIndex >= 0 && localIndex < ids.length) {
-                    indexRow = localIndex;
-                  }
-                  // Jika getInd gagal, indexRow akan otomatis menggunakan nilai terakhirnya 
-                  // yang sudah merupakan indeks lokal (0-9).
+                  // getInd('19229') → ketemu → indexRow di-update dengan benar
                   id = '';
                 }
 
@@ -212,10 +257,7 @@
               }
 
               setHighlight($(this));
-
-              setTimeout(() => {
-                // $(`${masterGrid} tr[id="${selectedRowId}"]`).focus();
-              }, 50);
+              ColumnSettingsManager.renderBadge(masterGrid);
             }
           }
         }
@@ -227,50 +269,63 @@
             id: 'add',
             innerHTML: '<i class="fa fa-plus"></i> ADD',
             class: 'btn btn-primary mr-1',
-            onClick: () => {
-              createUser()
-            }
+            shortcut: 'a',
+            onClick: () => createUser()
           },
           {
             id: 'edit',
             innerHTML: '<i class="fa fa-pen"></i> EDIT',
             class: 'btn btn-success mr-1',
-            onClick: () => {
-              selectedId = $("#jqGrid").jqGrid('getGridParam', 'selrow')
-              updateUser(selectedId)
-            }
+            shortcut: 'e',
+            onClick: () => updateUser($("#jqGrid").jqGrid('getGridParam', 'selrow'))
           },
           {
             id: 'delete',
             innerHTML: '<i class="fa fa-trash"></i> DELETE',
             class: 'btn btn-danger mr-1',
-            onClick: () => {
-              selectedId = $("#jqGrid").jqGrid('getGridParam', 'selrow')
-              deleteUser(selectedId)
-            }
+            shortcut: 'd',
+            onClick: () => deleteUser($("#jqGrid").jqGrid('getGridParam', 'selrow'))
           },
           {
             id: 'report',
             innerHTML: '<i class="fa fa-print"></i> REPORT',
             class: 'btn btn-info mr-1',
-            onClick: () => {
-              // $('#rangeModal').data('action', 'report')
-              // $('#rangeModal').find('button:submit').html(`Report`)
-              // $('#rangeModal').modal('show')
-            }
+            shortcut: 'r',
+            onClick: () => {}
           },
           {
             id: 'export',
             innerHTML: '<i class="fa fa-file-export"></i> EXPORT',
             class: 'btn btn-warning mr-1',
-            onClick: () => {
-              exportExcel()
-            }
+            shortcut: 'x',
+            onClick: () => exportExcel()
           },
         ]
       })
       .permissions(accessRights);
 
+    ColumnSettingsManager.init(masterGrid, GRID_PREF_KEY, getBaseColModel());
+
+    loadUserRoleGrid();
+    loadUserAclGrid();
+
+    // Setup Pintasan Keyboard Global
+    setupKeyboardShortcuts();
+
+    $("#tabs").tabs({
+      activate: function(event, ui) {
+        let selectedMasterId = $(masterGrid).jqGrid('getGridParam', 'selrow');
+        if (!selectedMasterId) return;
+
+        // 1. Dapatkan ID Tab yang baru saja dibuka oleh pengguna
+        let activeTabId = ui.newPanel.attr('id');
+
+        // 2. [EKSEKUSI MODULAR]: Panggil fungsinya dari kamus!
+        if (tabLoaders[activeTabId]) {
+          tabLoaders[activeTabId](selectedMasterId);
+        }
+      }
+    });
 
   });
 
@@ -292,6 +347,15 @@
         width: '100%',
         dropdownParent: $('#crudModal')
       })
+
+    let currentKey = draftManager.getKey();
+    if (localStorage.getItem(currentKey)) {
+      $('#btnGetLastData').show();
+    } else {
+      $('#btnGetLastData').hide();
+    }
+
+    draftManager.resume();
 
 
   })
