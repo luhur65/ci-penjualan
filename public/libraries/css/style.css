@@ -1997,3 +1997,11 @@ body.dark-mode .table-scroll tfoot th,
 body.dark-mode .table-scroll tfoot td {
     background: var(--content-dark-mode) !important;
 }
+
+
+/* Shortcut VB style */
+[data-shortcut] u {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    font-style: normal;
+}

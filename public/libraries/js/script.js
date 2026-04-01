@@ -889,50 +889,87 @@ function detectDeviceType() {
  * FUNGSI PINTASAN KEYBOARD (ACCESSIBILITY)
  * Menangani kombinasi ALT+A, ALT+E, ALT+D dengan proteksi Hak Akses
  */
+// function setupKeyboardShortcuts() {
+// 	$(window).off('keydown.globalShortcut').on('keydown.globalShortcut', function (e) {
+
+
+// 		// Pastikan pengguna tidak sedang mengetik di dalam input/textarea/select
+// 		// agar ALT+A tidak terpicu saat mereka sedang mengisi form!
+// 		let isInputActive = $(e.target).is('input, textarea, select');
+// 		if (isInputActive) return;
+
+// 		// Kombinasi ALT + A (ADD)
+// 		if (e.altKey && e.key.toLowerCase() === 'a') {
+// 			e.preventDefault(); // Cegah browser melakukan aksi default
+
+// 			// Cek permission dari object accessRights global Anda
+// 			if (typeof accessRights !== 'undefined' && accessRights.add) {
+// 				console.log('Shortcut Terpicu: ALT + A (Add)');
+// 				$('#add').click(); // Simulasikan klik tombol Add
+// 			} else {
+// 				if (typeof showDialog === "function") showDialog('error', 'Anda tidak memiliki akses untuk menambah data.');
+// 			}
+// 		}
+
+// 		// Kombinasi ALT + E (EDIT)
+// 		if (e.altKey && e.key.toLowerCase() === 'e') {
+// 			e.preventDefault();
+
+// 			if (typeof accessRights !== 'undefined' && accessRights.edit) {
+// 				console.log('Shortcut Terpicu: ALT + E (Edit)');
+// 				$('#edit').click(); // Simulasikan klik tombol Edit
+// 			} else {
+// 				if (typeof showDialog === "function") showDialog('error', 'Anda tidak memiliki akses untuk mengubah data.');
+// 			}
+// 		}
+
+// 		// Kombinasi ALT + D (DELETE)
+// 		if (e.altKey && e.key.toLowerCase() === 'd') {
+// 			e.preventDefault();
+
+// 			if (typeof accessRights !== 'undefined' && accessRights.delete) {
+// 				console.log('Shortcut Terpicu: ALT + D (Delete)');
+// 				$('#delete').click(); // Simulasikan klik tombol Delete
+// 			} else {
+// 				if (typeof showDialog === "function") showDialog('error', 'Anda tidak memiliki akses untuk menghapus data.');
+// 			}
+// 		}
+// 	});
+// }
+
 function setupKeyboardShortcuts() {
-	$(document).on('keydown', function (e) {
 
+	const shortcutMap = {};
+	$('[data-shortcut]').each(function () {
+		const key = $(this).data('shortcut').toLowerCase();
+		const right = $(this).data('right'); // opsional: 'add' | 'edit' | 'delete'
+		shortcutMap[key] = {
+			btn: $(this),
+			right: right || null
+		};
+	});
 
-		// Pastikan pengguna tidak sedang mengetik di dalam input/textarea/select
-		// agar ALT+A tidak terpicu saat mereka sedang mengisi form!
-		let isInputActive = $(e.target).is('input, textarea, select');
-		if (isInputActive) return;
+	$(window).off('keydown.globalShortcut').on('keydown.globalShortcut', function (e) {
 
-		// Kombinasi ALT + A (ADD)
-		if (e.altKey && e.key.toLowerCase() === 'a') {
-			e.preventDefault(); // Cegah browser melakukan aksi default
+		if ($(e.target).is('input, textarea, select')) return;
+		if (!e.altKey) return;
 
-			// Cek permission dari object accessRights global Anda
-			if (typeof accessRights !== 'undefined' && accessRights.add) {
-				console.log('Shortcut Terpicu: ALT + A (Add)');
-				$('#add').click(); // Simulasikan klik tombol Add
-			} else {
-				if (typeof showDialog === "function") showDialog('error', 'Anda tidak memiliki akses untuk menambah data.');
+		const key = e.key.toLowerCase();
+		const entry = shortcutMap[key];
+		if (!entry) return;
+
+		e.preventDefault();
+
+		// Cek permission jika ada
+		if (entry.right && typeof accessRights !== 'undefined') {
+			if (!accessRights[entry.right]) {
+				if (typeof showDialog === 'function') {
+					showDialog('error', 'Anda tidak memiliki akses untuk aksi ini.');
+				}
+				return;
 			}
 		}
 
-		// Kombinasi ALT + E (EDIT)
-		if (e.altKey && e.key.toLowerCase() === 'e') {
-			e.preventDefault();
-
-			if (typeof accessRights !== 'undefined' && accessRights.edit) {
-				console.log('Shortcut Terpicu: ALT + E (Edit)');
-				$('#edit').click(); // Simulasikan klik tombol Edit
-			} else {
-				if (typeof showDialog === "function") showDialog('error', 'Anda tidak memiliki akses untuk mengubah data.');
-			}
-		}
-
-		// Kombinasi ALT + D (DELETE)
-		if (e.altKey && e.key.toLowerCase() === 'd') {
-			e.preventDefault();
-
-			if (typeof accessRights !== 'undefined' && accessRights.delete) {
-				console.log('Shortcut Terpicu: ALT + D (Delete)');
-				$('#delete').click(); // Simulasikan klik tombol Delete
-			} else {
-				if (typeof showDialog === "function") showDialog('error', 'Anda tidak memiliki akses untuk menghapus data.');
-			}
-		}
+		entry.btn.click();
 	});
 }
