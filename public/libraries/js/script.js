@@ -959,31 +959,55 @@ function setCustomBindKeysLazy(grid) {
 			let currentPage = loader.currentViewPage;
 			let totalPages = loader.totalPages;
 
+			if (loader.loading) return; // Mencegah spam keyboard yang membuat request numpuk
+
+			// Helper function to focus row after jump
+			let focusRow = (rowType) => {
+				setTimeout(() => {
+					let newIds = $(activeGrid).getDataIDs();
+					if (newIds.length > 0) {
+						let targetId = rowType === 'first' ? newIds[0] : newIds[newIds.length - 1];
+						$(activeGrid).resetSelection().setSelection(targetId);
+
+						let bDiv = $(activeGrid).closest(".ui-jqgrid-bdiv");
+						if (rowType === 'first') {
+							bDiv.scrollTop(0);
+						} else {
+							bDiv.scrollTop(bDiv[0].scrollHeight);
+						}
+					}
+				}, 100);
+			};
+
 			// Page Up
 			if (33 === e.keyCode) {
 				if (currentPage > 1) {
-					loader.loadGridData(postData, currentPage - 1, rowsPerPage, 'up', 'jump');
+					loader.loadGridData(postData, currentPage - 1, rowsPerPage, 'up', 'jump', () => focusRow('first'));
 				}
 				$(activeGrid).triggerHandler("jqGridKeyUp");
 			}
 			// Page Down
 			if (34 === e.keyCode) {
 				if (currentPage < totalPages) {
-					loader.loadGridData(postData, currentPage + 1, rowsPerPage, 'down', 'jump');
+					loader.loadGridData(postData, currentPage + 1, rowsPerPage, 'down', 'jump', () => focusRow('first'));
 				}
 				$(activeGrid).triggerHandler("jqGridKeyUp");
 			}
 			// End
 			if (35 === e.keyCode) {
 				if (currentPage !== totalPages) {
-					loader.loadGridData(postData, totalPages, rowsPerPage, 'down', 'jump');
+					loader.loadGridData(postData, totalPages, rowsPerPage, 'down', 'jump', () => focusRow('last'));
+				} else {
+					focusRow('last');
 				}
 				$(activeGrid).triggerHandler("jqGridKeyUp");
 			}
 			// Home
 			if (36 === e.keyCode) {
 				if (currentPage > 1) {
-					loader.loadGridData(postData, 1, rowsPerPage, 'down', 'jump');
+					loader.loadGridData(postData, 1, rowsPerPage, 'down', 'jump', () => focusRow('first'));
+				} else {
+					focusRow('first');
 				}
 				$(activeGrid).triggerHandler("jqGridKeyUp");
 			}
@@ -1002,7 +1026,7 @@ function setCustomBindKeysLazy(grid) {
 					}
 				} else {
 					if (currentPage > 1) {
-						loader.loadGridData(postData, currentPage - 1, rowsPerPage, 'up', 'jump');
+						loader.loadGridData(postData, currentPage - 1, rowsPerPage, 'up', 'jump', () => focusRow('last'));
 					}
 				}
 			}
@@ -1021,7 +1045,7 @@ function setCustomBindKeysLazy(grid) {
 					}
 				} else {
 					if (currentPage < totalPages) {
-						loader.loadGridData(postData, currentPage + 1, rowsPerPage, 'down', 'jump');
+						loader.loadGridData(postData, currentPage + 1, rowsPerPage, 'down', 'jump', () => focusRow('first'));
 					}
 				}
 			}
