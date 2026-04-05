@@ -485,9 +485,14 @@ function setErrorMessages(form, errors) {
 let topSelected = 0;
 let bottomSelected = 12;
 function setCustomBindKeys(grid) {
+	if ($(grid).data('lazyLoader')) {
+		setCustomBindKeysLazy(grid);
+		return;
+	}
+
 	setSidebarBindKeys();
 
-	$(document).on("keydown", function (e) {
+	$(document).off("keydown.normalBind").on("keydown.normalBind", function (e) {
 		if (!sidebarIsOpen && activeGrid) {
 			if (
 				e.keyCode == 33 ||
