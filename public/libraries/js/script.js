@@ -982,21 +982,21 @@ function setCustomBindKeysLazy(grid) {
 			// Page Up
 			if (33 === e.keyCode) {
 				if (currentPage > 1) {
-					loader.loadGridData(postData, currentPage - 1, rowsPerPage, 'up', 'jump', () => focusRow('first'));
+					loader.loadGridData(postData, currentPage - 1, rowsPerPage, 'jump', 'jump', () => focusRow('first'));
 				}
 				$(activeGrid).triggerHandler("jqGridKeyUp");
 			}
 			// Page Down
 			if (34 === e.keyCode) {
 				if (currentPage < totalPages) {
-					loader.loadGridData(postData, currentPage + 1, rowsPerPage, 'down', 'jump', () => focusRow('first'));
+					loader.loadGridData(postData, currentPage + 1, rowsPerPage, 'jump', 'jump', () => focusRow('first'));
 				}
 				$(activeGrid).triggerHandler("jqGridKeyUp");
 			}
 			// End
 			if (35 === e.keyCode) {
 				if (currentPage !== totalPages) {
-					loader.loadGridData(postData, totalPages, rowsPerPage, 'down', 'jump', () => focusRow('last'));
+					loader.loadGridData(postData, totalPages, rowsPerPage, 'jump', 'jump', () => focusRow('last'));
 				} else {
 					focusRow('last');
 				}
@@ -1005,7 +1005,7 @@ function setCustomBindKeysLazy(grid) {
 			// Home
 			if (36 === e.keyCode) {
 				if (currentPage > 1) {
-					loader.loadGridData(postData, 1, rowsPerPage, 'down', 'jump', () => focusRow('first'));
+					loader.loadGridData(postData, 1, rowsPerPage, 'jump', 'jump', () => focusRow('first'));
 				} else {
 					focusRow('first');
 				}
@@ -1026,7 +1026,7 @@ function setCustomBindKeysLazy(grid) {
 					}
 				} else {
 					if (currentPage > 1) {
-						loader.loadGridData(postData, currentPage - 1, rowsPerPage, 'up', 'jump', () => focusRow('last'));
+						loader.loadGridData(postData, currentPage - 1, rowsPerPage, 'jump', 'jump', () => focusRow('last'));
 					}
 				}
 			}
@@ -1045,7 +1045,7 @@ function setCustomBindKeysLazy(grid) {
 					}
 				} else {
 					if (currentPage < totalPages) {
-						loader.loadGridData(postData, currentPage + 1, rowsPerPage, 'down', 'jump', () => focusRow('first'));
+						loader.loadGridData(postData, currentPage + 1, rowsPerPage, 'jump', 'jump', () => focusRow('first'));
 					}
 				}
 			}
