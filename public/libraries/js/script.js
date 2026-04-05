@@ -937,6 +937,107 @@ function detectDeviceType() {
 // 	});
 // }
 
+function setCustomBindKeysLazy(grid) {
+	setSidebarBindKeys();
+
+	$(document).off("keydown.lazyBind").on("keydown.lazyBind", function (e) {
+		if (!sidebarIsOpen && activeGrid) {
+			let allowedKeys = [33, 34, 35, 36, 38, 40, 13];
+			if (!allowedKeys.includes(e.keyCode)) return;
+
+			let loader = $(activeGrid).data('lazyLoader');
+			if (!loader) return;
+
+			e.preventDefault();
+
+			let gridIds = $(activeGrid).getDataIDs();
+			let selectedRow = $(activeGrid).getGridParam("selrow");
+			let currentIndex = gridIds.indexOf(selectedRow);
+
+			let postData = $(activeGrid).jqGrid("getGridParam", "postData");
+			let rowsPerPage = loader.rowsPerPage;
+			let currentPage = loader.currentViewPage;
+			let totalPages = loader.totalPages;
+
+			// Page Up
+			if (33 === e.keyCode) {
+				if (currentPage > 1) {
+					loader.loadGridData(postData, currentPage - 1, rowsPerPage, 'up', 'jump');
+				}
+				$(activeGrid).triggerHandler("jqGridKeyUp");
+			}
+			// Page Down
+			if (34 === e.keyCode) {
+				if (currentPage < totalPages) {
+					loader.loadGridData(postData, currentPage + 1, rowsPerPage, 'down', 'jump');
+				}
+				$(activeGrid).triggerHandler("jqGridKeyUp");
+			}
+			// End
+			if (35 === e.keyCode) {
+				if (currentPage !== totalPages) {
+					loader.loadGridData(postData, totalPages, rowsPerPage, 'down', 'jump');
+				}
+				$(activeGrid).triggerHandler("jqGridKeyUp");
+			}
+			// Home
+			if (36 === e.keyCode) {
+				if (currentPage > 1) {
+					loader.loadGridData(postData, 1, rowsPerPage, 'down', 'jump');
+				}
+				$(activeGrid).triggerHandler("jqGridKeyUp");
+			}
+			// Up
+			if (38 === e.keyCode) {
+				if (currentIndex - 1 >= 0) {
+					$(activeGrid).resetSelection().setSelection(gridIds[currentIndex - 1]);
+
+					var selInRow = $(activeGrid).getGridParam("selrow");
+					let indexRowSelect = $(activeGrid).jqGrid("getInd", selInRow);
+					var currentRowHeight = $(activeGrid).getGridParam("rowHeight") || 26;
+					var currentScrollTop = $(activeGrid).closest(".ui-jqgrid-bdiv").scrollTop();
+
+					if (indexRowSelect < loader.totalRecord - 10) {
+						$(activeGrid).closest(".ui-jqgrid-bdiv").scrollTop(currentScrollTop - currentRowHeight - 2);
+					}
+				} else {
+					if (currentPage > 1) {
+						loader.loadGridData(postData, currentPage - 1, rowsPerPage, 'up', 'jump');
+					}
+				}
+			}
+			// Down
+			if (40 === e.keyCode) {
+				if (currentIndex + 1 < gridIds.length) {
+					$(activeGrid).resetSelection().setSelection(gridIds[currentIndex + 1]);
+
+					var currentRowHeight = $(activeGrid).getGridParam("rowHeight") || 26;
+					var selInRow = $(activeGrid).getGridParam("selrow");
+					let indexRowSelect = $(activeGrid).jqGrid("getInd", selInRow);
+					var currentScrollTop = $(activeGrid).closest(".ui-jqgrid-bdiv").scrollTop();
+
+					if (indexRowSelect > 12) {
+						$(activeGrid).closest(".ui-jqgrid-bdiv").scrollTop(currentScrollTop + currentRowHeight + 2);
+					}
+				} else {
+					if (currentPage < totalPages) {
+						loader.loadGridData(postData, currentPage + 1, rowsPerPage, 'down', 'jump');
+					}
+				}
+			}
+			// Enter
+			if (13 === e.keyCode) {
+				let rowId = $(activeGrid).getGridParam("selrow");
+				let ondblClickRowHandler = $(activeGrid).jqGrid("getGridParam", "ondblClickRow");
+
+				if (ondblClickRowHandler) {
+					ondblClickRowHandler.call($(activeGrid)[0], rowId);
+				}
+			}
+		}
+	});
+}
+
 function setupKeyboardShortcuts() {
 
 	const shortcutMap = {};
