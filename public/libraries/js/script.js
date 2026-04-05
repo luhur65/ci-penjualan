@@ -946,7 +946,10 @@ function setCustomBindKeysLazy(grid) {
 			if (!allowedKeys.includes(e.keyCode)) return;
 
 			let loader = $(activeGrid).data('lazyLoader');
-			if (!loader) return;
+			if (!loader) {
+				console.log("[DEBUG] lazyLoader instance not found on activeGrid.");
+				return;
+			}
 
 			e.preventDefault();
 
@@ -959,14 +962,24 @@ function setCustomBindKeysLazy(grid) {
 			let currentPage = loader.currentViewPage;
 			let totalPages = loader.totalPages;
 
-			if (loader.loading) return; // Mencegah spam keyboard yang membuat request numpuk
+			console.log(`[DEBUG] Key pressed: ${e.keyCode}`);
+			console.log(`[DEBUG] State: currentPage=${currentPage}, totalPages=${totalPages}, loading=${loader.loading}`);
+			console.log(`[DEBUG] Current selection: id=${selectedRow}, index=${currentIndex}, total loaded rows=${gridIds.length}`);
+
+			if (loader.loading) {
+				console.log("[DEBUG] Blocked keyboard action because loader is currently loading.");
+				return; // Mencegah spam keyboard yang membuat request numpuk
+			}
 
 			// Helper function to focus row after jump
 			let focusRow = (rowType) => {
+				console.log(`[DEBUG] Executing focusRow callback. Target: ${rowType}`);
 				setTimeout(() => {
 					let newIds = $(activeGrid).getDataIDs();
+					console.log(`[DEBUG] focusRow setTimeout fired. Grid has ${newIds.length} rows.`);
 					if (newIds.length > 0) {
 						let targetId = rowType === 'first' ? newIds[0] : newIds[newIds.length - 1];
+						console.log(`[DEBUG] focusRow setting selection to ID: ${targetId}`);
 						$(activeGrid).resetSelection().setSelection(targetId);
 
 						let bDiv = $(activeGrid).closest(".ui-jqgrid-bdiv");
@@ -982,22 +995,30 @@ function setCustomBindKeysLazy(grid) {
 			// Page Up
 			if (33 === e.keyCode) {
 				if (currentPage > 1) {
+					console.log(`[DEBUG] Page Up - Jumping from ${currentPage} to ${currentPage - 1}`);
 					loader.loadGridData(postData, currentPage - 1, rowsPerPage, 'jump', 'jump', () => focusRow('first'));
+				} else {
+					console.log(`[DEBUG] Page Up - Ignored (already on page 1)`);
 				}
 				$(activeGrid).triggerHandler("jqGridKeyUp");
 			}
 			// Page Down
 			if (34 === e.keyCode) {
 				if (currentPage < totalPages) {
+					console.log(`[DEBUG] Page Down - Jumping from ${currentPage} to ${currentPage + 1}`);
 					loader.loadGridData(postData, currentPage + 1, rowsPerPage, 'jump', 'jump', () => focusRow('first'));
+				} else {
+					console.log(`[DEBUG] Page Down - Ignored (already on last page ${totalPages})`);
 				}
 				$(activeGrid).triggerHandler("jqGridKeyUp");
 			}
 			// End
 			if (35 === e.keyCode) {
 				if (currentPage !== totalPages) {
+					console.log(`[DEBUG] End - Jumping to last page ${totalPages}`);
 					loader.loadGridData(postData, totalPages, rowsPerPage, 'jump', 'jump', () => focusRow('last'));
 				} else {
+					console.log(`[DEBUG] End - Already on last page, just focusing last row`);
 					focusRow('last');
 				}
 				$(activeGrid).triggerHandler("jqGridKeyUp");
@@ -1005,8 +1026,10 @@ function setCustomBindKeysLazy(grid) {
 			// Home
 			if (36 === e.keyCode) {
 				if (currentPage > 1) {
+					console.log(`[DEBUG] Home - Jumping to first page (1)`);
 					loader.loadGridData(postData, 1, rowsPerPage, 'jump', 'jump', () => focusRow('first'));
 				} else {
+					console.log(`[DEBUG] Home - Already on first page, just focusing first row`);
 					focusRow('first');
 				}
 				$(activeGrid).triggerHandler("jqGridKeyUp");
@@ -1014,6 +1037,7 @@ function setCustomBindKeysLazy(grid) {
 			// Up
 			if (38 === e.keyCode) {
 				if (currentIndex - 1 >= 0) {
+					console.log(`[DEBUG] Up Arrow - Moving selection to local row index ${currentIndex - 1}`);
 					$(activeGrid).resetSelection().setSelection(gridIds[currentIndex - 1]);
 
 					var selInRow = $(activeGrid).getGridParam("selrow");
@@ -1026,13 +1050,17 @@ function setCustomBindKeysLazy(grid) {
 					}
 				} else {
 					if (currentPage > 1) {
+						console.log(`[DEBUG] Up Arrow - Reached top boundary. Jumping to page ${currentPage - 1}`);
 						loader.loadGridData(postData, currentPage - 1, rowsPerPage, 'jump', 'jump', () => focusRow('last'));
+					} else {
+						console.log(`[DEBUG] Up Arrow - Reached absolute top boundary. Ignored.`);
 					}
 				}
 			}
 			// Down
 			if (40 === e.keyCode) {
 				if (currentIndex + 1 < gridIds.length) {
+					console.log(`[DEBUG] Down Arrow - Moving selection to local row index ${currentIndex + 1}`);
 					$(activeGrid).resetSelection().setSelection(gridIds[currentIndex + 1]);
 
 					var currentRowHeight = $(activeGrid).getGridParam("rowHeight") || 26;
@@ -1045,7 +1073,10 @@ function setCustomBindKeysLazy(grid) {
 					}
 				} else {
 					if (currentPage < totalPages) {
+						console.log(`[DEBUG] Down Arrow - Reached bottom boundary. Jumping to page ${currentPage + 1}`);
 						loader.loadGridData(postData, currentPage + 1, rowsPerPage, 'jump', 'jump', () => focusRow('first'));
+					} else {
+						console.log(`[DEBUG] Down Arrow - Reached absolute bottom boundary. Ignored.`);
 					}
 				}
 			}
