@@ -971,18 +971,38 @@ function setCustomBindKeysLazy(grid) {
 			if (loader.loading) return; // Mencegah spam keyboard yang membuat request numpuk
 
 			// Helper function to focus row after jump
-			let focusRow = (rowType) => {
+			let focusRow = (rowType, targetPage = null) => {
 				setTimeout(() => {
 					let newIds = $(activeGrid).getDataIDs();
 					if (newIds.length > 0) {
-						let targetId = rowType === 'first' ? newIds[0] : newIds[newIds.length - 1];
-						$(activeGrid).resetSelection().setSelection(targetId);
-
+						let targetId;
 						let bDiv = $(activeGrid).closest(".ui-jqgrid-bdiv");
+						let rowHeight = $(activeGrid).getGridParam("rowHeight") || 26;
+
 						if (rowType === 'first') {
+							targetId = newIds[0];
 							bDiv.scrollTop(0);
-						} else {
+						} else if (rowType === 'last') {
+							targetId = newIds[newIds.length - 1];
 							bDiv.scrollTop(bDiv[0].scrollHeight);
+						} else if (rowType === 'page' && targetPage) {
+							// Determine local offset for the target page
+							let minLoaded = loader.minPageLoaded || 1;
+							let pageOffset = targetPage - minLoaded;
+							let targetIndex = pageOffset * loader.rowsPerPage;
+
+							if (targetIndex >= 0 && targetIndex < newIds.length) {
+								targetId = newIds[targetIndex];
+								bDiv.scrollTop(targetIndex * rowHeight);
+							} else {
+								// Fallback
+								targetId = newIds[0];
+								bDiv.scrollTop(0);
+							}
+						}
+
+						if (targetId) {
+							$(activeGrid).resetSelection().setSelection(targetId);
 						}
 					}
 				}, 100);
@@ -991,14 +1011,14 @@ function setCustomBindKeysLazy(grid) {
 			// Page Up
 			if (33 === e.keyCode) {
 				if (currentPage > 1) {
-					loader.loadGridData(postData, currentPage - 1, rowsPerPage, 'jump', 'page', () => focusRow('first'));
+					loader.loadGridData(postData, currentPage - 1, rowsPerPage, 'up', 'page', () => focusRow('page', currentPage - 1));
 				}
 				$(activeGrid).triggerHandler("jqGridKeyUp");
 			}
 			// Page Down
 			if (34 === e.keyCode) {
 				if (currentPage < totalPages) {
-					loader.loadGridData(postData, currentPage + 1, rowsPerPage, 'jump', 'page', () => focusRow('first'));
+					loader.loadGridData(postData, currentPage + 1, rowsPerPage, 'down', 'page', () => focusRow('page', currentPage + 1));
 				}
 				$(activeGrid).triggerHandler("jqGridKeyUp");
 			}
