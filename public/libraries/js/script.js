@@ -491,7 +491,10 @@ function setCustomBindKeysLazy(grid) {
 			if (!allowedKeys.includes(e.keyCode)) return;
 
 			let loader = $(activeGrid).data('lazyLoader');
-			if (!loader) return;
+			if (!loader) {
+				console.log("[DEBUG KEYBIND] lazyLoader tidak ditemukan di activeGrid.");
+				return;
+			}
 
 			e.preventDefault();
 
@@ -504,12 +507,21 @@ function setCustomBindKeysLazy(grid) {
 			let currentPage = loader.currentViewPage;
 			let totalPages = loader.totalPages;
 
-			if (loader.loading) return; // Mencegah spam keyboard yang membuat request numpuk
+			console.log(`[DEBUG KEYBIND] Key pressed: ${e.keyCode}`);
+			console.log(`[DEBUG KEYBIND] State sebelum proses: currentPage=${currentPage}, totalPages=${totalPages}, loading=${loader.loading}`);
+			console.log(`[DEBUG KEYBIND] Baris yg dimuat di DOM: ${gridIds.length}. Baris teratas ID: ${gridIds[0]}, terbawah ID: ${gridIds[gridIds.length - 1]}`);
+
+			if (loader.loading) {
+				console.log(`[DEBUG KEYBIND] Request ditolak! loader.loading sedang TRUE (Ada proses fetch/render yang belum selesai).`);
+				return; // Mencegah spam keyboard yang membuat request numpuk
+			}
 
 			// Helper function to focus row after jump
 			let focusRow = (rowType, targetPage = null) => {
+				console.log(`[DEBUG KEYBIND] Triggering focusRow('${rowType}') timeout...`);
 				setTimeout(() => {
 					let newIds = $(activeGrid).getDataIDs();
+					console.log(`[DEBUG KEYBIND] Executing focusRow. Data IDs di DOM sekarang: ${newIds.length}`);
 					if (newIds.length > 0) {
 						let targetId;
 						let bDiv = $(activeGrid).closest(".ui-jqgrid-bdiv");
@@ -537,9 +549,12 @@ function setCustomBindKeysLazy(grid) {
 							}
 						}
 
+						console.log(`[DEBUG KEYBIND] focusRow memilih ID: ${targetId}, scroll di set.`);
 						if (targetId) {
 							$(activeGrid).resetSelection().setSelection(targetId);
 						}
+					} else {
+						console.log(`[DEBUG KEYBIND] WARNING: focusRow dijalankan tapi DOM grid kosong (newIds.length = 0)!`);
 					}
 				}, 100);
 			};
@@ -547,22 +562,30 @@ function setCustomBindKeysLazy(grid) {
 			// Page Up
 			if (33 === e.keyCode) {
 				if (currentPage > 1) {
+					console.log(`[DEBUG KEYBIND] Action: Page Up. Meminta halaman ${currentPage - 1}`);
 					loader.loadGridData(postData, currentPage - 1, rowsPerPage, 'jump', 'page', () => focusRow('first'));
+				} else {
+					console.log(`[DEBUG KEYBIND] Action: Page Up. Dibatalkan (sudah di halaman pertama).`);
 				}
 				$(activeGrid).triggerHandler("jqGridKeyUp");
 			}
 			// Page Down
 			if (34 === e.keyCode) {
 				if (currentPage < totalPages) {
+					console.log(`[DEBUG KEYBIND] Action: Page Down. Meminta halaman ${currentPage + 1}`);
 					loader.loadGridData(postData, currentPage + 1, rowsPerPage, 'jump', 'page', () => focusRow('first'));
+				} else {
+					console.log(`[DEBUG KEYBIND] Action: Page Down. Dibatalkan (sudah di halaman terakhir).`);
 				}
 				$(activeGrid).triggerHandler("jqGridKeyUp");
 			}
 			// End
 			if (35 === e.keyCode) {
 				if (currentPage !== totalPages) {
+					console.log(`[DEBUG KEYBIND] Action: End. Meminta halaman ${totalPages}`);
 					loader.loadGridData(postData, totalPages, rowsPerPage, 'jump', 'page', () => focusRow('last'));
 				} else {
+					console.log(`[DEBUG KEYBIND] Action: End. Dibatalkan (sudah di halaman terakhir, cukup scroll ke bawah).`);
 					focusRow('last');
 				}
 				$(activeGrid).triggerHandler("jqGridKeyUp");
@@ -570,8 +593,10 @@ function setCustomBindKeysLazy(grid) {
 			// Home
 			if (36 === e.keyCode) {
 				if (currentPage > 1) {
+					console.log(`[DEBUG KEYBIND] Action: Home. Meminta halaman 1`);
 					loader.loadGridData(postData, 1, rowsPerPage, 'jump', 'page', () => focusRow('first'));
 				} else {
+					console.log(`[DEBUG KEYBIND] Action: Home. Dibatalkan (sudah di halaman pertama, cukup scroll ke atas).`);
 					focusRow('first');
 				}
 				$(activeGrid).triggerHandler("jqGridKeyUp");
@@ -591,6 +616,7 @@ function setCustomBindKeysLazy(grid) {
 					}
 				} else {
 					if (currentPage > 1) {
+						console.log(`[DEBUG KEYBIND] Action: Up Arrow (Cross Boundary). Meminta halaman ${currentPage - 1}`);
 						loader.loadGridData(postData, currentPage - 1, rowsPerPage, 'up', 'page', () => focusRow('last'));
 					}
 				}
@@ -610,6 +636,7 @@ function setCustomBindKeysLazy(grid) {
 					}
 				} else {
 					if (currentPage < totalPages) {
+						console.log(`[DEBUG KEYBIND] Action: Down Arrow (Cross Boundary). Meminta halaman ${currentPage + 1}`);
 						loader.loadGridData(postData, currentPage + 1, rowsPerPage, 'down', 'page', () => focusRow('first'));
 					}
 				}

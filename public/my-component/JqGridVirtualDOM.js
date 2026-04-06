@@ -328,12 +328,14 @@ class JqGridLazyLoader {
     }
 
     if (direction === 'jump' || direction === 'reload') {
+      console.log(`[DEBUG RENDER] Action: ${direction}. Clearing grid data and appending ${data.length} rows.`);
       this.grid.jqGrid('clearGridData');
       this.lastScrollTop = 0; // Cegah trigger scroll event saat clear DOM
 
       data.forEach(row => {
         this.grid.jqGrid('addRowData', row.id, row, 'last');
       });
+      console.log(`[DEBUG RENDER] DOM Grid sekarang memiliki ${this.grid.jqGrid('getDataIDs').length} baris.`);
 
       if (currentPage) {
         this.currentViewPage = parseInt(currentPage);
