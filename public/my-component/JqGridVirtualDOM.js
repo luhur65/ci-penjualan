@@ -329,7 +329,7 @@ class JqGridLazyLoader {
 
     if (direction === 'jump' || direction === 'reload') {
       this.grid.jqGrid('clearGridData');
-      this.lastScrollTop = 0; // Prevent fake scroll-up triggers when DOM clears
+      this.lastScrollTop = 0; // Cegah trigger scroll event saat clear DOM
 
       data.forEach(row => {
         this.grid.jqGrid('addRowData', row.id, row, 'last');

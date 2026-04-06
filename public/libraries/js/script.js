@@ -478,6 +478,155 @@ function setErrorMessages(form, errors) {
 	$(".is-invalid").first().focus();
 }
 
+function setCustomBindKeysLazy(grid) {
+	// Matikan event keydown bawaan grid (termasuk dari customBindKeys di extended-jqgrid)
+	// yang bisa memicu reloadGrid dan menghapus isi virtual DOM sebelum lazyLoader bekerja.
+	$(grid).off("keydown");
+
+	setSidebarBindKeys();
+
+	$(document).off("keydown.lazyBind").on("keydown.lazyBind", function (e) {
+		if (!sidebarIsOpen && activeGrid) {
+			let allowedKeys = [33, 34, 35, 36, 38, 40, 13];
+			if (!allowedKeys.includes(e.keyCode)) return;
+
+			let loader = $(activeGrid).data('lazyLoader');
+			if (!loader) return;
+
+			e.preventDefault();
+
+			let gridIds = $(activeGrid).getDataIDs();
+			let selectedRow = $(activeGrid).getGridParam("selrow");
+			let currentIndex = gridIds.indexOf(selectedRow);
+
+			let postData = $(activeGrid).jqGrid("getGridParam", "postData");
+			let rowsPerPage = loader.rowsPerPage;
+			let currentPage = loader.currentViewPage;
+			let totalPages = loader.totalPages;
+
+			if (loader.loading) return; // Mencegah spam keyboard yang membuat request numpuk
+
+			// Helper function to focus row after jump
+			let focusRow = (rowType, targetPage = null) => {
+				setTimeout(() => {
+					let newIds = $(activeGrid).getDataIDs();
+					if (newIds.length > 0) {
+						let targetId;
+						let bDiv = $(activeGrid).closest(".ui-jqgrid-bdiv");
+						let rowHeight = $(activeGrid).getGridParam("rowHeight") || 26;
+
+						if (rowType === 'first') {
+							targetId = newIds[0];
+							bDiv.scrollTop(0);
+						} else if (rowType === 'last') {
+							targetId = newIds[newIds.length - 1];
+							bDiv.scrollTop(bDiv[0].scrollHeight);
+						} else if (rowType === 'page' && targetPage) {
+							// Determine local offset for the target page
+							let minLoaded = loader.minPageLoaded || 1;
+							let pageOffset = targetPage - minLoaded;
+							let targetIndex = pageOffset * loader.rowsPerPage;
+
+							if (targetIndex >= 0 && targetIndex < newIds.length) {
+								targetId = newIds[targetIndex];
+								bDiv.scrollTop(targetIndex * rowHeight);
+							} else {
+								// Fallback
+								targetId = newIds[0];
+								bDiv.scrollTop(0);
+							}
+						}
+
+						if (targetId) {
+							$(activeGrid).resetSelection().setSelection(targetId);
+						}
+					}
+				}, 100);
+			};
+
+			// Page Up
+			if (33 === e.keyCode) {
+				if (currentPage > 1) {
+					loader.loadGridData(postData, currentPage - 1, rowsPerPage, 'jump', 'page', () => focusRow('first'));
+				}
+				$(activeGrid).triggerHandler("jqGridKeyUp");
+			}
+			// Page Down
+			if (34 === e.keyCode) {
+				if (currentPage < totalPages) {
+					loader.loadGridData(postData, currentPage + 1, rowsPerPage, 'jump', 'page', () => focusRow('first'));
+				}
+				$(activeGrid).triggerHandler("jqGridKeyUp");
+			}
+			// End
+			if (35 === e.keyCode) {
+				if (currentPage !== totalPages) {
+					loader.loadGridData(postData, totalPages, rowsPerPage, 'jump', 'page', () => focusRow('last'));
+				} else {
+					focusRow('last');
+				}
+				$(activeGrid).triggerHandler("jqGridKeyUp");
+			}
+			// Home
+			if (36 === e.keyCode) {
+				if (currentPage > 1) {
+					loader.loadGridData(postData, 1, rowsPerPage, 'jump', 'page', () => focusRow('first'));
+				} else {
+					focusRow('first');
+				}
+				$(activeGrid).triggerHandler("jqGridKeyUp");
+			}
+			// Up
+			if (38 === e.keyCode) {
+				if (currentIndex - 1 >= 0) {
+					$(activeGrid).resetSelection().setSelection(gridIds[currentIndex - 1]);
+
+					var selInRow = $(activeGrid).getGridParam("selrow");
+					let indexRowSelect = $(activeGrid).jqGrid("getInd", selInRow);
+					var currentRowHeight = $(activeGrid).getGridParam("rowHeight") || 26;
+					var currentScrollTop = $(activeGrid).closest(".ui-jqgrid-bdiv").scrollTop();
+
+					if (indexRowSelect < loader.totalRecord - 10) {
+						$(activeGrid).closest(".ui-jqgrid-bdiv").scrollTop(currentScrollTop - currentRowHeight - 2);
+					}
+				} else {
+					if (currentPage > 1) {
+						loader.loadGridData(postData, currentPage - 1, rowsPerPage, 'up', 'page', () => focusRow('last'));
+					}
+				}
+			}
+			// Down
+			if (40 === e.keyCode) {
+				if (currentIndex + 1 < gridIds.length) {
+					$(activeGrid).resetSelection().setSelection(gridIds[currentIndex + 1]);
+
+					var currentRowHeight = $(activeGrid).getGridParam("rowHeight") || 26;
+					var selInRow = $(activeGrid).getGridParam("selrow");
+					let indexRowSelect = $(activeGrid).jqGrid("getInd", selInRow);
+					var currentScrollTop = $(activeGrid).closest(".ui-jqgrid-bdiv").scrollTop();
+
+					if (indexRowSelect > 12) {
+						$(activeGrid).closest(".ui-jqgrid-bdiv").scrollTop(currentScrollTop + currentRowHeight + 2);
+					}
+				} else {
+					if (currentPage < totalPages) {
+						loader.loadGridData(postData, currentPage + 1, rowsPerPage, 'down', 'page', () => focusRow('first'));
+					}
+				}
+			}
+			// Enter
+			if (13 === e.keyCode) {
+				let rowId = $(activeGrid).getGridParam("selrow");
+				let ondblClickRowHandler = $(activeGrid).jqGrid("getGridParam", "ondblClickRow");
+
+				if (ondblClickRowHandler) {
+					ondblClickRowHandler.call($(activeGrid)[0], rowId);
+				}
+			}
+		}
+	});
+}
+
 /**
  * Set Home, End, PgUp, PgDn
  * to move grid page
@@ -941,155 +1090,6 @@ function detectDeviceType() {
 // 		}
 // 	});
 // }
-
-function setCustomBindKeysLazy(grid) {
-	// Matikan event keydown bawaan grid (termasuk dari customBindKeys di extended-jqgrid)
-	// yang bisa memicu reloadGrid dan menghapus isi virtual DOM sebelum lazyLoader bekerja.
-	$(grid).off("keydown");
-
-	setSidebarBindKeys();
-
-	$(document).off("keydown.lazyBind").on("keydown.lazyBind", function (e) {
-		if (!sidebarIsOpen && activeGrid) {
-			let allowedKeys = [33, 34, 35, 36, 38, 40, 13];
-			if (!allowedKeys.includes(e.keyCode)) return;
-
-			let loader = $(activeGrid).data('lazyLoader');
-			if (!loader) return;
-
-			e.preventDefault();
-
-			let gridIds = $(activeGrid).getDataIDs();
-			let selectedRow = $(activeGrid).getGridParam("selrow");
-			let currentIndex = gridIds.indexOf(selectedRow);
-
-			let postData = $(activeGrid).jqGrid("getGridParam", "postData");
-			let rowsPerPage = loader.rowsPerPage;
-			let currentPage = loader.currentViewPage;
-			let totalPages = loader.totalPages;
-
-			if (loader.loading) return; // Mencegah spam keyboard yang membuat request numpuk
-
-			// Helper function to focus row after jump
-			let focusRow = (rowType, targetPage = null) => {
-				setTimeout(() => {
-					let newIds = $(activeGrid).getDataIDs();
-					if (newIds.length > 0) {
-						let targetId;
-						let bDiv = $(activeGrid).closest(".ui-jqgrid-bdiv");
-						let rowHeight = $(activeGrid).getGridParam("rowHeight") || 26;
-
-						if (rowType === 'first') {
-							targetId = newIds[0];
-							bDiv.scrollTop(0);
-						} else if (rowType === 'last') {
-							targetId = newIds[newIds.length - 1];
-							bDiv.scrollTop(bDiv[0].scrollHeight);
-						} else if (rowType === 'page' && targetPage) {
-							// Determine local offset for the target page
-							let minLoaded = loader.minPageLoaded || 1;
-							let pageOffset = targetPage - minLoaded;
-							let targetIndex = pageOffset * loader.rowsPerPage;
-
-							if (targetIndex >= 0 && targetIndex < newIds.length) {
-								targetId = newIds[targetIndex];
-								bDiv.scrollTop(targetIndex * rowHeight);
-							} else {
-								// Fallback
-								targetId = newIds[0];
-								bDiv.scrollTop(0);
-							}
-						}
-
-						if (targetId) {
-							$(activeGrid).resetSelection().setSelection(targetId);
-						}
-					}
-				}, 100);
-			};
-
-			// Page Up
-			if (33 === e.keyCode) {
-				if (currentPage > 1) {
-					loader.loadGridData(postData, currentPage - 1, rowsPerPage, 'up', 'page', () => focusRow('page', currentPage - 1));
-				}
-				$(activeGrid).triggerHandler("jqGridKeyUp");
-			}
-			// Page Down
-			if (34 === e.keyCode) {
-				if (currentPage < totalPages) {
-					loader.loadGridData(postData, currentPage + 1, rowsPerPage, 'down', 'page', () => focusRow('page', currentPage + 1));
-				}
-				$(activeGrid).triggerHandler("jqGridKeyUp");
-			}
-			// End
-			if (35 === e.keyCode) {
-				if (currentPage !== totalPages) {
-					loader.loadGridData(postData, totalPages, rowsPerPage, 'jump', 'page', () => focusRow('last'));
-				} else {
-					focusRow('last');
-				}
-				$(activeGrid).triggerHandler("jqGridKeyUp");
-			}
-			// Home
-			if (36 === e.keyCode) {
-				if (currentPage > 1) {
-					loader.loadGridData(postData, 1, rowsPerPage, 'jump', 'page', () => focusRow('first'));
-				} else {
-					focusRow('first');
-				}
-				$(activeGrid).triggerHandler("jqGridKeyUp");
-			}
-			// Up
-			if (38 === e.keyCode) {
-				if (currentIndex - 1 >= 0) {
-					$(activeGrid).resetSelection().setSelection(gridIds[currentIndex - 1]);
-
-					var selInRow = $(activeGrid).getGridParam("selrow");
-					let indexRowSelect = $(activeGrid).jqGrid("getInd", selInRow);
-					var currentRowHeight = $(activeGrid).getGridParam("rowHeight") || 26;
-					var currentScrollTop = $(activeGrid).closest(".ui-jqgrid-bdiv").scrollTop();
-
-					if (indexRowSelect < loader.totalRecord - 10) {
-						$(activeGrid).closest(".ui-jqgrid-bdiv").scrollTop(currentScrollTop - currentRowHeight - 2);
-					}
-				} else {
-					if (currentPage > 1) {
-						loader.loadGridData(postData, currentPage - 1, rowsPerPage, 'up', 'page', () => focusRow('last'));
-					}
-				}
-			}
-			// Down
-			if (40 === e.keyCode) {
-				if (currentIndex + 1 < gridIds.length) {
-					$(activeGrid).resetSelection().setSelection(gridIds[currentIndex + 1]);
-
-					var currentRowHeight = $(activeGrid).getGridParam("rowHeight") || 26;
-					var selInRow = $(activeGrid).getGridParam("selrow");
-					let indexRowSelect = $(activeGrid).jqGrid("getInd", selInRow);
-					var currentScrollTop = $(activeGrid).closest(".ui-jqgrid-bdiv").scrollTop();
-
-					if (indexRowSelect > 12) {
-						$(activeGrid).closest(".ui-jqgrid-bdiv").scrollTop(currentScrollTop + currentRowHeight + 2);
-					}
-				} else {
-					if (currentPage < totalPages) {
-						loader.loadGridData(postData, currentPage + 1, rowsPerPage, 'down', 'page', () => focusRow('first'));
-					}
-				}
-			}
-			// Enter
-			if (13 === e.keyCode) {
-				let rowId = $(activeGrid).getGridParam("selrow");
-				let ondblClickRowHandler = $(activeGrid).jqGrid("getGridParam", "ondblClickRow");
-
-				if (ondblClickRowHandler) {
-					ondblClickRowHandler.call($(activeGrid)[0], rowId);
-				}
-			}
-		}
-	});
-}
 
 function setupKeyboardShortcuts() {
 
