@@ -991,14 +991,14 @@ function setCustomBindKeysLazy(grid) {
 			// Page Up
 			if (33 === e.keyCode) {
 				if (currentPage > 1) {
-					loader.loadGridData(postData, currentPage - 1, rowsPerPage, 'jump', 'page', () => focusRow('first'));
+					loader.loadGridData(postData, currentPage - 1, rowsPerPage, 'up', 'page', () => focusRow('first'));
 				}
 				$(activeGrid).triggerHandler("jqGridKeyUp");
 			}
 			// Page Down
 			if (34 === e.keyCode) {
 				if (currentPage < totalPages) {
-					loader.loadGridData(postData, currentPage + 1, rowsPerPage, 'jump', 'page', () => focusRow('first'));
+					loader.loadGridData(postData, currentPage + 1, rowsPerPage, 'down', 'page', () => focusRow('first'));
 				}
 				$(activeGrid).triggerHandler("jqGridKeyUp");
 			}
@@ -1035,7 +1035,7 @@ function setCustomBindKeysLazy(grid) {
 					}
 				} else {
 					if (currentPage > 1) {
-						loader.loadGridData(postData, currentPage - 1, rowsPerPage, 'jump', 'page', () => focusRow('last'));
+						loader.loadGridData(postData, currentPage - 1, rowsPerPage, 'up', 'page', () => focusRow('last'));
 					}
 				}
 			}
@@ -1054,7 +1054,7 @@ function setCustomBindKeysLazy(grid) {
 					}
 				} else {
 					if (currentPage < totalPages) {
-						loader.loadGridData(postData, currentPage + 1, rowsPerPage, 'jump', 'page', () => focusRow('first'));
+						loader.loadGridData(postData, currentPage + 1, rowsPerPage, 'down', 'page', () => focusRow('first'));
 					}
 				}
 			}
