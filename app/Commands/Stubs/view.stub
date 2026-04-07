@@ -89,66 +89,66 @@
       page: page,
       colModel: getBaseColModel(),
       options: {
-          sortname: sortname,
-          sortorder: sortorder,
-          rowNum: rowNum,
-          onSelectRow: function(id) {
-            activeGrid = $(this)
-            indexRow = $(this).jqGrid('getCell', id, 'rn') - 1
-            limit = $(this).jqGrid('getGridParam', 'rowNum')
-            page = $(this).jqGrid('getGridParam', 'page')
-            // let rows = $(this).jqGrid('getGridParam', 'postData').limit
-            // if (indexRow >= rows) indexRow = (indexRow - rows * (page - 1))
-          },
-      },
-      loadComplete: function(data) {
-            changeJqGridRowListText();
-            triggerClick = true;
+        sortname: sortname,
+        sortorder: sortorder,
+        rowNum: rowNum,
+        onSelectRow: function(id) {
+          activeGrid = $(this)
+          indexRow = $(this).jqGrid('getCell', id, 'rn') - 1
+          limit = $(this).jqGrid('getGridParam', 'rowNum')
+          page = $(this).jqGrid('getGridParam', 'page')
+          // let rows = $(this).jqGrid('getGridParam', 'postData').limit
+          // if (indexRow >= rows) indexRow = (indexRow - rows * (page - 1))
+        },
+        loadComplete: function(data) {
+          changeJqGridRowListText();
+          triggerClick = true;
 
-            $(document).unbind('keydown')
-            setCustomBindKeys($(this))
+          $(document).unbind('keydown')
+          setCustomBindKeys($(this))
 
-            let ids = $(this).getDataIDs();
-            let selectedRowId = ids[0];
+          let ids = $(this).getDataIDs();
+          let selectedRowId = ids[0];
 
-            if (ids.length > 0) {
-              if (triggerClick) {
+          if (ids.length > 0) {
+            if (triggerClick) {
 
-                if (id != '') {
-                  // Mencari indeks lokal menggunakan ID terdekat dari Backend
-                  let localIndex = parseInt($(masterGrid).jqGrid('getInd', id)) - 1;
+              if (id != '') {
+                // Mencari indeks lokal menggunakan ID terdekat dari Backend
+                let localIndex = parseInt($(masterGrid).jqGrid('getInd', id)) - 1;
 
-                  if (!isNaN(localIndex) && localIndex >= 0 && localIndex < ids.length) {
-                    indexRow = localIndex;
-                  }
-                  // Jika getInd gagal, indexRow akan otomatis menggunakan nilai terakhirnya 
-                  // yang sudah merupakan indeks lokal (0-9).
-                  id = '';
+                if (!isNaN(localIndex) && localIndex >= 0 && localIndex < ids.length) {
+                  indexRow = localIndex;
                 }
-
-                // Amankan indexRow agar tidak melebihi jumlah data yang ada di halaman saat ini
-                // (Mencegah error saat menghapus baris terakhir)
-                if (indexRow >= ids.length) {
-                  indexRow = ids.length > 0 ? ids.length - 1 : 0;
-                }
-
-                selectedRowId = ids[indexRow];
-                $(`${masterGrid} tr[id="${selectedRowId}"]`).click();
-                triggerClick = false;
-
-              } else {
-                if (indexRow >= ids.length) indexRow = ids.length - 1;
-                selectedRowId = ids[indexRow];
-                $(masterGrid).setSelection(selectedRowId);
+                // Jika getInd gagal, indexRow akan otomatis menggunakan nilai terakhirnya 
+                // yang sudah merupakan indeks lokal (0-9).
+                id = '';
               }
 
-              setHighlight($(this));
+              // Amankan indexRow agar tidak melebihi jumlah data yang ada di halaman saat ini
+              // (Mencegah error saat menghapus baris terakhir)
+              if (indexRow >= ids.length) {
+                indexRow = ids.length > 0 ? ids.length - 1 : 0;
+              }
 
-              setTimeout(() => {
-                // $(`${masterGrid} tr[id="${selectedRowId}"]`).focus();
-              }, 50);
+              selectedRowId = ids[indexRow];
+              $(`${masterGrid} tr[id="${selectedRowId}"]`).click();
+              triggerClick = false;
+
+            } else {
+              if (indexRow >= ids.length) indexRow = ids.length - 1;
+              selectedRowId = ids[indexRow];
+              $(masterGrid).setSelection(selectedRowId);
             }
+
+            setHighlight($(this));
+
+            setTimeout(() => {
+              // $(`${masterGrid} tr[id="${selectedRowId}"]`).focus();
+            }, 50);
           }
+        }
+      },
     })
     .loadClearFilter()
     .clearGlobalSearch()
