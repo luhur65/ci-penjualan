@@ -26,7 +26,6 @@ class JqGridLazyLoader {
 
     this.loadingDirection = null; // 'up', 'down', atau null
 
-    this.loadingDirection = null; // 'up', 'down', atau null
     this.throttle = function (func, limit) {
       let inThrottle;
       let lastArgs;
