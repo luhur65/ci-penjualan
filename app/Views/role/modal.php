@@ -163,6 +163,9 @@
               <i class="fa fa-times"></i>
               Cancel
             </button>
+            <button type="button" id="btnGetLastData" class="btn btn-info ml-auto" style="display: none;">
+              <i class="fa fa-history"></i> Last Data
+            </button>
           </div>
         </form>
       </div>
@@ -171,12 +174,19 @@
 </div>
 
 <script>
+  let draftManager;
   let modalBody = $('#crudModal').find('.modal-body').html();
 
   $(document).ready(function() {
 
+    draftManager = new DraftFormManager('#crudForm', {
+      debug: true,
+      expiry: 1000 * 60 * 60 * 24
+    });
+
     let submitButton = $('#btnSubmit');
     let cancelButton = $('#btnCancel');
+    let getLastDataButton = $('#btnGetLastData');
 
     submitButton.click(async function(e) {
       e.preventDefault();
@@ -246,6 +256,11 @@
           data: JSON.stringify(data)
         });
 
+        if (action === 'add') {
+          draftManager.clear();
+          getLastDataButton.hide();
+        }
+
         // Success handling
         form.trigger('reset');
         $('#crudModal').modal('hide');
@@ -271,6 +286,13 @@
 
     cancelButton.click(function() {
       $('#crudModal').find('.modal-body').html(modalBody);
+    });
+
+    getLastDataButton.click(function() {
+      draftManager.restore();
+
+      // (Opsional) Sembunyikan tombol setelah draf berhasil dimuat
+      $(this).hide();
     });
 
   });
@@ -317,6 +339,8 @@
 
     let form = $('#crudForm')
 
+    draftManager.pause();
+
     $('.modal-loader').removeClass('d-none')
     $('.rolediv').hide()
     form.trigger('reset')
@@ -325,6 +349,13 @@
     $('#crudModalTitle').text('Add Role')
     $('.is-invalid').removeClass('is-invalid');
     $('.invalid-feedback').remove();
+
+    // menampilkan tombol
+    if (localStorage.getItem(draftManager.getKey())) {
+      $('#btnGetLastData').show();
+    } else {
+      $('#btnGetLastData').hide();
+    }
 
     $('#crudModal').modal('show')
     $('.modal-loader').addClass('d-none')
