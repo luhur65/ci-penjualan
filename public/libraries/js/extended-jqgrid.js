@@ -331,14 +331,24 @@ $.jgrid.extend({
 				$.fn.jqGrid.clearGlobalSearch.call(self);
 				$.fn.jqGrid.clearFilterToolbar.call(self);
 
-				$(self)
-					.jqGrid("setGridParam", {
-						search: false,
-						postData: {
-							filters: "",
-						},
-					})
-					.trigger("reloadGrid");
+				const gridEl = $(self);
+
+				let postData = gridEl.jqGrid("getGridParam", "postData") || {};
+				postData.filters = "";
+				postData._search = false;
+				delete postData.filter_group;
+
+				gridEl.jqGrid("setGridParam", {
+					search: false,
+					postData: postData,
+				});
+
+				const loader = gridEl.data('lazyLoader');
+				if (loader) {
+					loader.loadGridData(postData, 1, loader.rowsPerPage, 'down', 'reload');
+				} else {
+					gridEl.trigger("reloadGrid");
+				}
 			});
 		});
 	},

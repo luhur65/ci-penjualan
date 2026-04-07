@@ -24,6 +24,7 @@
   let rowNum = 10;
   let sortname = 'menukode';
   let sortorder = 'asc';
+  const GRID_PREF_KEY = 'menu_master_grid';
   const urlMaster = '/menu';
   const masterGrid = '#jqGrid';
   const gridPager = '#jqGridPager';
@@ -153,18 +154,31 @@
     ]
   }
 
-  $(document).ready(function() {
+  $(document).ready(async function() {
+
+    GridPreferenceManager.configure({
+      mode: 'server',
+      serverUrl: API_URL + '/grid-preferences',
+    });
+
+    const savedPrefs = await GridPreferenceManager.load(GRID_PREF_KEY);
+    const finalColModel = GridPreferenceManager.apply(getBaseColModel(), savedPrefs);
 
     const grid = createJqGrid({
         gridId: masterGrid,
         pagerId: gridPager,
         url: urlMaster,
         page: page,
-        colModel: getBaseColModel(),
+        colModel: finalColModel,
         options: {
           sortname: sortname,
           sortorder: sortorder,
           rowNum: rowNum,
+          resizeStop: function(newWidth, index) {
+            const prefs = GridPreferenceManager.extract(masterGrid);
+            GridPreferenceManager.save(GRID_PREF_KEY, prefs);
+            console.log('[Grid] Preferensi tersimpan setelah resize.');
+          },
           onSelectRow: function(id) {
             activeGrid = $(this)
             indexRow = $(this).jqGrid('getCell', id, 'rn') - 1
@@ -218,10 +232,7 @@
               }
 
               setHighlight($(this));
-
-              setTimeout(() => {
-                // $(`${masterGrid} tr[id="${selectedRowId}"]`).focus();
-              }, 50);
+              ColumnSettingsManager.renderBadge(masterGrid);
             }
           }
         }
@@ -233,6 +244,7 @@
             id: 'add',
             innerHTML: '<i class="fa fa-plus"></i> ADD',
             class: 'btn btn-primary btn-md mr-1',
+            shortcut: 'a',
             onClick: () => {
               createMenu()
             }
@@ -241,6 +253,7 @@
             id: 'edit',
             innerHTML: '<i class="fa fa-pen"></i> EDIT',
             class: 'btn btn-success btn-md mr-1',
+            shortcut: 'e',
             onClick: () => {
               selectedId = $("#jqGrid").jqGrid('getGridParam', 'selrow')
               updateMenu(selectedId)
@@ -250,6 +263,7 @@
             id: 'delete',
             innerHTML: '<i class="fa fa-trash"></i> DELETE',
             class: 'btn btn-danger btn-md mr-1',
+            shortcut: 'd',
             onClick: () => {
               selectedId = $("#jqGrid").jqGrid('getGridParam', 'selrow')
               deleteMenu(selectedId)
@@ -259,6 +273,7 @@
             id: 'report',
             innerHTML: '<i class="fa fa-print"></i> REPORT',
             class: 'btn btn-info btn-md mr-1',
+            shortcut: 'r',
             onClick: () => {
               // $('#rangeModal').data('action', 'report')
               // $('#rangeModal').find('button:submit').html(`Report`)
@@ -269,6 +284,7 @@
             id: 'export',
             innerHTML: '<i class="fa fa-file-export"></i> EXPORT',
             class: 'btn btn-warning btn-md mr-1',
+            shortcut: 'x',
             onClick: () => {
               // $('#rangeModal').data('action', 'export')
               // $('#rangeModal').find('button:submit').html(`Export`)
@@ -278,6 +294,8 @@
         ]
       })
       .permissions(accessRights);
+
+    ColumnSettingsManager.init(masterGrid, GRID_PREF_KEY, getBaseColModel());
 
   });
 

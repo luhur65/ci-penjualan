@@ -25,8 +25,8 @@
   let rowNum = 10;
   let sortname = 'menukode';
   let sortorder = 'asc';
-
-  const urlMaster = '/parameter';
+  const GRID_PREF_KEY = 'parameter_master_grid';
+  const urlMaster = '/parameters';
   const masterGrid = '#jqGrid';
   const gridPager = '#jqGridPager';
 
@@ -46,6 +46,36 @@
         width: '70px',
         search: false,
         hidden: true
+      },
+      {
+        label: 'GROUP',
+        name: 'grp',
+        width: (detectDeviceType() == "desktop") ? md_dekstop_1 : md_mobile_1,
+      },
+      {
+        label: 'SUBGROUP',
+        name: 'subgrp',
+        width: (detectDeviceType() == "desktop") ? md_dekstop_1 : md_mobile_1,
+      },
+      {
+        label: 'NAMA PARAMETER',
+        name: 'text',
+        width: (detectDeviceType() == "desktop") ? md_dekstop_1 : md_mobile_1,
+      },
+      {
+        label: 'KELOMPOK',
+        name: 'kelompok',
+        width: (detectDeviceType() == "desktop") ? md_dekstop_1 : md_mobile_1,
+      },
+      {
+        label: 'DEFAULT',
+        name: 'default',
+        width: (detectDeviceType() == "desktop") ? sm_dekstop_2 : sm_mobile_2
+      },
+      {
+        label: 'TYPE',
+        name: 'type',
+        width: (detectDeviceType() == "desktop") ? md_dekstop_1 : md_mobile_1
       },
       {
         label: 'MODIFIED BY',
@@ -78,18 +108,31 @@
     ];
   }
 
-  $(document).ready(function() {
+  $(document).ready(async function() {
+
+    GridPreferenceManager.configure({
+      mode: 'server',
+      serverUrl: API_URL + '/grid-preferences',
+    });
+
+    const savedPrefs = await GridPreferenceManager.load(GRID_PREF_KEY);
+    const finalColModel = GridPreferenceManager.apply(getBaseColModel(), savedPrefs);
 
     const grid = createJqGrid({
         gridId: masterGrid,
         pagerId: gridPager,
         url: urlMaster,
         page: page,
-        colModel: getBaseColModel(),
+        colModel: finalColModel,
         options: {
           sortname: sortname,
           sortorder: sortorder,
           rowNum: rowNum,
+          resizeStop: function(newWidth, index) {
+            const prefs = GridPreferenceManager.extract(masterGrid);
+            GridPreferenceManager.save(GRID_PREF_KEY, prefs);
+            console.log('[Grid] Preferensi tersimpan setelah resize.');
+          },
           onSelectRow: function(id) {
             activeGrid = $(this)
             indexRow = $(this).jqGrid('getCell', id, 'rn') - 1
@@ -98,53 +141,50 @@
             // let rows = $(this).jqGrid('getGridParam', 'postData').limit
             // if (indexRow >= rows) indexRow = (indexRow - rows * (page - 1))
           },
-        },
-        loadComplete: function(data) {
-          changeJqGridRowListText();
-          triggerClick = true;
+          loadComplete: function(data) {
+            changeJqGridRowListText();
+            triggerClick = true;
 
-          $(document).unbind('keydown')
-          setCustomBindKeys($(this))
+            $(document).unbind('keydown')
+            setCustomBindKeys($(this))
 
-          let ids = $(this).getDataIDs();
-          let selectedRowId = ids[0];
+            let ids = $(this).getDataIDs();
+            let selectedRowId = ids[0];
 
-          if (ids.length > 0) {
-            if (triggerClick) {
+            if (ids.length > 0) {
+              if (triggerClick) {
 
-              if (id != '') {
-                // Mencari indeks lokal menggunakan ID terdekat dari Backend
-                let localIndex = parseInt($(masterGrid).jqGrid('getInd', id)) - 1;
+                if (id != '') {
+                  // Mencari indeks lokal menggunakan ID terdekat dari Backend
+                  let localIndex = parseInt($(masterGrid).jqGrid('getInd', id)) - 1;
 
-                if (!isNaN(localIndex) && localIndex >= 0 && localIndex < ids.length) {
-                  indexRow = localIndex;
+                  if (!isNaN(localIndex) && localIndex >= 0 && localIndex < ids.length) {
+                    indexRow = localIndex;
+                  }
+                  // Jika getInd gagal, indexRow akan otomatis menggunakan nilai terakhirnya 
+                  // yang sudah merupakan indeks lokal (0-9).
+                  id = '';
                 }
-                // Jika getInd gagal, indexRow akan otomatis menggunakan nilai terakhirnya 
-                // yang sudah merupakan indeks lokal (0-9).
-                id = '';
+
+                // Amankan indexRow agar tidak melebihi jumlah data yang ada di halaman saat ini
+                // (Mencegah error saat menghapus baris terakhir)
+                if (indexRow >= ids.length) {
+                  indexRow = ids.length > 0 ? ids.length - 1 : 0;
+                }
+
+                selectedRowId = ids[indexRow];
+                $(`${masterGrid} tr[id="${selectedRowId}"]`).click();
+                triggerClick = false;
+
+              } else {
+                if (indexRow >= ids.length) indexRow = ids.length - 1;
+                selectedRowId = ids[indexRow];
+                $(masterGrid).setSelection(selectedRowId);
               }
 
-              // Amankan indexRow agar tidak melebihi jumlah data yang ada di halaman saat ini
-              // (Mencegah error saat menghapus baris terakhir)
-              if (indexRow >= ids.length) {
-                indexRow = ids.length > 0 ? ids.length - 1 : 0;
-              }
-
-              selectedRowId = ids[indexRow];
-              $(`${masterGrid} tr[id="${selectedRowId}"]`).click();
-              triggerClick = false;
-
-            } else {
-              if (indexRow >= ids.length) indexRow = ids.length - 1;
-              selectedRowId = ids[indexRow];
-              $(masterGrid).setSelection(selectedRowId);
+              setHighlight($(this));
+              ColumnSettingsManager.renderBadge(masterGrid);
             }
-
-            setHighlight($(this));
-
-            setTimeout(() => {
-              // $(`${masterGrid} tr[id="${selectedRowId}"]`).focus();
-            }, 50);
           }
         }
       })
@@ -196,6 +236,8 @@
         ]
       })
       .permissions(accessRights);
+
+    ColumnSettingsManager.init(masterGrid, GRID_PREF_KEY, getBaseColModel());
 
   });
 
