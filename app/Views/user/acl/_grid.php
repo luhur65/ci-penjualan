@@ -73,7 +73,7 @@
           },
           loadComplete: function(data) {
             changeJqGridRowListText();
-            $(document).unbind('keydown');
+            $(document).off('keydown.detailGrid');
             setCustomBindKeys($(this));
 
             if (typeof initResize === "function") initResize($(this));
