@@ -85,6 +85,9 @@
             <i class="fa fa-times"></i>
             Cancel
           </button>
+          <button type="button" id="btnGetLastData" class="btn btn-info ml-auto" style="display: none;">
+            <i class="fa fa-history"></i> Last Data
+          </button>
         </div>
       </div>
     </form>
@@ -92,12 +95,19 @@
 </div>
 
 <script>
+  let draftManager;
   let modalBody = $('#crudModal').find('.modal-body').html();
 
   $(document).ready(function() {
 
+    draftManager = new DraftFormManager('#crudForm', {
+      debug: true,
+      expiry: 1000 * 60 * 60 * 24
+    });
+
     let submitButton = $('#btnSubmit');
     let cancelButton = $('#btnCancel');
+    let getLastDataButton = $('#btnGetLastData');
 
     submitButton.click(async function(e) {
       e.preventDefault();
@@ -161,6 +171,11 @@
           data: JSON.stringify(data)
         });
 
+        if (action === 'add') {
+          draftManager.clear();
+          getLastDataButton.hide();
+        }
+
         // Success handling
         form.trigger('reset');
         $('#crudModal').modal('hide');
@@ -187,12 +202,20 @@
       $('#crudModal').find('.modal-body').html(modalBody);
     });
 
+    getLastDataButton.click(function() {
+      draftManager.restore();
+
+      // (Opsional) Sembunyikan tombol setelah draf berhasil dimuat
+      $(this).hide();
+    });
 
   })
 
   async function createMenu() {
     const form = $('#crudForm');
     const modal = $('#crudModal');
+
+    draftManager.pause();
 
     $('.modal-loader').removeClass('d-none')
 
@@ -208,6 +231,14 @@
       modal.find('#crudModalTitle').text('Add Menu')
       $('.is-invalid').removeClass('is-invalid');
       $('.invalid-feedback').remove();
+
+      // menampilkan tombol
+      if (localStorage.getItem(draftManager.getKey())) {
+        $('#btnGetLastData').show();
+      } else {
+        $('#btnGetLastData').hide();
+      }
+
       modal.modal('show')
 
     } catch (error) {

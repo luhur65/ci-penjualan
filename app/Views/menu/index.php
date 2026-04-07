@@ -21,7 +21,8 @@
   let limit = 10;
   let postData;
   let autoNumericElements = [];
-  let rowNum = 10;
+  let rowNum = 50;
+  let lazyLoader;
   let sortname = 'menukode';
   let sortorder = 'asc';
   const GRID_PREF_KEY = 'menu_master_grid';
@@ -168,8 +169,18 @@
         gridId: masterGrid,
         pagerId: gridPager,
         url: urlMaster,
+        shrinkToFit: false,
         page: page,
         colModel: finalColModel,
+        lazyLoad: true,
+        lazyLoadOptions: {
+          rowsPerPage: 50,
+          windowPages: 3,
+          gapPage: 30,
+          onInit: function(instance) {
+            lazyLoader = instance;
+          }
+        },
         options: {
           sortname: sortname,
           sortorder: sortorder,
@@ -193,9 +204,6 @@
 
             $(document).unbind('keydown')
             setCustomBindKeys($(this))
-
-            // Pintasan Keyboard Global
-            setupKeyboardShortcuts();
 
             let ids = $(this).getDataIDs();
             let selectedRowId = ids[0];
@@ -297,6 +305,9 @@
 
     ColumnSettingsManager.init(masterGrid, GRID_PREF_KEY, getBaseColModel());
 
+    // Setup Pintasan Keyboard Global
+    setupKeyboardShortcuts();
+
   });
 
   $('#crudModal').on('shown.bs.modal', () => {
@@ -310,6 +321,15 @@
     initSelect2(form.find('select'), $('#crudModal'))
     // initDatepicker()
     // initLookup()
+
+    let currentKey = draftManager.getKey();
+    if (localStorage.getItem(currentKey)) {
+      $('#btnGetLastData').show();
+    } else {
+      $('#btnGetLastData').hide();
+    }
+
+    draftManager.resume();
   })
 </script>
 
