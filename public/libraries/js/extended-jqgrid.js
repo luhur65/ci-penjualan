@@ -639,7 +639,6 @@ $.jgrid.extend({
 			let firstRow = (page - 1) * perPage + 1;
 			let lastRow = firstRow + recordCount - 1;
 
-			console.log(firstRow, lastRow, totalRecords);
 			if (isLazy) {
 				// Tampilan khusus untuk mode Lazy Loading
 				$(element).html(`

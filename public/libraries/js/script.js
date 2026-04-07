@@ -478,6 +478,145 @@ function setErrorMessages(form, errors) {
 	$(".is-invalid").first().focus();
 }
 
+function setCustomBindKeysLazy(grid) {
+	$(grid).off("keydown");
+
+	setSidebarBindKeys();
+
+	var ns = 'lazyBind_' + grid.replace(/[^a-zA-Z0-9]/g, '');
+	$(document).off('keydown.' + ns).on('keydown.' + ns, function (e) {
+
+		if (sidebarIsOpen) return;
+
+		var $grid = $(grid);
+
+		if (!activeGrid || activeGrid[0] !== $grid[0]) return;
+
+		var allowedKeys = [33, 34, 35, 36, 38, 40, 13];
+		if (!allowedKeys.includes(e.keyCode)) return;
+
+		var loader = $grid.data('lazyLoader') ||
+			(typeof lazyLoader !== 'undefined' ? lazyLoader : null);
+
+		if (!loader) {
+			return;
+		}
+
+		e.preventDefault();
+
+		var postData = $grid.jqGrid("getGridParam", "postData");
+		var rowsPerPage = loader.rowsPerPage;
+		var currentPage = loader.currentViewPage;
+		var totalPages = loader.totalPages;
+
+		// $grid di-resolve fresh di atas — getDataIDs() pasti akurat
+		var gridIds = $grid.getDataIDs();
+		var selectedRow = $grid.getGridParam("selrow");
+		var currentIndex = gridIds.indexOf(selectedRow);
+
+		if (loader.loading) {
+			return;
+		}
+
+		var focusRow = function (rowType) {
+			setTimeout(function () {
+				// Resolve fresh lagi di dalam setTimeout
+				var $g = $(grid);
+				var newIds = $g.getDataIDs();
+				if (!newIds.length) return;
+
+				var bDiv = $g.closest(".ui-jqgrid-bdiv");
+				var targetId;
+
+				if (rowType === 'first') {
+					targetId = newIds[0];
+					bDiv.scrollTop(0);
+				} else if (rowType === 'last') {
+					targetId = newIds[newIds.length - 1];
+					bDiv.scrollTop(bDiv[0].scrollHeight);
+				}
+
+				if (targetId) {
+					$g.resetSelection().setSelection(targetId);
+				}
+			}, 150);
+		};
+
+		// Page Up (33)
+		if (e.keyCode === 33) {
+			if (currentPage > 1) {
+				loader.loadGridData(postData, currentPage - 1, rowsPerPage, 'up', 'jump', function () { focusRow('first'); });
+			}
+			$grid.triggerHandler("jqGridKeyUp");
+		}
+
+		// Page Down (34)
+		if (e.keyCode === 34) {
+			if (currentPage < totalPages) {
+				loader.loadGridData(postData, currentPage + 1, rowsPerPage, 'down', 'jump', function () { focusRow('first'); });
+			}
+			$grid.triggerHandler("jqGridKeyUp");
+		}
+
+		// End (35)
+		if (e.keyCode === 35) {
+			if (currentPage !== totalPages) {
+				loader.loadGridData(postData, totalPages, rowsPerPage, 'down', 'jump', function () { focusRow('last'); });
+			} else {
+				focusRow('last');
+			}
+			$grid.triggerHandler("jqGridKeyUp");
+		}
+
+		// Home (36)
+		if (e.keyCode === 36) {
+			if (currentPage > 1) {
+				loader.loadGridData(postData, 1, rowsPerPage, 'up', 'jump', function () { focusRow('first'); });
+			} else {
+				focusRow('first');
+			}
+			$grid.triggerHandler("jqGridKeyUp");
+		}
+
+		// Arrow Up (38)
+		if (e.keyCode === 38) {
+			if (currentIndex - 1 >= 0) {
+				$grid.resetSelection().setSelection(gridIds[currentIndex - 1]);
+				var rowHeight = $grid.getGridParam("rowHeight") || 26;
+				var bDiv = $grid.closest(".ui-jqgrid-bdiv");
+				var rowIdx = $grid.jqGrid("getInd", $grid.getGridParam("selrow"));
+				if (rowIdx < loader.totalRecord - 10) {
+					bDiv.scrollTop(bDiv.scrollTop() - rowHeight - 2);
+				}
+			} else if (currentPage > 1) {
+				loader.loadGridData(postData, currentPage - 1, rowsPerPage, 'up', 'jump', function () { focusRow('last'); });
+			}
+		}
+
+		// Arrow Down (40)
+		if (e.keyCode === 40) {
+			if (currentIndex + 1 < gridIds.length) {
+				$grid.resetSelection().setSelection(gridIds[currentIndex + 1]);
+				var rowHeight = $grid.getGridParam("rowHeight") || 26;
+				var bDiv = $grid.closest(".ui-jqgrid-bdiv");
+				var rowIdx = $grid.jqGrid("getInd", $grid.getGridParam("selrow"));
+				if (rowIdx > 12) {
+					bDiv.scrollTop(bDiv.scrollTop() + rowHeight + 2);
+				}
+			} else if (currentPage < totalPages) {
+				loader.loadGridData(postData, currentPage + 1, rowsPerPage, 'down', 'jump', function () { focusRow('first'); });
+			}
+		}
+
+		// Enter (13)
+		if (e.keyCode === 13) {
+			var rowId = $grid.getGridParam("selrow");
+			var handler = $grid.jqGrid("getGridParam", "ondblClickRow");
+			if (handler) handler.call($grid[0], rowId);
+		}
+	});
+}
+
 /**
  * Set Home, End, PgUp, PgDn
  * to move grid page
@@ -485,10 +624,16 @@ function setErrorMessages(form, errors) {
 let topSelected = 0;
 let bottomSelected = 12;
 function setCustomBindKeys(grid) {
+	if ($(grid).data('lazyLoader')) {
+		setCustomBindKeysLazy(grid);
+		return;
+	}
+
 	setSidebarBindKeys();
 
-	$(document).on("keydown", function (e) {
+	$(document).off("keydown.normalBind").on("keydown.normalBind", function (e) {
 		if (!sidebarIsOpen && activeGrid) {
+			if ($(activeGrid).data('lazyLoader')) return;
 			if (
 				e.keyCode == 33 ||
 				e.keyCode == 34 ||

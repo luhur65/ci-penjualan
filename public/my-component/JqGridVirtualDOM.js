@@ -3,7 +3,7 @@ class JqGridLazyLoader {
   constructor(gridId, apiUrl, accessToken, options = {}) {
     this.gridId = gridId;
     this.grid = $(gridId);
-    this.apiUrl = apiUrl;
+    this.apiUrl = apiUrl || this.grid.jqGrid('getGridParam', 'url');
     this.accessToken = accessToken;
 
     this.page = 1;
@@ -24,6 +24,9 @@ class JqGridLazyLoader {
     this.currentViewPage = 1;
     this.prefetchedServerPages = new Set();
 
+    this.loadingDirection = null; // 'up', 'down', atau null
+
+    this.loadingDirection = null; // 'up', 'down', atau null
     this.throttle = function (func, limit) {
       let inThrottle;
       let lastArgs;
@@ -51,6 +54,13 @@ class JqGridLazyLoader {
     // Initial load
     let initialPostData = this.grid.jqGrid('getGridParam', 'postData');
     this.loadGridData(initialPostData, 1, this.rowsPerPage, 'down', 'page');
+
+    if (typeof options.onInit === 'function') {
+      options.onInit(this);
+    }
+  }
+
+  logState(methodName) {
   }
 
   hasFilterChanged() {
@@ -83,6 +93,8 @@ class JqGridLazyLoader {
     }
 
     this.grid.jqGrid('clearGridData');
+
+    this.updateGridInfoFast();
   }
 
   processLoadingQueue(postData, rowsCount) {
@@ -114,19 +126,27 @@ class JqGridLazyLoader {
     }
 
     if (proses === 'jump') {
-      this.loading = true;
-      this.grid.jqGrid('clearGridData');
+      this.grid.clearGridData();
+      // this.grid.parents('.ui-jqgrid-bdiv').find('.loading').show();
+
       this.currentFilters = this.grid.jqGrid('getGridParam', 'postData').filters;
       this.minPageLoaded = pageNumber;
       this.maxPageLoaded = pageNumber;
-      if (typeof this.lastScrollTop !== 'undefined') this.lastScrollTop = 0;
-      this.loading = false;
+      this.lastScrollTop = 0;
+
+      if (this.cachedData[pageNumber]) {
+        this.renderFromCache(this.cachedData[pageNumber], 'jump', rowsCount, pageNumber);
+        this.loadingDirection = null;
+        if (callback) callback();
+        return;
+      }
     }
 
     if (this.cachedData[pageNumber] && proses === 'page') {
       if (!onlyCache) {
         this.renderFromCache(this.cachedData[pageNumber], direction, rowsCount, pageNumber);
       }
+      this.loadingDirection = null;
       if (callback) callback();
       return;
     }
@@ -141,19 +161,22 @@ class JqGridLazyLoader {
     }
 
     if (onlyCache) {
-      if (this.prefetchedServerPages.has(serverPage)) return;
+      if (this.prefetchedServerPages.has(serverPage)) {
+        return;
+      }
       this.prefetchedServerPages.add(serverPage);
     }
 
     this.loading = true;
-    if (!onlyCache) this.grid.parents('.ui-jqgrid-bdiv').find('.loading').show();
+    if (!onlyCache) {
+      this.loadingDirection = direction;
+      this.updateGridInfoFast();
+      this.grid.parents('.ui-jqgrid-bdiv').find('.loading').show();
+    }
 
     var fullPostData = $.extend({}, postData, {
       page: serverPage,
       limit: limitToSend,
-      // sortIndex: this.grid.jqGrid('getGridParam', 'sortname'),
-      // sortOrder: this.grid.jqGrid('getGridParam', 'sortorder'),
-      // filters: this.grid.jqGrid('getGridParam', 'postData').filters
     });
 
     $.ajax({
@@ -166,7 +189,6 @@ class JqGridLazyLoader {
       success: function (res) {
         self.grid.parents('.ui-jqgrid-bdiv').find('.loading').hide();
 
-        // Adapter untuk jsonReader di app.php (attributes.totalRows)
         self.totalRecord = (res.attributes && res.attributes.totalRows) || res.records || 0;
         self.totalPages = Math.ceil(self.totalRecord / rowsCount);
 
@@ -190,7 +212,8 @@ class JqGridLazyLoader {
 
         if (!onlyCache) {
           if (self.cachedData[pageNumber]) {
-            self.renderFromCache(self.cachedData[pageNumber], direction, rowsCount, pageNumber);
+            let renderDirection = (proses === 'jump') ? 'jump' : direction;
+            self.renderFromCache(self.cachedData[pageNumber], renderDirection, rowsCount, pageNumber);
           }
         }
 
@@ -211,6 +234,8 @@ class JqGridLazyLoader {
           records: self.totalRecord
         });
         if (callback) callback();
+      },
+      error: function (xhr) {
       },
       complete: function () {
         self.loading = false;
@@ -292,12 +317,15 @@ class JqGridLazyLoader {
   }
 
   renderFromCache(data, direction, rowsPerPage, currentPage) {
+    var self = this;
     var existingIds = this.grid.jqGrid('getDataIDs');
 
     if (direction === 'down') {
+      let added = 0;
       data.forEach(row => {
         if (!existingIds.includes(row.id.toString())) {
           this.grid.jqGrid('addRowData', row.id, row, 'last');
+          added++;
         }
       });
       let validPage = currentPage || this.maxPageLoaded;
@@ -328,37 +356,36 @@ class JqGridLazyLoader {
     }
 
     if (direction === 'jump' || direction === 'reload') {
+
       this.grid.jqGrid('clearGridData');
+
       data.forEach(row => {
         this.grid.jqGrid('addRowData', row.id, row, 'last');
       });
 
       if (currentPage) {
         this.currentViewPage = parseInt(currentPage);
-        this.minPageLoaded = parseInt(currentPage);
-        this.maxPageLoaded = parseInt(currentPage);
+        this.minPageLoaded = this.currentViewPage;
+        this.maxPageLoaded = this.currentViewPage;
         this.grid.jqGrid('setGridParam', {
-          page: parseInt(currentPage)
-        });
-        this.grid.jqGrid('setGridParam', {
+          page: this.currentViewPage,
           records: this.totalRecord
-        });
-      } else {
-        this.currentViewPage = this.minPageLoaded || 1;
-        this.minPageLoaded = this.maxPageLoaded;
-        this.grid.jqGrid('setGridParam', {
-          records: this.totalRecord
-        });
-        this.grid.jqGrid('setGridParam', {
-          page: this.minPageLoaded
         });
       }
+
+      var bDiv = this.grid.parents('.ui-jqgrid-bdiv');
+      bDiv.scrollTop(0);
+      this.lastScrollTop = 0;
     }
 
     this.ensureValidSelection();
     if (typeof setHighlight === 'function') setHighlight(this.grid);
     this.refreshRowNumbers();
+
+    this.loadingDirection = null;
     this.updateGridInfoFast();
+
+    this.grid.parents('.ui-jqgrid-bdiv').find('.loading').hide();
   }
 
   trimGridRows(direction, rowsPerPage) {
@@ -444,21 +471,28 @@ class JqGridLazyLoader {
   }
 
   updateGridInfoFast() {
+    let gridIdPrefix = this.grid.attr('id');
+    let infoEl = $(`#${gridIdPrefix}InfoHandler`);
+
+    if (this.loading && this.loadingDirection) {
+      infoEl.html('<i class="fa fa-spinner fa-spin"></i> Loading...');
+      return;
+    }
+
+    if (this.totalRecord === 0) {
+      infoEl.html('<i class="fa fa-spinner fa-spin"></i> Loading...');
+      return;
+    }
+
     var startRecord = (this.currentViewPage - 1) * this.rowsPerPage + 1;
-    var actualRowsInPage = this.cachedData[this.currentViewPage] ? this.cachedData[this.currentViewPage].length : this.rowsPerPage;
+    var actualRowsInPage = this.cachedData[this.currentViewPage]
+      ? this.cachedData[this.currentViewPage].length
+      : this.rowsPerPage;
     var endRecord = startRecord + actualRowsInPage - 1;
 
-    if (this.totalRecord > 0 && endRecord > this.totalRecord) {
-      endRecord = this.totalRecord;
-    }
+    if (endRecord > this.totalRecord) endRecord = this.totalRecord;
 
-    // Dinamis target info handler
-    let pagerId = this.grid.jqGrid('getGridParam', 'pager');
-    if (pagerId) {
-      // Update info container di pager
-      let gridIdPrefix = this.grid.attr('id');
-      $(`#${gridIdPrefix}InfoHandler`).text(`View ${startRecord} - ${endRecord} of ${this.totalRecord}`);
-    }
+    infoEl.text(`View ${startRecord} - ${endRecord} of ${this.totalRecord}`);
   }
 
   detectCurrentViewPage() {
@@ -474,5 +508,9 @@ class JqGridLazyLoader {
     if (page > this.totalPages) page = this.totalPages;
 
     return page;
+  }
+
+  isReady() {
+    return !this.loading && this.totalRecord > 0;
   }
 }
