@@ -377,7 +377,7 @@
       // });
 
       if (isLazy) {
-        $(config.pagerId).hide();
+        // $(config.pagerId).hide();
 
         // Buat instance LazyLoader
         let lazyLoader = new JqGridLazyLoader(
@@ -582,27 +582,21 @@
             search: true
           });
 
-          // if (lazyLoading) {
-          //   grid.jqGrid('clearGridData');
+          if (lazyLoading) {
+            grid.jqGrid('clearGridData');
 
-          //   loadGridData(
-          //     grid[0].id,
-          //     API_URL + url,
-          //     ACCESS_TOKEN,
-          //     postData,
-          //     1,
-          //     50,
-          //     'down',
-          //     'reload',
-          //     () => setHighlight(grid)
-          //   );
+            let loader = grid.data('lazyLoader');
+            if (loader) {
+              loader.loadGridData(postData, 1, loader.rowsPerPage, 'down', 'reload');
+            }
+            return true;
 
-          // } else {
-          grid.trigger("reloadGrid", [{
-            page: 1,
-            current: true
-          }]);
-          // }
+          } else {
+            grid.trigger("reloadGrid", [{
+              page: 1,
+              current: true
+            }]);
+          }
           return false;
         }, 500);
       });

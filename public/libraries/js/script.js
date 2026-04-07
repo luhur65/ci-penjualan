@@ -479,177 +479,140 @@ function setErrorMessages(form, errors) {
 }
 
 function setCustomBindKeysLazy(grid) {
-	// Matikan event keydown bawaan grid (termasuk dari customBindKeys di extended-jqgrid)
-	// yang bisa memicu reloadGrid dan menghapus isi virtual DOM sebelum lazyLoader bekerja.
 	$(grid).off("keydown");
 
 	setSidebarBindKeys();
 
-	$(document).off("keydown.lazyBind").on("keydown.lazyBind", function (e) {
-		if (!sidebarIsOpen && activeGrid) {
-			let allowedKeys = [33, 34, 35, 36, 38, 40, 13];
-			if (!allowedKeys.includes(e.keyCode)) return;
+	var ns = 'lazyBind_' + grid.replace(/[^a-zA-Z0-9]/g, '');
+	$(document).off('keydown.' + ns).on('keydown.' + ns, function (e) {
 
-			let loader = $(activeGrid).data('lazyLoader');
-			if (!loader) {
-				console.log("[DEBUG KEYBIND] lazyLoader tidak ditemukan di activeGrid.");
-				return;
-			}
+		if (sidebarIsOpen) return;
 
-			e.preventDefault();
+		var $grid = $(grid);
 
-			let gridIds = $(activeGrid).getDataIDs();
-			let selectedRow = $(activeGrid).getGridParam("selrow");
-			let currentIndex = gridIds.indexOf(selectedRow);
+		if (!activeGrid || activeGrid[0] !== $grid[0]) return;
 
-			let postData = $(activeGrid).jqGrid("getGridParam", "postData");
-			let rowsPerPage = loader.rowsPerPage;
-			let currentPage = loader.currentViewPage;
-			let totalPages = loader.totalPages;
+		var allowedKeys = [33, 34, 35, 36, 38, 40, 13];
+		if (!allowedKeys.includes(e.keyCode)) return;
 
-			console.log(`[DEBUG KEYBIND] Key pressed: ${e.keyCode}`);
-			console.log(`[DEBUG KEYBIND] State sebelum proses: currentPage=${currentPage}, totalPages=${totalPages}, loading=${loader.loading}`);
-			console.log(`[DEBUG KEYBIND] Baris yg dimuat di DOM: ${gridIds.length}. Baris teratas ID: ${gridIds[0]}, terbawah ID: ${gridIds[gridIds.length - 1]}`);
+		var loader = $grid.data('lazyLoader') ||
+			(typeof lazyLoader !== 'undefined' ? lazyLoader : null);
 
-			if (loader.loading) {
-				console.log(`[DEBUG KEYBIND] Request ditolak! loader.loading sedang TRUE (Ada proses fetch/render yang belum selesai).`);
-				return; // Mencegah spam keyboard yang membuat request numpuk
-			}
+		if (!loader) {
+			return;
+		}
 
-			// Helper function to focus row after jump
-			let focusRow = (rowType, targetPage = null) => {
-				console.log(`[DEBUG KEYBIND] Triggering focusRow('${rowType}') timeout...`);
-				setTimeout(() => {
-					let newIds = $(activeGrid).getDataIDs();
-					console.log(`[DEBUG KEYBIND] Executing focusRow. Data IDs di DOM sekarang: ${newIds.length}`);
-					if (newIds.length > 0) {
-						let targetId;
-						let bDiv = $(activeGrid).closest(".ui-jqgrid-bdiv");
-						let rowHeight = $(activeGrid).getGridParam("rowHeight") || 26;
+		e.preventDefault();
 
-						if (rowType === 'first') {
-							targetId = newIds[0];
-							bDiv.scrollTop(0);
-						} else if (rowType === 'last') {
-							targetId = newIds[newIds.length - 1];
-							bDiv.scrollTop(bDiv[0].scrollHeight);
-						} else if (rowType === 'page' && targetPage) {
-							// Determine local offset for the target page
-							let minLoaded = loader.minPageLoaded || 1;
-							let pageOffset = targetPage - minLoaded;
-							let targetIndex = pageOffset * loader.rowsPerPage;
+		var postData = $grid.jqGrid("getGridParam", "postData");
+		var rowsPerPage = loader.rowsPerPage;
+		var currentPage = loader.currentViewPage;
+		var totalPages = loader.totalPages;
 
-							if (targetIndex >= 0 && targetIndex < newIds.length) {
-								targetId = newIds[targetIndex];
-								bDiv.scrollTop(targetIndex * rowHeight);
-							} else {
-								// Fallback
-								targetId = newIds[0];
-								bDiv.scrollTop(0);
-							}
-						}
+		// $grid di-resolve fresh di atas — getDataIDs() pasti akurat
+		var gridIds = $grid.getDataIDs();
+		var selectedRow = $grid.getGridParam("selrow");
+		var currentIndex = gridIds.indexOf(selectedRow);
 
-						console.log(`[DEBUG KEYBIND] focusRow memilih ID: ${targetId}, scroll di set.`);
-						if (targetId) {
-							$(activeGrid).resetSelection().setSelection(targetId);
-						}
-					} else {
-						console.log(`[DEBUG KEYBIND] WARNING: focusRow dijalankan tapi DOM grid kosong (newIds.length = 0)!`);
-					}
-				}, 100);
-			};
+		if (loader.loading) {
+			return;
+		}
 
-			// Page Up
-			if (33 === e.keyCode) {
-				if (currentPage > 1) {
-					console.log(`[DEBUG KEYBIND] Action: Page Up. Meminta halaman ${currentPage - 1}`);
-					loader.loadGridData(postData, currentPage - 1, rowsPerPage, 'jump', 'page', () => focusRow('first'));
-				} else {
-					console.log(`[DEBUG KEYBIND] Action: Page Up. Dibatalkan (sudah di halaman pertama).`);
+		var focusRow = function (rowType) {
+			setTimeout(function () {
+				// Resolve fresh lagi di dalam setTimeout
+				var $g = $(grid);
+				var newIds = $g.getDataIDs();
+				if (!newIds.length) return;
+
+				var bDiv = $g.closest(".ui-jqgrid-bdiv");
+				var targetId;
+
+				if (rowType === 'first') {
+					targetId = newIds[0];
+					bDiv.scrollTop(0);
+				} else if (rowType === 'last') {
+					targetId = newIds[newIds.length - 1];
+					bDiv.scrollTop(bDiv[0].scrollHeight);
 				}
-				$(activeGrid).triggerHandler("jqGridKeyUp");
-			}
-			// Page Down
-			if (34 === e.keyCode) {
-				if (currentPage < totalPages) {
-					console.log(`[DEBUG KEYBIND] Action: Page Down. Meminta halaman ${currentPage + 1}`);
-					loader.loadGridData(postData, currentPage + 1, rowsPerPage, 'jump', 'page', () => focusRow('first'));
-				} else {
-					console.log(`[DEBUG KEYBIND] Action: Page Down. Dibatalkan (sudah di halaman terakhir).`);
-				}
-				$(activeGrid).triggerHandler("jqGridKeyUp");
-			}
-			// End
-			if (35 === e.keyCode) {
-				if (currentPage !== totalPages) {
-					console.log(`[DEBUG KEYBIND] Action: End. Meminta halaman ${totalPages}`);
-					loader.loadGridData(postData, totalPages, rowsPerPage, 'jump', 'page', () => focusRow('last'));
-				} else {
-					console.log(`[DEBUG KEYBIND] Action: End. Dibatalkan (sudah di halaman terakhir, cukup scroll ke bawah).`);
-					focusRow('last');
-				}
-				$(activeGrid).triggerHandler("jqGridKeyUp");
-			}
-			// Home
-			if (36 === e.keyCode) {
-				if (currentPage > 1) {
-					console.log(`[DEBUG KEYBIND] Action: Home. Meminta halaman 1`);
-					loader.loadGridData(postData, 1, rowsPerPage, 'jump', 'page', () => focusRow('first'));
-				} else {
-					console.log(`[DEBUG KEYBIND] Action: Home. Dibatalkan (sudah di halaman pertama, cukup scroll ke atas).`);
-					focusRow('first');
-				}
-				$(activeGrid).triggerHandler("jqGridKeyUp");
-			}
-			// Up
-			if (38 === e.keyCode) {
-				if (currentIndex - 1 >= 0) {
-					$(activeGrid).resetSelection().setSelection(gridIds[currentIndex - 1]);
 
-					var selInRow = $(activeGrid).getGridParam("selrow");
-					let indexRowSelect = $(activeGrid).jqGrid("getInd", selInRow);
-					var currentRowHeight = $(activeGrid).getGridParam("rowHeight") || 26;
-					var currentScrollTop = $(activeGrid).closest(".ui-jqgrid-bdiv").scrollTop();
-
-					if (indexRowSelect < loader.totalRecord - 10) {
-						$(activeGrid).closest(".ui-jqgrid-bdiv").scrollTop(currentScrollTop - currentRowHeight - 2);
-					}
-				} else {
-					if (currentPage > 1) {
-						console.log(`[DEBUG KEYBIND] Action: Up Arrow (Cross Boundary). Meminta halaman ${currentPage - 1}`);
-						loader.loadGridData(postData, currentPage - 1, rowsPerPage, 'up', 'page', () => focusRow('last'));
-					}
+				if (targetId) {
+					$g.resetSelection().setSelection(targetId);
 				}
+			}, 150);
+		};
+
+		// Page Up (33)
+		if (e.keyCode === 33) {
+			if (currentPage > 1) {
+				loader.loadGridData(postData, currentPage - 1, rowsPerPage, 'up', 'jump', function () { focusRow('first'); });
 			}
-			// Down
-			if (40 === e.keyCode) {
-				if (currentIndex + 1 < gridIds.length) {
-					$(activeGrid).resetSelection().setSelection(gridIds[currentIndex + 1]);
+			$grid.triggerHandler("jqGridKeyUp");
+		}
 
-					var currentRowHeight = $(activeGrid).getGridParam("rowHeight") || 26;
-					var selInRow = $(activeGrid).getGridParam("selrow");
-					let indexRowSelect = $(activeGrid).jqGrid("getInd", selInRow);
-					var currentScrollTop = $(activeGrid).closest(".ui-jqgrid-bdiv").scrollTop();
+		// Page Down (34)
+		if (e.keyCode === 34) {
+			if (currentPage < totalPages) {
+				loader.loadGridData(postData, currentPage + 1, rowsPerPage, 'down', 'jump', function () { focusRow('first'); });
+			}
+			$grid.triggerHandler("jqGridKeyUp");
+		}
 
-					if (indexRowSelect > 12) {
-						$(activeGrid).closest(".ui-jqgrid-bdiv").scrollTop(currentScrollTop + currentRowHeight + 2);
-					}
-				} else {
-					if (currentPage < totalPages) {
-						console.log(`[DEBUG KEYBIND] Action: Down Arrow (Cross Boundary). Meminta halaman ${currentPage + 1}`);
-						loader.loadGridData(postData, currentPage + 1, rowsPerPage, 'down', 'page', () => focusRow('first'));
-					}
+		// End (35)
+		if (e.keyCode === 35) {
+			if (currentPage !== totalPages) {
+				loader.loadGridData(postData, totalPages, rowsPerPage, 'down', 'jump', function () { focusRow('last'); });
+			} else {
+				focusRow('last');
+			}
+			$grid.triggerHandler("jqGridKeyUp");
+		}
+
+		// Home (36)
+		if (e.keyCode === 36) {
+			if (currentPage > 1) {
+				loader.loadGridData(postData, 1, rowsPerPage, 'up', 'jump', function () { focusRow('first'); });
+			} else {
+				focusRow('first');
+			}
+			$grid.triggerHandler("jqGridKeyUp");
+		}
+
+		// Arrow Up (38)
+		if (e.keyCode === 38) {
+			if (currentIndex - 1 >= 0) {
+				$grid.resetSelection().setSelection(gridIds[currentIndex - 1]);
+				var rowHeight = $grid.getGridParam("rowHeight") || 26;
+				var bDiv = $grid.closest(".ui-jqgrid-bdiv");
+				var rowIdx = $grid.jqGrid("getInd", $grid.getGridParam("selrow"));
+				if (rowIdx < loader.totalRecord - 10) {
+					bDiv.scrollTop(bDiv.scrollTop() - rowHeight - 2);
 				}
+			} else if (currentPage > 1) {
+				loader.loadGridData(postData, currentPage - 1, rowsPerPage, 'up', 'jump', function () { focusRow('last'); });
 			}
-			// Enter
-			if (13 === e.keyCode) {
-				let rowId = $(activeGrid).getGridParam("selrow");
-				let ondblClickRowHandler = $(activeGrid).jqGrid("getGridParam", "ondblClickRow");
+		}
 
-				if (ondblClickRowHandler) {
-					ondblClickRowHandler.call($(activeGrid)[0], rowId);
+		// Arrow Down (40)
+		if (e.keyCode === 40) {
+			if (currentIndex + 1 < gridIds.length) {
+				$grid.resetSelection().setSelection(gridIds[currentIndex + 1]);
+				var rowHeight = $grid.getGridParam("rowHeight") || 26;
+				var bDiv = $grid.closest(".ui-jqgrid-bdiv");
+				var rowIdx = $grid.jqGrid("getInd", $grid.getGridParam("selrow"));
+				if (rowIdx > 12) {
+					bDiv.scrollTop(bDiv.scrollTop() + rowHeight + 2);
 				}
+			} else if (currentPage < totalPages) {
+				loader.loadGridData(postData, currentPage + 1, rowsPerPage, 'down', 'jump', function () { focusRow('first'); });
 			}
+		}
+
+		// Enter (13)
+		if (e.keyCode === 13) {
+			var rowId = $grid.getGridParam("selrow");
+			var handler = $grid.jqGrid("getGridParam", "ondblClickRow");
+			if (handler) handler.call($grid[0], rowId);
 		}
 	});
 }
@@ -670,6 +633,7 @@ function setCustomBindKeys(grid) {
 
 	$(document).off("keydown.normalBind").on("keydown.normalBind", function (e) {
 		if (!sidebarIsOpen && activeGrid) {
+			if ($(activeGrid).data('lazyLoader')) return;
 			if (
 				e.keyCode == 33 ||
 				e.keyCode == 34 ||

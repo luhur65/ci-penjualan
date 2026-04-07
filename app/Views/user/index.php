@@ -52,6 +52,7 @@
   let postData;
   let autoNumericElements = [];
   let rowNum = 50;
+  let lazyLoader;
   let selectedId = null;
   let selectedRows = [];
   let sortname = 'fullname';
@@ -192,7 +193,10 @@
         lazyLoadOptions: {
           rowsPerPage: 50,
           windowPages: 3,
-          gapPage: 30
+          gapPage: 30,
+          onInit: function(instance) {
+            lazyLoader = instance;
+          }
         },
         options: {
           sortname: sortname,
@@ -226,7 +230,7 @@
             triggerClick = true;
 
             $(document).unbind('keydown')
-            setCustomBindKeys($(this))
+            setCustomBindKeys(masterGrid)
 
             let ids = $(this).getDataIDs();
             let selectedRowId = ids[0];
@@ -236,12 +240,9 @@
 
                 if (id != '') {
                   let localIndex = parseInt($(masterGrid).jqGrid('getInd', id)) - 1;
-                  // getInd('19229') → ketemu → indexRow di-update dengan benar
                   id = '';
                 }
 
-                // Amankan indexRow agar tidak melebihi jumlah data yang ada di halaman saat ini
-                // (Mencegah error saat menghapus baris terakhir)
                 if (indexRow >= ids.length) {
                   indexRow = ids.length > 0 ? ids.length - 1 : 0;
                 }
