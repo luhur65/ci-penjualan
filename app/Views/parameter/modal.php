@@ -132,8 +132,14 @@
                       <td class="text-center"><button type="button" class="btn btn-danger btn-sm delete-row"><i class="fa fa-trash"></i></button></td>
                       <td><input type="text" name="key[]" class="form-control" value="WARNATULISAN" readonly></td>
                       <td>
-                        <input type="hidden" name="color[]" value="">
-                        <input type="text" name="value[]" class="form-control">
+                        <div class="input-group">
+                          <div class="input-group-prepend">
+                            <span class="input-group-text p-0" style="width: 40px; overflow: hidden;">
+                              <input type="color" name="color[]" class="border-0 m-0 p-0 color-picker" style="width: 100%; height: 100%;" value="#FFFFFF">
+                            </span>
+                          </div>
+                          <input type="text" name="value[]" class="form-control color-text" value="#FFFFFF">
+                        </div>
                       </td>
                     </tr>
                   </tbody>
@@ -160,11 +166,6 @@
             </button>
           </div>
         </form>
-
-        <div class="modal-footer">
-          <button type="submit" class="btn btn-primary">Save</button>
-          <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-        </div>
       </div>
     </form>
   </div>
@@ -289,6 +290,7 @@
 
         if (loader) {
           let postData = grid.jqGrid('getGridParam', 'postData');
+          loader.resetGridState(false);
 
           if (action === 'delete') {
             id = payload.id || '';
@@ -393,7 +395,7 @@
 
     try {
       // Tunggu semua async task selesai
-      
+
 
       // Load detail grid
       // $('#acoGrid').jqGrid('setGridParam', {
@@ -436,7 +438,7 @@
 
     try {
       // Tunggu semua async task selesai
-      
+
 
       // Tampilkan modal
       $('#crudModal').modal('show');
@@ -456,7 +458,7 @@
 
   function initLookup() {
 
-    
+
 
   }
 

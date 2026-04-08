@@ -272,6 +272,7 @@
 
         if (loader) {
           let postData = grid.jqGrid('getGridParam', 'postData');
+          loader.resetGridState(false);
 
           if (action === 'delete') {
             id = payload.id || '';
