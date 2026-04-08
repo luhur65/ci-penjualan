@@ -181,10 +181,59 @@
         $('#crudModal').modal('hide');
         selectedRows = [];
         id = response.data.id;
+        let payload = response.data;
+        let grid = $('#jqGrid');
+        let loader = grid.data('lazyLoader');
 
-        $('#jqGrid').jqGrid('setGridParam', {
-          page: response.data.page
-        }).trigger('reloadGrid');
+        if (loader) {
+          let postData = grid.jqGrid('getGridParam', 'postData');
+
+          if (action === 'delete') {
+            id = payload.id || '';
+            indexRow = payload.offset % loader.rowsPerPage;
+
+            loader.loadGridData(postData, payload.page, loader.rowsPerPage, 'down', 'jump', function() {
+              setTimeout(() => {
+                let ids = grid.getDataIDs();
+                let bDiv = grid.parents('.ui-jqgrid-bdiv');
+                let targetId = payload.id || ids[Math.min(indexRow, ids.length - 1)];
+
+                if (!targetId) return;
+
+                grid.jqGrid('setSelection', targetId, true);
+
+                let rowEl = grid.find(`tr#${targetId}`);
+                if (rowEl.length > 0) {
+                  let scrollPos = rowEl.position().top + bDiv.scrollTop() -
+                    (bDiv.height() / 2) +
+                    (rowEl.height() / 2);
+                  bDiv.scrollTop(scrollPos);
+                }
+              }, 100);
+            });
+          } else {
+            // ADD / EDIT
+            loader.loadGridData(postData, payload.page, loader.rowsPerPage, 'down', 'jump', function() {
+              setTimeout(() => {
+                grid.jqGrid('setSelection', payload.id, true);
+
+                let bDiv = grid.parents('.ui-jqgrid-bdiv');
+                let selectedRow = grid.find(`tr#${payload.id}`);
+
+                if (selectedRow.length > 0) {
+                  let scrollPos = selectedRow.position().top + bDiv.scrollTop() -
+                    (bDiv.height() / 2) +
+                    (selectedRow.height() / 2);
+                  bDiv.scrollTop(scrollPos);
+                }
+              }, 100);
+            });
+          }
+        } else {
+          grid.jqGrid('setGridParam', {
+            page: response.data.page
+          }).trigger('reloadGrid');
+        }
 
       } catch (error) {
         if (error.status !== 422) {
