@@ -25,7 +25,8 @@
   let limit = 10;
   let postData;
   let autoNumericElements = [];
-  let rowNum = 10;
+  let rowNum = 50;
+  let lazyLoader;
   let selectedId = null;
   let selectedRows = [];
   let sortname = 'rolename';
@@ -99,8 +100,18 @@
       gridId: masterGrid,
       pagerId: gridPager,
       url: urlMaster,
+      shrinkToFit: false,
       page: page,
       colModel: finalColModel,
+      lazyLoad: true,
+      lazyLoadOptions: {
+        rowsPerPage: 50,
+        windowPages: 3,
+        gapPage: 30,
+        onInit: function(instance) {
+          lazyLoader = instance;
+        }
+      },
       options: {
         sortname: sortname,
         sortorder: sortorder,
@@ -172,6 +183,7 @@
           id: 'add',
           innerHTML: '<i class="fa fa-plus"></i> ADD',
           class: 'btn btn-primary mr-1',
+          shortcut: 'a',
           onClick: () => {
             createRole()
           }
@@ -180,6 +192,7 @@
           id: 'edit',
           innerHTML: '<i class="fa fa-pen"></i> EDIT',
           class: 'btn btn-success mr-1',
+          shortcut: 'e',
           onClick: () => {
             selectedId = $("#jqGrid").jqGrid('getGridParam', 'selrow')
             updateRole(selectedId)
@@ -189,6 +202,7 @@
           id: 'delete',
           innerHTML: '<i class="fa fa-trash"></i> DELETE',
           class: 'btn btn-danger mr-1',
+          shortcut: 'd',
           onClick: () => {
             selectedId = $("#jqGrid").jqGrid('getGridParam', 'selrow')
             deleteRole(selectedId)
@@ -198,6 +212,7 @@
           id: 'report',
           innerHTML: '<i class="fa fa-print"></i> REPORT',
           class: 'btn btn-info mr-1',
+          shortcut: 'r',
           onClick: () => {
             // $('#rangeModal').data('action', 'report')
             // $('#rangeModal').find('button:submit').html(`Report`)
@@ -208,6 +223,7 @@
           id: 'export',
           innerHTML: '<i class="fa fa-file-export"></i> EXPORT',
           class: 'btn btn-warning mr-1',
+          shortcut: 'x',
           onClick: () => {
             // $('#rangeModal').data('action', 'export')
             // $('#rangeModal').find('button:submit').html(`Export`)
@@ -219,6 +235,9 @@
     .permissions(accessRights);
 
     ColumnSettingsManager.init(masterGrid, GRID_PREF_KEY, getBaseColModel());
+
+    // Setup Pintasan Keyboard Global
+    setupKeyboardShortcuts();
 
   });
 
@@ -239,6 +258,15 @@
       theme: 'bootstrap4',
       width: '100%',
     })
+
+    let currentKey = draftManager.getKey();
+    if (localStorage.getItem(currentKey)) {
+      $('#btnGetLastData').show();
+    } else {
+      $('#btnGetLastData').hide();
+    }
+
+    draftManager.resume();
   })
 
   $('#crudModal').on('hidden.bs.modal', () => {

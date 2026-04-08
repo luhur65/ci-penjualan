@@ -85,6 +85,9 @@
             <i class="fa fa-times"></i>
             Cancel
           </button>
+          <button type="button" id="btnGetLastData" class="btn btn-info ml-auto" style="display: none;">
+            <i class="fa fa-history"></i> Last Data
+          </button>
         </div>
       </div>
     </form>
@@ -92,12 +95,19 @@
 </div>
 
 <script>
+  let draftManager;
   let modalBody = $('#crudModal').find('.modal-body').html();
 
   $(document).ready(function() {
 
+    draftManager = new DraftFormManager('#crudForm', {
+      debug: true,
+      expiry: 1000 * 60 * 60 * 24
+    });
+
     let submitButton = $('#btnSubmit');
     let cancelButton = $('#btnCancel');
+    let getLastDataButton = $('#btnGetLastData');
 
     submitButton.click(async function(e) {
       e.preventDefault();
@@ -161,15 +171,70 @@
           data: JSON.stringify(data)
         });
 
+        if (action === 'add') {
+          draftManager.clear();
+          getLastDataButton.hide();
+        }
+
         // Success handling
         form.trigger('reset');
         $('#crudModal').modal('hide');
         selectedRows = [];
         id = response.data.id;
+        let payload = response.data;
+        let grid = $('#jqGrid');
+        let loader = grid.data('lazyLoader');
 
-        $('#jqGrid').jqGrid('setGridParam', {
-          page: response.data.page
-        }).trigger('reloadGrid');
+        if (loader) {
+          let postData = grid.jqGrid('getGridParam', 'postData');
+          loader.resetGridState(false);
+
+          if (action === 'delete') {
+            id = payload.id || '';
+            indexRow = payload.offset % loader.rowsPerPage;
+
+            loader.loadGridData(postData, payload.page, loader.rowsPerPage, 'down', 'jump', function() {
+              setTimeout(() => {
+                let ids = grid.getDataIDs();
+                let bDiv = grid.parents('.ui-jqgrid-bdiv');
+                let targetId = payload.id || ids[Math.min(indexRow, ids.length - 1)];
+
+                if (!targetId) return;
+
+                grid.jqGrid('setSelection', targetId, true);
+
+                let rowEl = grid.find(`tr#${targetId}`);
+                if (rowEl.length > 0) {
+                  let scrollPos = rowEl.position().top + bDiv.scrollTop() -
+                    (bDiv.height() / 2) +
+                    (rowEl.height() / 2);
+                  bDiv.scrollTop(scrollPos);
+                }
+              }, 100);
+            });
+          } else {
+            // ADD / EDIT
+            loader.loadGridData(postData, payload.page, loader.rowsPerPage, 'down', 'jump', function() {
+              setTimeout(() => {
+                grid.jqGrid('setSelection', payload.id, true);
+
+                let bDiv = grid.parents('.ui-jqgrid-bdiv');
+                let selectedRow = grid.find(`tr#${payload.id}`);
+
+                if (selectedRow.length > 0) {
+                  let scrollPos = selectedRow.position().top + bDiv.scrollTop() -
+                    (bDiv.height() / 2) +
+                    (selectedRow.height() / 2);
+                  bDiv.scrollTop(scrollPos);
+                }
+              }, 100);
+            });
+          }
+        } else {
+          grid.jqGrid('setGridParam', {
+            page: response.data.page
+          }).trigger('reloadGrid');
+        }
 
       } catch (error) {
         if (error.status !== 422) {
@@ -187,12 +252,20 @@
       $('#crudModal').find('.modal-body').html(modalBody);
     });
 
+    getLastDataButton.click(function() {
+      draftManager.restore();
+
+      // (Opsional) Sembunyikan tombol setelah draf berhasil dimuat
+      $(this).hide();
+    });
 
   })
 
   async function createMenu() {
     const form = $('#crudForm');
     const modal = $('#crudModal');
+
+    draftManager.pause();
 
     $('.modal-loader').removeClass('d-none')
 
@@ -208,6 +281,14 @@
       modal.find('#crudModalTitle').text('Add Menu')
       $('.is-invalid').removeClass('is-invalid');
       $('.invalid-feedback').remove();
+
+      // menampilkan tombol
+      if (localStorage.getItem(draftManager.getKey())) {
+        $('#btnGetLastData').show();
+      } else {
+        $('#btnGetLastData').hide();
+      }
+
       modal.modal('show')
 
     } catch (error) {
