@@ -20,45 +20,132 @@
               </div>
             </div>
 
-            <!-- <div class="row form-group">
+            <div class="row form-group">
               <div class="col-12 col-sm-3 col-md-2">
                 <label class="col-form-label">
-                  Status Aktif <span class="text-danger">*</span>
+                  GROUP <span class="text-danger">*</span>
                 </label>
               </div>
               <div class="col-12 col-sm-9 col-md-10">
-                <input type="hidden" name="statusaktif">
-                <input type="text" name="statusaktiftext" id="statusaktiftext" class="form-control lg-form">
-
-              </div>
-            </div> -->
-            <div class="row form-group statusaktif">
-              <div class="col-12 col-sm-3 col-md-2">
-                <label class="col-form-label">
-                  Status Aktif <span class="text-danger">*</span>
-                </label>
-              </div>
-              <div class="col-12 col-sm-9 col-md-10">
-                <select name="statusaktif" id="statusaktif" class="select2bs4 form-select"></select>
+                <input type="text" name="grp" class="form-control">
               </div>
             </div>
 
-            <!-- <div class="row form-group rolediv">
+            <div class="row form-group">
               <div class="col-12 col-sm-3 col-md-2">
                 <label class="col-form-label">
-                  Role <span class="text-danger"></span>
+                  SUBGROUP <span class="text-danger">*</span>
                 </label>
               </div>
               <div class="col-12 col-sm-9 col-md-10">
-                <select name="role_ids[]" id="multiple" class="select2bs4 form-control" multiple="multiple"></select>
+                <input type="text" name="subgrp" class="form-control">
               </div>
-            </div> -->
+            </div>
+
+            <div class="row form-group">
+              <div class="col-12 col-sm-3 col-md-2">
+                <label class="col-form-label">
+                  NAMA PARAMETER <span class="text-danger">*</span>
+                </label>
+              </div>
+              <div class="col-12 col-sm-9 col-md-10">
+                <input type="text" name="text" class="form-control">
+              </div>
+            </div>
+
+            <div class="row form-group">
+              <div class="col-12 col-sm-3 col-md-2">
+                <label class="col-form-label">
+                  KELOMPOK
+                </label>
+              </div>
+              <div class="col-12 col-sm-9 col-md-10">
+                <input type="text" name="kelompok" class="form-control">
+              </div>
+            </div>
+
+            <div class="row form-group">
+              <div class="col-12 col-sm-3 col-md-2">
+                <label class="col-form-label">
+                  TYPE
+                </label>
+              </div>
+              <div class="col-12 col-sm-9 col-md-10">
+                <input type="text" name="type" class="form-control">
+              </div>
+            </div>
+
+            <div class="row form-group">
+              <div class="col-12 col-sm-3 col-md-2">
+                <label class="col-form-label">
+                  DEFAULT
+                </label>
+              </div>
+              <div class="col-12 col-sm-9 col-md-10">
+                <input type="text" name="default" class="form-control">
+              </div>
+            </div>
 
             <div class="row form-group">
               <div class="col-12">
-
-                <!-- <table id="acoGrid"></table> -->
-
+                <label class="col-form-label">MEMO</label>
+                <table class="table table-bordered table-sm" id="tableMemo">
+                  <thead>
+                    <tr>
+                      <th width="50px">AKSI</th>
+                      <th>KEY <span class="text-danger">*</span></th>
+                      <th>VALUE <span class="text-danger">*</span></th>
+                    </tr>
+                  </thead>
+                  <tbody id="memoTbody">
+                    <tr>
+                      <td class="text-center"><button type="button" class="btn btn-danger btn-sm delete-row"><i class="fa fa-trash"></i></button></td>
+                      <td><input type="text" name="key[]" class="form-control" value="MEMO" readonly></td>
+                      <td>
+                        <input type="hidden" name="color[]" value="">
+                        <input type="text" name="value[]" class="form-control">
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="text-center"><button type="button" class="btn btn-danger btn-sm delete-row"><i class="fa fa-trash"></i></button></td>
+                      <td><input type="text" name="key[]" class="form-control" value="SINGKATAN" readonly></td>
+                      <td>
+                        <input type="hidden" name="color[]" value="">
+                        <input type="text" name="value[]" class="form-control">
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="text-center"><button type="button" class="btn btn-danger btn-sm delete-row"><i class="fa fa-trash"></i></button></td>
+                      <td><input type="text" name="key[]" class="form-control" value="WARNA" readonly></td>
+                      <td>
+                        <div class="input-group">
+                          <div class="input-group-prepend">
+                            <span class="input-group-text p-0" style="width: 40px; overflow: hidden;">
+                              <input type="color" name="color[]" class="border-0 m-0 p-0 color-picker" style="width: 100%; height: 100%;">
+                            </span>
+                          </div>
+                          <input type="text" name="value[]" class="form-control color-text">
+                        </div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="text-center"><button type="button" class="btn btn-danger btn-sm delete-row"><i class="fa fa-trash"></i></button></td>
+                      <td><input type="text" name="key[]" class="form-control" value="WARNATULISAN" readonly></td>
+                      <td>
+                        <input type="hidden" name="color[]" value="">
+                        <input type="text" name="value[]" class="form-control">
+                      </td>
+                    </tr>
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <td class="text-center">
+                        <button type="button" class="btn btn-outline-primary btn-sm add-row"><i class="fa fa-plus"></i></button>
+                      </td>
+                      <td colspan="2"></td>
+                    </tr>
+                  </tfoot>
+                </table>
               </div>
             </div>
           </div>
@@ -91,6 +178,36 @@
     let submitButton = $('#btnSubmit');
     let cancelButton = $('#btnCancel');
 
+    // Add new row to MEMO table
+    $(document).on('click', '.add-row', function() {
+      let newRow = `
+        <tr>
+          <td class="text-center"><button type="button" class="btn btn-danger btn-sm delete-row"><i class="fa fa-trash"></i></button></td>
+          <td><input type="text" name="key[]" class="form-control"></td>
+          <td>
+            <input type="hidden" name="color[]" value="">
+            <input type="text" name="value[]" class="form-control">
+          </td>
+        </tr>
+      `;
+      $('#memoTbody').append(newRow);
+    });
+
+    // Delete row from MEMO table
+    $(document).on('click', '.delete-row', function() {
+      $(this).closest('tr').remove();
+    });
+
+    // Sync color picker with text input
+    $(document).on('input', '.color-picker', function() {
+      $(this).closest('.input-group').find('.color-text').val($(this).val());
+    });
+
+    // Sync text input with color picker
+    $(document).on('input', '.color-text', function() {
+      $(this).closest('.input-group').find('.color-picker').val($(this).val());
+    });
+
     submitButton.click(async function(e) {
       e.preventDefault();
 
@@ -105,11 +222,15 @@
       const data = {};
       form.find('[name]').each(function() {
         const el = $(this);
-        const name = el.attr('name').replace('[]', '');
+        const name = el.attr('name');
+        if (!name || name.trim() === '') return;
+
         let value = el.val();
 
-        if (Array.isArray(value)) {
-          data[name] = value; // langsung jadi array
+        if (name.endsWith('[]')) {
+          const cleanName = name.replace('[]', '');
+          if (!data[cleanName]) data[cleanName] = [];
+          data[cleanName].push(value);
         } else {
           data[name] = value;
         }
