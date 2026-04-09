@@ -492,9 +492,8 @@ function setCustomBindKeysLazy(grid) {
 
 		if (!activeGrid || activeGrid[0] !== $grid[0]) return;
 
-		// Jika ini adalah input focus, kita hanya mengizinkan tombol navigasi Pagination
-		// agar tidak mengganggu arrow (kiri/kanan/atas/bawah) ketika mengetik search
-		var allowedKeys = isInputFocus ? [33, 34, 35, 36, 13] : [33, 34, 35, 36, 38, 40, 13];
+		// Diperbarui: izinkan Arrow Up (38) & Down (40) untuk input fokus juga
+		var allowedKeys = [33, 34, 35, 36, 38, 40, 13];
 		if (!allowedKeys.includes(e.keyCode)) return;
 
 		var loader = $grid.data('lazyLoader') ||
@@ -504,7 +503,10 @@ function setCustomBindKeysLazy(grid) {
 			return;
 		}
 
-		e.preventDefault();
+		// Hindari event.preventDefault() untuk Enter agar search bisa terpanggil natural
+		if (e.keyCode !== 13) {
+			e.preventDefault();
+		}
 
 		var postData = $grid.jqGrid("getGridParam", "postData");
 		var rowsPerPage = loader.rowsPerPage;
@@ -539,7 +541,14 @@ function setCustomBindKeysLazy(grid) {
 				}
 
 				if (targetId) {
-					$g.resetSelection().setSelection(targetId);
+					// Jika input fokus (sedang mengetik search), jangan panggil setSelection karena itu memicu grid focus
+					// dan mencuri kursor dari text input
+					if (!isInputFocus) {
+						$g.resetSelection().setSelection(targetId);
+					} else {
+						// Set the selection silently without forcing DOM focus onto the row
+						$g.jqGrid('setSelection', targetId, false);
+					}
 				}
 			}, 150);
 		};
@@ -583,7 +592,9 @@ function setCustomBindKeysLazy(grid) {
 		// Arrow Up (38)
 		if (e.keyCode === 38) {
 			if (currentIndex - 1 >= 0) {
-				$grid.resetSelection().setSelection(gridIds[currentIndex - 1]);
+				if (!isInputFocus) $grid.resetSelection().setSelection(gridIds[currentIndex - 1]);
+				else $grid.jqGrid('setSelection', gridIds[currentIndex - 1], false);
+
 				var rowHeight = $grid.getGridParam("rowHeight") || 26;
 				var bDiv = $grid.closest(".ui-jqgrid-bdiv");
 				var rowIdx = $grid.jqGrid("getInd", $grid.getGridParam("selrow"));
@@ -598,7 +609,9 @@ function setCustomBindKeysLazy(grid) {
 		// Arrow Down (40)
 		if (e.keyCode === 40) {
 			if (currentIndex + 1 < gridIds.length) {
-				$grid.resetSelection().setSelection(gridIds[currentIndex + 1]);
+				if (!isInputFocus) $grid.resetSelection().setSelection(gridIds[currentIndex + 1]);
+				else $grid.jqGrid('setSelection', gridIds[currentIndex + 1], false);
+
 				var rowHeight = $grid.getGridParam("rowHeight") || 26;
 				var bDiv = $grid.closest(".ui-jqgrid-bdiv");
 				var rowIdx = $grid.jqGrid("getInd", $grid.getGridParam("selrow"));
@@ -625,12 +638,13 @@ function setCustomBindKeysLazy(grid) {
 	});
 
 	// Tambahkan juga event listener spesifik di dalam filterToolbar / globalSearch inputs
-	// Agar event tertangkap sebelum dicegah propagasinya oleh library lain
+	// Menggunakan Event Delegation dari ui-jqgrid agar listener tetap hidup jika DOM re-render
 	setTimeout(function() {
-		$(grid).closest('.ui-jqgrid').find('.ui-search-toolbar input, .global-search').off('keydown.' + ns + '_input').on('keydown.' + ns + '_input', function(e) {
-			// Cegah propagasi ke atas agar tidak bentrok, dan handle page-jump secara langsung
-			if ([33, 34, 35, 36].includes(e.keyCode)) {
-				e.stopPropagation();
+		$(grid).closest('.ui-jqgrid').off('keydown.' + ns + '_input', '.ui-search-toolbar input, .global-search')
+			.on('keydown.' + ns + '_input', '.ui-search-toolbar input, .global-search', function(e) {
+			// Handle page-jump & arrow navigation secara langsung saat input fokus
+			if ([33, 34, 35, 36, 38, 40].includes(e.keyCode)) {
+				e.stopPropagation(); // Mencegah jqGrid's default focus stealing
 				lazyKeydownHandler(e, true);
 			}
 		});
