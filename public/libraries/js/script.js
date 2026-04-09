@@ -484,15 +484,17 @@ function setCustomBindKeysLazy(grid) {
 	setSidebarBindKeys();
 
 	var ns = 'lazyBind_' + grid.replace(/[^a-zA-Z0-9]/g, '');
-	$(document).off('keydown.' + ns).on('keydown.' + ns, function (e) {
 
+	function lazyKeydownHandler(e, isInputFocus = false) {
 		if (sidebarIsOpen) return;
 
 		var $grid = $(grid);
 
 		if (!activeGrid || activeGrid[0] !== $grid[0]) return;
 
-		var allowedKeys = [33, 34, 35, 36, 38, 40, 13];
+		// Jika ini adalah input focus, kita hanya mengizinkan tombol navigasi Pagination
+		// agar tidak mengganggu arrow (kiri/kanan/atas/bawah) ketika mengetik search
+		var allowedKeys = isInputFocus ? [33, 34, 35, 36, 13] : [33, 34, 35, 36, 38, 40, 13];
 		if (!allowedKeys.includes(e.keyCode)) return;
 
 		var loader = $grid.data('lazyLoader') ||
@@ -610,11 +612,29 @@ function setCustomBindKeysLazy(grid) {
 
 		// Enter (13)
 		if (e.keyCode === 13) {
-			var rowId = $grid.getGridParam("selrow");
-			var handler = $grid.jqGrid("getGridParam", "ondblClickRow");
-			if (handler) handler.call($grid[0], rowId);
+			if (!isInputFocus) { // Jangan jalankan onDblClick jika user sedang enter di search box
+				var rowId = $grid.getGridParam("selrow");
+				var handler = $grid.jqGrid("getGridParam", "ondblClickRow");
+				if (handler) handler.call($grid[0], rowId);
+			}
 		}
+	}
+
+	$(document).off('keydown.' + ns).on('keydown.' + ns, function (e) {
+		lazyKeydownHandler(e, false);
 	});
+
+	// Tambahkan juga event listener spesifik di dalam filterToolbar / globalSearch inputs
+	// Agar event tertangkap sebelum dicegah propagasinya oleh library lain
+	setTimeout(function() {
+		$(grid).closest('.ui-jqgrid').find('.ui-search-toolbar input, .global-search').off('keydown.' + ns + '_input').on('keydown.' + ns + '_input', function(e) {
+			// Cegah propagasi ke atas agar tidak bentrok, dan handle page-jump secara langsung
+			if ([33, 34, 35, 36].includes(e.keyCode)) {
+				e.stopPropagation();
+				lazyKeydownHandler(e, true);
+			}
+		});
+	}, 500); // Tunggu sampai DOM search inputs ter-render
 }
 
 /**
