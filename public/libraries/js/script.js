@@ -595,11 +595,17 @@ function setCustomBindKeysLazy(grid) {
 				if (!isInputFocus) $grid.resetSelection().setSelection(gridIds[currentIndex - 1]);
 				else $grid.jqGrid('setSelection', gridIds[currentIndex - 1], false);
 
-				var rowHeight = $grid.getGridParam("rowHeight") || 26;
+				var targetRow = $grid.find(`tr#${gridIds[currentIndex - 1]}`);
 				var bDiv = $grid.closest(".ui-jqgrid-bdiv");
-				var rowIdx = $grid.jqGrid("getInd", $grid.getGridParam("selrow"));
-				if (rowIdx < loader.totalRecord - 10) {
-					bDiv.scrollTop(bDiv.scrollTop() - rowHeight - 2);
+
+				if (targetRow.length) {
+					var rowTop = targetRow.position().top;
+					var bDivTop = 0; // Relative to bDiv itself
+
+					// Jika row melewati batas atas, scroll ke atas agar row terlihat
+					if (rowTop < bDivTop) {
+						bDiv.scrollTop(bDiv.scrollTop() + rowTop);
+					}
 				}
 			} else if (currentPage > 1) {
 				loader.loadGridData(postData, currentPage - 1, rowsPerPage, 'up', 'jump', function () { focusRow('last'); });
@@ -612,11 +618,17 @@ function setCustomBindKeysLazy(grid) {
 				if (!isInputFocus) $grid.resetSelection().setSelection(gridIds[currentIndex + 1]);
 				else $grid.jqGrid('setSelection', gridIds[currentIndex + 1], false);
 
-				var rowHeight = $grid.getGridParam("rowHeight") || 26;
+				var targetRow = $grid.find(`tr#${gridIds[currentIndex + 1]}`);
 				var bDiv = $grid.closest(".ui-jqgrid-bdiv");
-				var rowIdx = $grid.jqGrid("getInd", $grid.getGridParam("selrow"));
-				if (rowIdx > 12) {
-					bDiv.scrollTop(bDiv.scrollTop() + rowHeight + 2);
+
+				if (targetRow.length) {
+					var rowBottom = targetRow.position().top + targetRow.outerHeight();
+					var bDivBottom = bDiv.height();
+
+					// Jika row melewati batas bawah, scroll ke bawah secukupnya agar row terlihat penuh
+					if (rowBottom > bDivBottom) {
+						bDiv.scrollTop(bDiv.scrollTop() + (rowBottom - bDivBottom));
+					}
 				}
 			} else if (currentPage < totalPages) {
 				loader.loadGridData(postData, currentPage + 1, rowsPerPage, 'down', 'jump', function () { focusRow('first'); });
