@@ -135,16 +135,26 @@ $.jgrid.extend({
 						}
 					}
 
+					let loader = $(element).data("lazyLoader");
+					let postData = $(element).jqGrid("getGridParam", "postData");
+
 					// page up
 					if (event.which == 33) {
-						if (currentPage > 1) {
-							$(element)
-								.jqGrid("setGridParam", {
-									page: $(element).getGridParam("page") - 1,
-								})
-								.trigger("reloadGrid");
+						if (loader) {
+							if (loader.currentViewPage > 1) {
+								loader.loadGridData(postData, loader.currentViewPage - 1, loader.rowsPerPage, "up", "jump");
+								event.preventDefault();
+							}
+						} else {
+							if (currentPage > 1) {
+								$(element)
+									.jqGrid("setGridParam", {
+										page: $(element).getGridParam("page") - 1,
+									})
+									.trigger("reloadGrid");
 
-							event.preventDefault();
+								event.preventDefault();
+							}
 						}
 
 						$(element).jqGrid("setGridParam", {
@@ -154,14 +164,21 @@ $.jgrid.extend({
 
 					// page down
 					if (event.which == 34) {
-						if (currentPage !== lastPage) {
-							$(element)
-								.jqGrid("setGridParam", {
-									page: $(element).getGridParam("page") + 1,
-								})
-								.trigger("reloadGrid");
+						if (loader) {
+							if (loader.currentViewPage < loader.totalPages) {
+								loader.loadGridData(postData, loader.currentViewPage + 1, loader.rowsPerPage, "down", "jump");
+								event.preventDefault();
+							}
+						} else {
+							if (currentPage !== lastPage) {
+								$(element)
+									.jqGrid("setGridParam", {
+										page: $(element).getGridParam("page") + 1,
+									})
+									.trigger("reloadGrid");
 
-							event.preventDefault();
+								event.preventDefault();
+							}
 						}
 
 						$(element).jqGrid("setGridParam", {
@@ -171,12 +188,18 @@ $.jgrid.extend({
 
 					// end
 					if (event.which == 35) {
-						if (currentPage < lastPage) { // Perbaiki logika: Hanya jalan jika belum di halaman terakhir
-							$(element)
-								.jqGrid("setGridParam", {
-									page: lastPage,
-								})
-								.trigger("reloadGrid");
+						if (loader) {
+							if (loader.currentViewPage < loader.totalPages) {
+								loader.loadGridData(postData, loader.totalPages, loader.rowsPerPage, "down", "jump");
+							}
+						} else {
+							if (currentPage < lastPage) { // Perbaiki logika: Hanya jalan jika belum di halaman terakhir
+								$(element)
+									.jqGrid("setGridParam", {
+										page: lastPage,
+									})
+									.trigger("reloadGrid");
+							}
 						}
 
 						event.preventDefault(); // [KUNCI PERBAIKAN]: Taruh di luar agar kursor tidak pernah lompat ke akhir teks!
@@ -188,12 +211,18 @@ $.jgrid.extend({
 
 					// home
 					if (event.which == 36) {
-						if (currentPage > 1) { // Perbaiki logika: Hanya jalan jika tidak sedang di halaman 1
-							$(element)
-								.jqGrid("setGridParam", {
-									page: 1,
-								})
-								.trigger("reloadGrid");
+						if (loader) {
+							if (loader.currentViewPage > 1) {
+								loader.loadGridData(postData, 1, loader.rowsPerPage, "up", "jump");
+							}
+						} else {
+							if (currentPage > 1) { // Perbaiki logika: Hanya jalan jika tidak sedang di halaman 1
+								$(element)
+									.jqGrid("setGridParam", {
+										page: 1,
+									})
+									.trigger("reloadGrid");
+							}
 						}
 
 						event.preventDefault(); // [KUNCI PERBAIKAN]: Taruh di luar agar kursor tidak pernah lompat ke awal teks!
