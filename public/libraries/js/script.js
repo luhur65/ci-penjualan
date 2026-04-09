@@ -556,7 +556,7 @@ function setCustomBindKeysLazy(grid) {
 		// Page Up (33)
 		if (e.keyCode === 33) {
 			if (currentPage > 1) {
-				loader.loadGridData(postData, currentPage - 1, rowsPerPage, 'up', 'jump', function () { focusRow('first'); });
+				loader.loadGridData(postData, currentPage - 1, rowsPerPage, 'up', 'jump');
 			}
 			$grid.triggerHandler("jqGridKeyUp");
 		}
@@ -564,7 +564,7 @@ function setCustomBindKeysLazy(grid) {
 		// Page Down (34)
 		if (e.keyCode === 34) {
 			if (currentPage < totalPages) {
-				loader.loadGridData(postData, currentPage + 1, rowsPerPage, 'down', 'jump', function () { focusRow('first'); });
+				loader.loadGridData(postData, currentPage + 1, rowsPerPage, 'down', 'jump');
 			}
 			$grid.triggerHandler("jqGridKeyUp");
 		}
@@ -572,9 +572,7 @@ function setCustomBindKeysLazy(grid) {
 		// End (35)
 		if (e.keyCode === 35) {
 			if (currentPage !== totalPages) {
-				loader.loadGridData(postData, totalPages, rowsPerPage, 'down', 'jump', function () { focusRow('last'); });
-			} else {
-				focusRow('last');
+				loader.loadGridData(postData, totalPages, rowsPerPage, 'down', 'jump');
 			}
 			$grid.triggerHandler("jqGridKeyUp");
 		}
@@ -582,9 +580,7 @@ function setCustomBindKeysLazy(grid) {
 		// Home (36)
 		if (e.keyCode === 36) {
 			if (currentPage > 1) {
-				loader.loadGridData(postData, 1, rowsPerPage, 'up', 'jump', function () { focusRow('first'); });
-			} else {
-				focusRow('first');
+				loader.loadGridData(postData, 1, rowsPerPage, 'up', 'jump');
 			}
 			$grid.triggerHandler("jqGridKeyUp");
 		}
@@ -608,7 +604,7 @@ function setCustomBindKeysLazy(grid) {
 					}
 				}
 			} else if (currentPage > 1) {
-				loader.loadGridData(postData, currentPage - 1, rowsPerPage, 'up', 'jump', function () { focusRow('last'); });
+				loader.loadGridData(postData, currentPage - 1, rowsPerPage, 'up', 'jump');
 			}
 		}
 
@@ -631,7 +627,7 @@ function setCustomBindKeysLazy(grid) {
 					}
 				}
 			} else if (currentPage < totalPages) {
-				loader.loadGridData(postData, currentPage + 1, rowsPerPage, 'down', 'jump', function () { focusRow('first'); });
+				loader.loadGridData(postData, currentPage + 1, rowsPerPage, 'down', 'jump');
 			}
 		}
 

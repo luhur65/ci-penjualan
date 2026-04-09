@@ -136,16 +136,10 @@ $.jgrid.extend({
 					}
 
 					let loader = $(element).data("lazyLoader");
-					let postData = $(element).jqGrid("getGridParam", "postData");
 
 					// page up
 					if (event.which == 33) {
-						if (loader) {
-							if (loader.currentViewPage > 1) {
-								loader.loadGridData(postData, loader.currentViewPage - 1, loader.rowsPerPage, "up", "jump");
-								event.preventDefault();
-							}
-						} else {
+						if (!loader) {
 							if (currentPage > 1) {
 								$(element)
 									.jqGrid("setGridParam", {
@@ -164,12 +158,7 @@ $.jgrid.extend({
 
 					// page down
 					if (event.which == 34) {
-						if (loader) {
-							if (loader.currentViewPage < loader.totalPages) {
-								loader.loadGridData(postData, loader.currentViewPage + 1, loader.rowsPerPage, "down", "jump");
-								event.preventDefault();
-							}
-						} else {
+						if (!loader) {
 							if (currentPage !== lastPage) {
 								$(element)
 									.jqGrid("setGridParam", {
@@ -188,11 +177,7 @@ $.jgrid.extend({
 
 					// end
 					if (event.which == 35) {
-						if (loader) {
-							if (loader.currentViewPage < loader.totalPages) {
-								loader.loadGridData(postData, loader.totalPages, loader.rowsPerPage, "down", "jump");
-							}
-						} else {
+						if (!loader) {
 							if (currentPage < lastPage) { // Perbaiki logika: Hanya jalan jika belum di halaman terakhir
 								$(element)
 									.jqGrid("setGridParam", {
@@ -202,7 +187,7 @@ $.jgrid.extend({
 							}
 						}
 
-						event.preventDefault(); // [KUNCI PERBAIKAN]: Taruh di luar agar kursor tidak pernah lompat ke akhir teks!
+						if (!loader) event.preventDefault(); // [KUNCI PERBAIKAN]: Taruh di luar agar kursor tidak pernah lompat ke akhir teks!
 
 						$(element).jqGrid("setGridParam", {
 							triggerClick: false,
@@ -211,11 +196,7 @@ $.jgrid.extend({
 
 					// home
 					if (event.which == 36) {
-						if (loader) {
-							if (loader.currentViewPage > 1) {
-								loader.loadGridData(postData, 1, loader.rowsPerPage, "up", "jump");
-							}
-						} else {
+						if (!loader) {
 							if (currentPage > 1) { // Perbaiki logika: Hanya jalan jika tidak sedang di halaman 1
 								$(element)
 									.jqGrid("setGridParam", {
@@ -225,7 +206,7 @@ $.jgrid.extend({
 							}
 						}
 
-						event.preventDefault(); // [KUNCI PERBAIKAN]: Taruh di luar agar kursor tidak pernah lompat ke awal teks!
+						if (!loader) event.preventDefault(); // [KUNCI PERBAIKAN]: Taruh di luar agar kursor tidak pernah lompat ke awal teks!
 
 						$(element).jqGrid("setGridParam", {
 							triggerClick: false,
@@ -313,30 +294,64 @@ $.jgrid.extend({
 				}
 
 				// arrow up
-        if (event.which == 38) {
-          let selrow = $(element).jqGrid('getGridParam', 'selrow');
-          let ids = $(element).getDataIDs();
-          let index = ids.indexOf(selrow);
-          if (index > 0) {
-            $(element).jqGrid('setSelection', ids[index - 1], true, event);
-            // Pindahkan fokus ke baris yang baru terpilih
-            $(`#${$.jgrid.jqID(element.id)} tr[id="${ids[index - 1]}"]`).focus();
-          }
-          event.preventDefault();
-        }
+				if (event.which == 38) {
+					if (!$(element).data("lazyLoader")) {
+						let selrow = $(element).jqGrid('getGridParam', 'selrow');
+						let ids = $(element).getDataIDs();
+						let index = ids.indexOf(selrow);
+						if (index > 0) {
+							// Jika focus di input, gunakan silent selection
+							let isInputFocus = $(event.target).is('input, textarea');
+							$(element).jqGrid('setSelection', ids[index - 1], !isInputFocus, event);
 
-        // arrow down
-        if (event.which == 40) {
-          let selrow = $(element).jqGrid('getGridParam', 'selrow');
-          let ids = $(element).getDataIDs();
-          let index = ids.indexOf(selrow);
-          if (index < ids.length - 1) {
-            $(element).jqGrid('setSelection', ids[index + 1], true, event);
-            // Pindahkan fokus ke baris yang baru terpilih
-            $(`#${$.jgrid.jqID(element.id)} tr[id="${ids[index + 1]}"]`).focus();
-          }
-          event.preventDefault();
-        }
+							var targetRow = $(element).find(`tr#${ids[index - 1]}`);
+							var bDiv = $(element).closest(".ui-jqgrid-bdiv");
+
+							if (targetRow.length) {
+								var rowTop = targetRow.position().top;
+								var bDivTop = 0;
+								if (rowTop < bDivTop) {
+									bDiv.scrollTop(bDiv.scrollTop() + rowTop);
+								}
+							}
+
+							if (!isInputFocus) {
+								$(`#${$.jgrid.jqID(element.id)} tr[id="${ids[index - 1]}"]`).focus();
+							}
+						}
+						event.preventDefault();
+					}
+				}
+
+				// arrow down
+				if (event.which == 40) {
+					if (!$(element).data("lazyLoader")) {
+						let selrow = $(element).jqGrid('getGridParam', 'selrow');
+						let ids = $(element).getDataIDs();
+						let index = ids.indexOf(selrow);
+						if (index < ids.length - 1) {
+							// Jika focus di input, gunakan silent selection
+							let isInputFocus = $(event.target).is('input, textarea');
+							$(element).jqGrid('setSelection', ids[index + 1], !isInputFocus, event);
+
+							var targetRow = $(element).find(`tr#${ids[index + 1]}`);
+							var bDiv = $(element).closest(".ui-jqgrid-bdiv");
+
+							if (targetRow.length) {
+								var rowBottom = targetRow.position().top + targetRow.outerHeight();
+								var bDivBottom = bDiv.height();
+								if (rowBottom > bDivBottom) {
+									bDiv.scrollTop(bDiv.scrollTop() + (rowBottom - bDivBottom));
+								}
+							}
+
+							if (!isInputFocus) {
+								$(`#${$.jgrid.jqID(element.id)} tr[id="${ids[index + 1]}"]`).focus();
+							}
+						}
+						event.preventDefault();
+					}
+				}
 			});
 		});
 
