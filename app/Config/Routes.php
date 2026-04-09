@@ -8,6 +8,7 @@ use App\Controllers\UserController;
 use App\Controllers\RoleController;
 use App\Controllers\PenjualanController;
 use App\Controllers\ParameterController;
+use App\Controllers\OverviewController;
 
 /**
  * @var RouteCollection $routes
@@ -34,6 +35,7 @@ $routes->get('/reset-password/success', function() {
 // Protected Routes without ACL Filter but must be authenticated
 $routes->group('', ['filter' => 'authenticated'], function($routes) {
     $routes->get('dashboard', [DashboardController::class, 'index'], ['as' => 'dashboard.index']);
+    $routes->get('/transaksi', [OverviewController::class, 'transaksi'], ['as' => 'overview.transaksi']);
 });
 
 // Protected Routes with ACL Filter
