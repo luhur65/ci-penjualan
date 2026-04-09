@@ -195,6 +195,7 @@
             id: 'add',
             innerHTML: '<i class="fa fa-plus"></i> ADD',
             class: 'btn btn-primary btn-md mr-1',
+            shortcut: 'a',
             onClick: () => {
               createparameter()
             }
@@ -203,6 +204,7 @@
             id: 'edit',
             innerHTML: '<i class="fa fa-pen"></i> EDIT',
             class: 'btn btn-success btn-md mr-1',
+            shortcut: 'e',
             onClick: () => {
               selectedId = $("#jqGrid").jqGrid('getGridParam', 'selrow')
               updateparameter(selectedId)
@@ -212,6 +214,7 @@
             id: 'delete',
             innerHTML: '<i class="fa fa-trash"></i> DELETE',
             class: 'btn btn-danger btn-md mr-1',
+            shortcut: 'd',
             onClick: () => {
               selectedId = $("#jqGrid").jqGrid('getGridParam', 'selrow')
               deleteparameter(selectedId)
@@ -221,6 +224,7 @@
             id: 'report',
             innerHTML: '<i class="fa fa-print"></i> REPORT',
             class: 'btn btn-info btn-md mr-1',
+            shortcut: 'r',
             onClick: () => {
 
             }
@@ -229,6 +233,7 @@
             id: 'export',
             innerHTML: '<i class="fa fa-file-export"></i> EXPORT',
             class: 'btn btn-warning btn-md mr-1',
+            shortcut: 'x',
             onClick: () => {
 
             }
@@ -238,6 +243,9 @@
       .permissions(accessRights);
 
     ColumnSettingsManager.init(masterGrid, GRID_PREF_KEY, getBaseColModel());
+
+    // Setup Pintasan Keyboard Global
+    setupKeyboardShortcuts();
 
   });
 
@@ -252,6 +260,15 @@
     initSelect2(form.find('select'), $('#crudModal'))
     // initDatepicker()
     // initLookup()
+
+    let currentKey = draftManager.getKey();
+    if (localStorage.getItem(currentKey)) {
+      $('#btnGetLastData').show();
+    } else {
+      $('#btnGetLastData').hide();
+    }
+
+    draftManager.resume();
   })
 </script>
 

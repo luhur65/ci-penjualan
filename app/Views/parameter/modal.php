@@ -172,9 +172,15 @@
 </div>
 
 <script>
+  let draftManager;
   let modalBody = $('#crudModal').find('.modal-body').html();
 
   $(document).ready(function() {
+
+    draftManager = new DraftFormManager('#crudForm', {
+      debug: true,
+      expiry: 1000 * 60 * 60 * 24
+    });
 
     let submitButton = $('#btnSubmit');
     let cancelButton = $('#btnCancel');
@@ -394,7 +400,7 @@
     $('.modal-loader').removeClass('d-none');
 
     try {
-      // Tunggu semua async task selesai
+      await showParameter(form, id);
 
 
       // Load detail grid
@@ -523,9 +529,9 @@
     }
   }
 
-  async function showUser(form, userId) {
+  async function showParameter(form, userId) {
     const response = await ajaxWithRefresh({
-      url: `${API_URL}/users/${userId}`,
+      url: `${API_URL}/parameter/${userId}`,
       method: 'GET',
       dataType: 'JSON'
     });

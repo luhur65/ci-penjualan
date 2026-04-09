@@ -160,6 +160,39 @@
       console.log(`Total available: ${quota} bytes`);
     });
 
+    $(document).ready(function() {
+      // 1. Ambil URL halaman saat ini (buang query string seperti ?id=1 jika ada agar presisi)
+      let urlSekarang = window.location.href.split(/[?#]/)[0];
+
+      // 2. Sisir semua link di dalam menu sidebar
+      $('ul.nav-sidebar a.nav-link').each(function() {
+        let linkMenu = $(this).attr('href');
+
+        // 3. Jika href cocok dengan URL sekarang, eksekusi pembukaan menu
+        if (linkMenu === urlSekarang) {
+          // Beri highlight aktif pada menu yang sedang diklik
+          $(this).addClass('active');
+
+          // Tarik ke atas, temukan semua elemen <li> pembungkusnya, dan paksa buka
+          $(this).parents('.nav-item').addClass('menu-is-opening menu-open');
+
+          // Beri highlight aktif juga pada parent utamanya agar terlihat sedang di-expand
+          $(this).parents('.nav-item').children('a.nav-link').addClass('active');
+        }
+      });
+
+      // 4. Script untuk memisahkan area klik teks vs klik panah
+      $('ul.nav-sidebar a.nav-link').on('click', function(e) {
+        let urlTujuan = $(this).attr('href');
+        // Deteksi apakah user spesifik mengklik icon panah AdminLTE
+        let klikPanah = $(e.target).hasClass('right') || $(e.target).hasClass('fa-angle-left');
+
+        if (urlTujuan && urlTujuan !== 'javascript:void(0)' && urlTujuan !== '#' && !klikPanah) {
+          window.location.href = urlTujuan;
+        }
+      });
+    });
+
     // Handler Global 401 Error
     $.ajaxPrefilter(function(options, originalOptions, jqXHR) {
       // Simpan error callback asli (kalau ada)
@@ -349,8 +382,6 @@
         gridview: true,
         page: config.page || 1,
         pager: config.pagerId,
-        // scroll: true, // set the scroll property to 1 to enable paging with scrollbar - virtual loading of records
-        // emptyrecords: 'Scroll to bottom to retrieve new page', // the message will be displayed at the bottom 
         jsonReader: {
           root: 'data',
           total: 'attributes.totalPages',
@@ -367,17 +398,8 @@
 
       const grid = $(config.gridId).jqGrid(finalOptions);
 
-      // default nav
-      // grid.jqGrid('navGrid', config.pagerId, {
-      //   edit: false,
-      //   add: false,
-      //   del: false,
-      //   search: false,
-      //   refresh: false
-      // });
-
       if (isLazy) {
-        // $(config.pagerId).hide();
+        $(config.pagerId).hide();
 
         // Buat instance LazyLoader
         let lazyLoader = new JqGridLazyLoader(
@@ -387,7 +409,6 @@
           config.lazyLoadOptions || {}
         );
 
-        // Simpan instance-nya ke memori elemen grid agar bisa dipanggil dari filterToolbar
         grid.data('lazyLoader', lazyLoader);
       }
 
@@ -526,25 +547,25 @@
     }
 
     function initGlobalSearch(grid, config) {
-      // const lazyLoading = config.lazyLoading || false;
       const url = config.url;
+      const isLazy = config.lazyLoad === true; // ← ambil dari config
 
-      // Tambahkan HTML kolom search
+      // Tambahkan HTML toolbar search (tidak berubah)
       $("#t_" + $.jgrid.jqID(grid[0].id)).html(
         $(
           `
-            <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between w-100 px-2 py-1">
-                <form class="form-inline">
-                    <div class="form-group w-100 px-2" id="titlesearch">
-                        <label for="searchText" style="font-weight: normal !important;">Search : </label>
-                        <input type="text" class="form-control form-control-sm global-search" id="${$.jgrid.jqID(grid[0].id)}_searchText" placeholder="Search" autocomplete="off">
-                    </div>
-                </form>
-                <div class="px-2 d-flex align-items-center">
-                    <div id="searchDetail_${$.jgrid.jqID(grid[0].id)}" class="px-2"></div>
-                    <div id="infoContainer_${$.jgrid.jqID(grid[0].id)}" class="px-2"></div>
+        <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between w-100 px-2 py-1">
+            <form class="form-inline">
+                <div class="form-group w-100 px-2" id="titlesearch">
+                    <label for="searchText" style="font-weight: normal !important;">Search : </label>
+                    <input type="text" class="form-control form-control-sm global-search" id="${$.jgrid.jqID(grid[0].id)}_searchText" placeholder="Search" autocomplete="off">
                 </div>
-            </div>`
+            </form>
+            <div class="px-2 d-flex align-items-center">
+                <div id="searchDetail_${$.jgrid.jqID(grid[0].id)}" class="px-2"></div>
+                <div id="infoContainer_${$.jgrid.jqID(grid[0].id)}" class="px-2"></div>
+            </div>
+        </div>`
         )
       );
 
@@ -582,15 +603,13 @@
             search: true
           });
 
-          if (lazyLoading) {
+          if (isLazy) {
             grid.jqGrid('clearGridData');
-
             let loader = grid.data('lazyLoader');
             if (loader) {
               loader.loadGridData(postData, 1, loader.rowsPerPage, 'down', 'reload');
             }
             return true;
-
           } else {
             grid.trigger("reloadGrid", [{
               page: 1,

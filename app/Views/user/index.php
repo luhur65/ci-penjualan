@@ -198,6 +198,10 @@
             lazyLoader = instance;
           }
         },
+        clearGlobalSearch: function(gridEl) {
+          const searchInputId = `#${$.jgrid.jqID(gridEl[0].id)}_searchText`;
+          $(searchInputId).val('');
+        },
         options: {
           sortname: sortname,
           sortorder: sortorder,
@@ -264,7 +268,6 @@
         }
       })
       .loadClearFilter()
-      .clearGlobalSearch()
       .customPager({
         buttons: [{
             id: 'add',
