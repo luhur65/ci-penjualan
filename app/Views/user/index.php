@@ -171,16 +171,16 @@
     ];
   }
 
-  $(document).ready(async function() {
+  GridPreferenceManager.configure({
+    mode: 'server',
+    serverUrl: API_URL + '/grid-preferences',
+  });
+
+  const savedPrefs = GridPreferenceManager.load(GRID_PREF_KEY);
+  const finalColModel = GridPreferenceManager.apply(getBaseColModel(), savedPrefs);
+
+  $(document).ready(function() {
     $("#tabs").tabs();
-
-    GridPreferenceManager.configure({
-      mode: 'server',
-      serverUrl: API_URL + '/grid-preferences',
-    });
-
-    const savedPrefs = await GridPreferenceManager.load(GRID_PREF_KEY);
-    const finalColModel = GridPreferenceManager.apply(getBaseColModel(), savedPrefs);
 
     const grid = createJqGrid({
         gridId: masterGrid,
@@ -213,10 +213,11 @@
           },
           onSelectRow: function(id) {
             activeGrid = $(this)
+            selectedId = $(masterGrid).jqGrid('getCell', id, 'id')
             page = $(masterGrid).jqGrid('getGridParam', 'page')
-            limit = $(masterGrid).jqGrid('getGridParam', 'rowNum')
-            indexRow = $(masterGrid).jqGrid('getInd', id) - 1;
-
+            indexRow = $(masterGrid).jqGrid('getCell', id, 'rn') - 1
+            let limit = $(masterGrid).jqGrid('getGridParam', 'postData').limit
+            if (indexRow >= limit) indexRow = (indexRow - limit * (page - 1))
 
             let activeTabIndex = $("#tabs").tabs('option', 'active')
             //Dapatkan ID HTML dari panel tab yang aktif tersebut (misal: "role-tab")
@@ -224,6 +225,8 @@
             if (tabLoaders[activeTabId]) {
               tabLoaders[activeTabId](id);
             }
+
+            // syncActiveFilterWithSelectedRow(this, id);
 
             // ini yang benar (global position)
             // let localIndex = $(masterGrid).jqGrid('getInd', selectedId) - 1
@@ -233,8 +236,8 @@
             changeJqGridRowListText();
             triggerClick = true;
 
-            $(document).unbind('keydown')
-            setCustomBindKeys(masterGrid)
+            $(this).off('keydown.custom');
+            setCustomBindKeysLazy(masterGrid);
 
             let ids = $(this).getDataIDs();
             let selectedRowId = ids[0];
@@ -253,13 +256,23 @@
 
                 selectedRowId = ids[indexRow];
                 $(`${masterGrid} tr[id="${selectedRowId}"]`).click();
+                // $(`${masterGrid} tr[id="${selectedRowId}"]`).focus();
+                if (!$(document.activeElement).is("input, textarea, select")) {
+                  $(`${masterGrid} tr[id="${selectedRowId}"]`).focus();
+                }
                 triggerClick = false;
 
               } else {
                 if (indexRow >= ids.length) indexRow = ids.length - 1;
                 selectedRowId = ids[indexRow];
                 $(masterGrid).setSelection(selectedRowId);
+
+                // $(`${masterGrid} tr[id="${selectedRowId}"]`).focus();
+                if (!$(document.activeElement).is("input, textarea, select")) {
+                  $(`${masterGrid} tr[id="${selectedRowId}"]`).focus();
+                }
               }
+
 
               setHighlight($(this));
               ColumnSettingsManager.renderBadge(masterGrid);
@@ -267,6 +280,8 @@
           }
         }
       })
+      .toolbarBindKeys()
+      // .customBindKeys()
       .loadClearFilter()
       .customPager({
         buttons: [{

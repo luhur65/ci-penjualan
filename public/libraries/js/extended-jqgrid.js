@@ -18,7 +18,8 @@ $.jgrid.extend({
 			$(element)
 				.parents(".ui-jqgrid")
 				.find("input")
-				.on("keydown", function (event) {
+				.off("keydown.toolbar")
+				.on("keydown.toolbar", function (event) {
 					let currentPage = $(element).getGridParam("page");
 					let lastPage = $(element).getGridParam("lastpage");
 
@@ -42,51 +43,42 @@ $.jgrid.extend({
 						) {
 							// up key
 							if (event.keyCode === 38) {
-								r = target.previousSibling;
-								id = "";
-								if (r && $(r).hasClass("jqgrow")) {
-									if ($(r).is(":hidden")) {
-										while (r) {
-											r = r.previousSibling;
-											if (!$(r).is(":hidden") && $(r).hasClass("jqgrow")) {
-												id = r.id;
-												break;
-											}
-										}
-									} else {
-										id = r.id;
+								var ids = $(element).jqGrid('getDataIDs');
+								var selId = $(element).jqGrid('getGridParam', 'selrow');
+								var currIndex = ids.indexOf(selId);
+
+								if (currIndex > 0) {
+									var prevId = ids[currIndex - 1];
+									$(element).jqGrid("setSelection", prevId, o.onSelectRow, event);
+
+									indexRow = currIndex - 1; // Update variabel global indexRow Anda
+
+									if (typeof scrollGridSelectionIntoView !== "undefined") {
+										scrollGridSelectionIntoView(element, prevId);
 									}
-									$(element).jqGrid("setSelection", id, o.onSelectRow, event);
-								}
-								$(element).triggerHandler("jqGridKeyUp", [id, previd, event]);
-								if ($.jgrid.isFunction(o.onUpKey)) {
-									o.onUpKey.call(element, id, previd, event);
 								}
 								event.preventDefault();
+								event.stopPropagation();
 							}
 							//if key is down arrow
 							if (event.keyCode === 40) {
-								r = target.nextSibling;
-								id = "";
-								if (r && $(r).hasClass("jqgrow")) {
-									if ($(r).is(":hidden")) {
-										while (r) {
-											r = r.nextSibling;
-											if (!$(r).is(":hidden") && $(r).hasClass("jqgrow")) {
-												id = r.id;
-												break;
-											}
-										}
-									} else {
-										id = r.id;
+								var ids = $(element).jqGrid('getDataIDs');
+								var selId = $(element).jqGrid('getGridParam', 'selrow');
+								var currIndex = ids.indexOf(selId);
+
+								if (currIndex < ids.length - 1) {
+									var nextId = ids[currIndex + 1];
+									$(element).jqGrid("setSelection", nextId, o.onSelectRow, event);
+
+									// Update indexRow agar loadComplete tidak menarik balik posisinya
+									indexRow = currIndex + 1;
+
+									if (typeof scrollGridSelectionIntoView !== "undefined") {
+										scrollGridSelectionIntoView(element, nextId);
 									}
-									$(element).jqGrid("setSelection", id, o.onSelectRow, event);
-								}
-								$(element).triggerHandler("jqGridKeyDown", [id, previd, event]);
-								if ($.jgrid.isFunction(o.onDownKey)) {
-									o.onDownKey.call(element, id, previd, event);
 								}
 								event.preventDefault();
+								event.stopPropagation();
 							}
 							// left
 							if (event.keyCode === 37) {
@@ -135,184 +127,452 @@ $.jgrid.extend({
 						}
 					}
 
+					var loader = $(element).data("lazyLoader") || (typeof lazyLoader !== "undefined" ? lazyLoader : null);
+					var hasLoader = loader !== null && loader !== undefined;
+					if (hasLoader && loader.loading) return;
+
+					var focusRow = function (rowType) {
+						setTimeout(function () {
+							var $g = $(element);
+							var newIds = $g.getDataIDs();
+							if (!newIds.length) return;
+
+							var bDiv = $g.closest(".ui-jqgrid-bdiv");
+							var targetId;
+
+							if (rowType === 'first') {
+								targetId = newIds[0];
+								bDiv.scrollTop(0);
+							} else if (rowType === 'last') {
+								targetId = newIds[newIds.length - 1];
+								bDiv.scrollTop(bDiv[0].scrollHeight);
+							}
+
+							if (targetId) {
+								$g.resetSelection().setSelection(targetId);
+								// $g.find(`tr#${targetId}`).focus();
+								if (!$(document.activeElement).is("input, textarea, select")) {
+									$g.find(`tr#${targetId}`).focus();
+								}
+							}
+						}, 150);
+					};
+
 					// page up
 					if (event.which == 33) {
-						if (currentPage > 1) {
-							$(element)
-								.jqGrid("setGridParam", {
-									page: $(element).getGridParam("page") - 1,
-								})
-								.trigger("reloadGrid");
-
-							event.preventDefault();
+						console.log("ketekan toolbarbindkeys page up")
+						if (hasLoader) {
+							if (loader.currentViewPage > 1) {
+								loader.loadGridData($(element).jqGrid("getGridParam", "postData"), loader.currentViewPage - 1, loader.rowsPerPage, 'up', 'jump', function () { focusRow('first'); });
+							}
+						} else {
+							if (currentPage > 1) {
+								$(element).jqGrid("setGridParam", { page: $(element).getGridParam("page") - 1 }).trigger("reloadGrid");
+							}
 						}
+						$(element).jqGrid("setGridParam", { triggerClick: true });
+						event.preventDefault();
+						event.stopImmediatePropagation();
 
-						$(element).jqGrid("setGridParam", {
-							triggerClick: false,
-						});
+						var $thisInput = $(this);
+						setTimeout(() => { $thisInput.focus(); }, 200);
 					}
 
 					// page down
 					if (event.which == 34) {
-						if (currentPage !== lastPage) {
-							$(element)
-								.jqGrid("setGridParam", {
-									page: $(element).getGridParam("page") + 1,
-								})
-								.trigger("reloadGrid");
-
-							event.preventDefault();
+						console.log("ketekan toolbarbindkeys page down")
+						if (hasLoader) {
+							if (loader.currentViewPage < loader.totalPages) {
+								loader.loadGridData($(element).jqGrid("getGridParam", "postData"), loader.currentViewPage + 1, loader.rowsPerPage, 'down', 'jump', function () { focusRow('first'); });
+							}
+						} else {
+							if (currentPage !== lastPage) {
+								$(element).jqGrid("setGridParam", { page: $(element).getGridParam("page") + 1 }).trigger("reloadGrid");
+							}
 						}
+						$(element).jqGrid("setGridParam", { triggerClick: true });
+						event.preventDefault();
+						event.stopImmediatePropagation();
 
-						$(element).jqGrid("setGridParam", {
-							triggerClick: false,
-						});
+						var $thisInput = $(this);
+						setTimeout(() => { $thisInput.focus(); }, 200);
 					}
 
 					// end
 					if (event.which == 35) {
-						if (currentPage < lastPage) { // Perbaiki logika: Hanya jalan jika belum di halaman terakhir
-							$(element)
-								.jqGrid("setGridParam", {
-									page: lastPage,
-								})
-								.trigger("reloadGrid");
+						console.log("ketekan toolbarbindkeys end")
+						if (hasLoader) {
+							if (loader.currentViewPage !== loader.totalPages) {
+								loader.loadGridData($(element).jqGrid("getGridParam", "postData"), loader.totalPages, loader.rowsPerPage, 'down', 'jump', function () { focusRow('last'); });
+							} else {
+								focusRow('last');
+							}
+						} else {
+							if (currentPage !== lastPage) {
+								$(element).jqGrid("setGridParam", { page: lastPage }).trigger("reloadGrid");
+							}
+							let ids = $(element).getDataIDs();
+							if (ids.length > 0) {
+								$(element).jqGrid("setSelection", ids[ids.length - 1], true, event);
+								if (typeof scrollGridSelectionIntoView !== "undefined") scrollGridSelectionIntoView(element, ids[ids.length - 1]);
+							}
 						}
+						$(element).jqGrid("setGridParam", { triggerClick: true });
+						event.preventDefault();
+						event.stopImmediatePropagation();
 
-						event.preventDefault(); // [KUNCI PERBAIKAN]: Taruh di luar agar kursor tidak pernah lompat ke akhir teks!
-
-						$(element).jqGrid("setGridParam", {
-							triggerClick: false,
-						});
+						var $thisInput = $(this);
+						setTimeout(() => { $thisInput.focus(); }, 200);
 					}
 
 					// home
 					if (event.which == 36) {
-						if (currentPage > 1) { // Perbaiki logika: Hanya jalan jika tidak sedang di halaman 1
-							$(element)
-								.jqGrid("setGridParam", {
-									page: 1,
-								})
-								.trigger("reloadGrid");
+						console.log("ketekan toolbarbindkeys home")
+						if (hasLoader) {
+							if (loader.currentViewPage > 1) {
+								loader.loadGridData($(element).jqGrid("getGridParam", "postData"), 1, loader.rowsPerPage, 'up', 'jump', function () { focusRow('first'); });
+							} else {
+								focusRow('first');
+							}
+						} else {
+							if (currentPage > 1) {
+								$(element).jqGrid("setGridParam", { page: 1 }).trigger("reloadGrid");
+							}
+							let ids = $(element).getDataIDs();
+							if (ids.length > 0) {
+								$(element).jqGrid("setSelection", ids[0], true, event);
+								if (typeof scrollGridSelectionIntoView !== "undefined") scrollGridSelectionIntoView(element, ids[0]);
+							}
 						}
+						$(element).jqGrid("setGridParam", { triggerClick: true });
+						event.preventDefault();
+						event.stopImmediatePropagation();
 
-						event.preventDefault(); // [KUNCI PERBAIKAN]: Taruh di luar agar kursor tidak pernah lompat ke awal teks!
-
-						$(element).jqGrid("setGridParam", {
-							triggerClick: false,
-						});
+						var $thisInput = $(this);
+						setTimeout(() => { $thisInput.focus(); }, 200);
 					}
 				});
 		});
 
 		return this;
 	},
-	customBindKeys: function () {
-		this.each(function () {
-			let element = this;
+	// customBindKeys: function (options) {
+	// 	var o = $.extend(
+	// 		{
+	// 			onEnter: null,
+	// 			onSpace: null,
+	// 			onLeftKey: null,
+	// 			onRightKey: null,
+	// 			onSelectRow: true,
+	// 			scrollingRows: true,
+	// 		},
+	// 		options || {}
+	// 	);
 
-			$(element).on("keydown", function (event) {
-				let currentPage = $(element).getGridParam("page");
-				let lastPage = $(element).getGridParam("lastpage");
+	// 	this.each(function () {
+	// 		let element = this;
 
-				// page up
-				if (event.which == 33) {
-					if (currentPage > 1) {
-						$(element)
-							.jqGrid("setGridParam", {
-								page: $(element).getGridParam("page") - 1,
-							})
-							.trigger("reloadGrid");
+	// 		$(element).off("keydown.custom").on("keydown.custom", function (event) {
+	// 			if ($(event.target).is("input, textarea, select")) {
+	// 				return;
+	// 			}
 
-						event.preventDefault();
-					}
+	// 			let currentPage = $(element).getGridParam("page");
+	// 			let lastPage = $(element).getGridParam("lastpage");
 
-					$(element).jqGrid("setGridParam", {
-						triggerClick: true,
-					});
-				}
+	// 			var loader = $(element).data("lazyLoader") || (typeof lazyLoader !== "undefined" ? lazyLoader : null);
+	// 			var hasLoader = loader !== null && loader !== undefined;
+	// 			if (hasLoader && loader.loading) return;
 
-				// page down
-				if (event.which == 34) {
-					if (currentPage !== lastPage) {
-						$(element)
-							.jqGrid("setGridParam", {
-								page: $(element).getGridParam("page") + 1,
-							})
-							.trigger("reloadGrid");
+	// 			var focusRow = function (rowType) {
+	// 				setTimeout(function () {
+	// 					var $g = $(element);
+	// 					var newIds = $g.getDataIDs();
+	// 					if (!newIds.length) return;
 
-						event.preventDefault();
-					}
+	// 					var bDiv = $g.closest(".ui-jqgrid-bdiv");
+	// 					var targetId;
 
-					$(element).jqGrid("setGridParam", {
-						triggerClick: true,
-					});
-				}
+	// 					if (rowType === 'first') {
+	// 						targetId = newIds[0];
+	// 						bDiv.scrollTop(0);
+	// 					} else if (rowType === 'last') {
+	// 						targetId = newIds[newIds.length - 1];
+	// 						bDiv.scrollTop(bDiv[0].scrollHeight);
+	// 					}
 
-				// end
-				if (event.which == 35) {
-					if (currentPage !== lastPage) {
-						$(element)
-							.jqGrid("setGridParam", {
-								page: $(element).getGridParam("lastpage"),
-							})
-							.trigger("reloadGrid");
+	// 					if (targetId) {
+	// 						$g.resetSelection().setSelection(targetId);
+	// 						$g.find(`tr#${targetId}`).focus();
+	// 					}
+	// 				}, 150);
+	// 			};
 
-						event.preventDefault();
-					}
+	// 			// page up
+	// 			if (event.which == 33) {
+	// 				console.log("ketekan customBindkeys page up")
+	// 				if (hasLoader) {
+	// 					if (loader.currentViewPage > 1) {
+	// 						loader.loadGridData($(element).jqGrid("getGridParam", "postData"), loader.currentViewPage - 1, loader.rowsPerPage, 'up', 'jump', function () { focusRow('first'); });
+	// 					}
+	// 				} else {
+	// 					if (currentPage > 1) {
+	// 						$(element).jqGrid("setGridParam", { page: $(element).getGridParam("page") - 1 }).trigger("reloadGrid");
+	// 					}
+	// 				}
+	// 				$(element).jqGrid("setGridParam", { triggerClick: true });
+	// 				event.preventDefault();
+	// 			}
 
-					$(element).jqGrid("setGridParam", {
-						triggerClick: true,
-					});
-				}
+	// 			// page down
+	// 			if (event.which == 34) {
+	// 				console.log("ketekan customBindkeys page down")
+	// 				if (hasLoader) {
+	// 					if (loader.currentViewPage < loader.totalPages) {
+	// 						loader.loadGridData($(element).jqGrid("getGridParam", "postData"), loader.currentViewPage + 1, loader.rowsPerPage, 'down', 'jump', function () { focusRow('first'); });
+	// 					}
+	// 				} else {
+	// 					if (currentPage !== lastPage) {
+	// 						$(element).jqGrid("setGridParam", { page: $(element).getGridParam("page") + 1 }).trigger("reloadGrid");
+	// 					}
+	// 				}
+	// 				$(element).jqGrid("setGridParam", { triggerClick: true });
+	// 				event.preventDefault();
+	// 			}
 
-				// home
-				if (event.which == 36) {
-					if (currentPage > 1) {
-						$(element)
-							.jqGrid("setGridParam", {
-								page: 1,
-							})
-							.trigger("reloadGrid");
+	// 			// end
+	// 			if (event.which == 35) {
+	// 				console.log("ketekan customBindkeys end")
+	// 				if (hasLoader) {
+	// 					if (loader.currentViewPage !== loader.totalPages) {
+	// 						loader.loadGridData($(element).jqGrid("getGridParam", "postData"), loader.totalPages, loader.rowsPerPage, 'down', 'jump', function () { focusRow('last'); });
+	// 					} else {
+	// 						focusRow('last');
+	// 					}
+	// 				} else {
+	// 					if (currentPage !== lastPage) {
+	// 						$(element).jqGrid("setGridParam", { page: lastPage }).trigger("reloadGrid");
+	// 					}
+	// 					let ids = $(element).getDataIDs();
+	// 					if (ids.length > 0) {
+	// 						$(element).jqGrid("setSelection", ids[ids.length - 1], true, event);
+	// 						if (typeof scrollGridSelectionIntoView !== "undefined") scrollGridSelectionIntoView(element, ids[ids.length - 1]);
+	// 					}
+	// 				}
+	// 				$(element).jqGrid("setGridParam", { triggerClick: true });
+	// 				event.preventDefault();
+	// 			}
 
-						event.preventDefault();
-					}
+	// 			// home
+	// 			if (event.which == 36) {
+	// 				console.log("ketekan customBindkeys home")
+	// 				if (hasLoader) {
+	// 					if (loader.currentViewPage > 1) {
+	// 						loader.loadGridData($(element).jqGrid("getGridParam", "postData"), 1, loader.rowsPerPage, 'up', 'jump', function () { focusRow('first'); });
+	// 					} else {
+	// 						focusRow('first');
+	// 					}
+	// 				} else {
+	// 					if (currentPage > 1) {
+	// 						$(element).jqGrid("setGridParam", { page: 1 }).trigger("reloadGrid");
+	// 					}
+	// 					let ids = $(element).getDataIDs();
+	// 					if (ids.length > 0) {
+	// 						$(element).jqGrid("setSelection", ids[0], true, event);
+	// 						if (typeof scrollGridSelectionIntoView !== "undefined") scrollGridSelectionIntoView(element, ids[0]);
+	// 					}
+	// 				}
+	// 				$(element).jqGrid("setGridParam", { triggerClick: true });
+	// 				event.preventDefault();
+	// 			}
 
-					$(element).jqGrid("setGridParam", {
-						triggerClick: true,
-					});
-				}
 
-				// arrow up
-        if (event.which == 38) {
-          let selrow = $(element).jqGrid('getGridParam', 'selrow');
-          let ids = $(element).getDataIDs();
-          let index = ids.indexOf(selrow);
-          if (index > 0) {
-            $(element).jqGrid('setSelection', ids[index - 1], true, event);
-            // Pindahkan fokus ke baris yang baru terpilih
-            $(`#${$.jgrid.jqID(element.id)} tr[id="${ids[index - 1]}"]`).focus();
-          }
-          event.preventDefault();
-        }
 
-        // arrow down
-        if (event.which == 40) {
-          let selrow = $(element).jqGrid('getGridParam', 'selrow');
-          let ids = $(element).getDataIDs();
-          let index = ids.indexOf(selrow);
-          if (index < ids.length - 1) {
-            $(element).jqGrid('setSelection', ids[index + 1], true, event);
-            // Pindahkan fokus ke baris yang baru terpilih
-            $(`#${$.jgrid.jqID(element.id)} tr[id="${ids[index + 1]}"]`).focus();
-          }
-          event.preventDefault();
-        }
-			});
-		});
+	// 			// arrow down
+	// 			// if (event.which == 40) {
+	// 			// 	if (hasLoader && loader.loading) { event.preventDefault(); return; }
 
-		return this;
-	},
+	// 			// 	let selrow = $(element).jqGrid('getGridParam', 'selrow');
+	// 			// 	if (selrow) {
+	// 			// 		let target = $(element).find(`tr#${selrow}`)[0];
+	// 			// 		let r = target.nextSibling;
+	// 			// 		let id = "";
+
+	// 			// 		if (r && $(r).hasClass("jqgrow")) {
+	// 			// 			if ($(r).is(":hidden")) {
+	// 			// 				while (r) {
+	// 			// 					r = r.nextSibling;
+	// 			// 					if (!$(r).is(":hidden") && $(r).hasClass("jqgrow")) {
+	// 			// 						id = r.id;
+	// 			// 						break;
+	// 			// 					}
+	// 			// 				}
+	// 			// 			} else {
+	// 			// 				id = r.id;
+	// 			// 			}
+	// 			// 		}
+
+	// 			// 		if (id) {
+	// 			// 			// Skenario 1: Normal (Pindah baris)
+	// 			// 			$(element).jqGrid('setSelection', id, true, event);
+	// 			// 			let targetRow = $(element).find(`tr#${id}`)[0];
+	// 			// 			if (targetRow) {
+	// 			// 				targetRow.focus({ preventScroll: true });
+	// 			// 				targetRow.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+	// 			// 			}
+	// 			// 		} else {
+	// 			// 			// Skenario 2: Mentok Bawah
+	// 			// 			if (hasLoader && loader.maxPageLoaded < loader.totalPages) {
+	// 			// 				let targetPage = loader.maxPageLoaded + 1;
+	// 			// 				loader.loadGridData(
+	// 			// 					$(element).jqGrid("getGridParam", "postData"),
+	// 			// 					targetPage,
+	// 			// 					loader.rowsPerPage,
+	// 			// 					'down',
+	// 			// 					'jump',
+	// 			// 					function () {
+	// 			// 						setTimeout(function () {
+	// 			// 							let newIds = $(element).getDataIDs();
+	// 			// 							if (newIds.length > 0) {
+	// 			// 								let firstId = newIds[0];
+	// 			// 								$(element).jqGrid('setSelection', firstId, true, event);
+
+	// 			// 								let bDiv = $(element).closest(".ui-jqgrid-bdiv");
+	// 			// 								bDiv.scrollTop(0);
+	// 			// 								loader.lastScrollTop = 0;
+
+	// 			// 								let targetRow = $(element).find(`tr#${firstId}`)[0];
+	// 			// 								if (targetRow) targetRow.focus({ preventScroll: true });
+	// 			// 							}
+	// 			// 						}, 150);
+	// 			// 					}
+	// 			// 				);
+	// 			// 			}
+	// 			// 		}
+	// 			// 	}
+	// 			// 	event.preventDefault();
+	// 			// }
+				
+
+	// 			// arrow up
+	// 			if (event.which == 38) {
+	// 				let selrow = $(element).jqGrid('getGridParam', 'selrow');
+	// 				if (selrow) {
+	// 					let target = $(element).find(`tr#${selrow}`)[0];
+	// 					let r = target.previousSibling;
+	// 					let id = "";
+
+	// 					if (r && $(r).hasClass("jqgrow")) {
+	// 						if ($(r).is(":hidden")) {
+	// 							while (r) {
+	// 								r = r.previousSibling;
+	// 								if (!$(r).is(":hidden") && $(r).hasClass("jqgrow")) {
+	// 									id = r.id;
+	// 									break;
+	// 								}
+	// 							}
+	// 						} else {
+	// 							id = r.id;
+	// 						}
+
+	// 						$(element).jqGrid('setSelection', id, true, event);
+
+
+	// 						// Atur posisi scroll menggunakan fungsi custom
+	// 						if (typeof scrollGridSelectionIntoView !== "undefined") {
+	// 							scrollGridSelectionIntoView(element, id);
+	// 						}
+	// 					}
+	// 				}
+	// 				event.preventDefault();
+	// 			}
+
+	// 			// arrow down
+	// 			if (event.which == 40) {
+	// 				var selrow = $(element).jqGrid('getGridParam', 'selrow');
+	// 				if (!selrow) { event.preventDefault(); return; }
+
+	// 				var currentRow = $(element).find(`tr#${selrow}`)[0];
+	// 				if (!currentRow) { event.preventDefault(); return; }
+
+	// 				var r = currentRow.nextSibling;
+	// 				var id = "";
+
+	// 				while (r) {
+	// 					if ($(r).hasClass("jqgrow") && !$(r).is(":hidden")) {
+	// 						id = r.id;
+	// 						break;
+	// 					}
+	// 					r = r.nextSibling;
+	// 				}
+
+	// 				if (id) {
+	// 					$(element).jqGrid('setSelection', id, false, event);
+
+	// 					// ✅ Scroll manual: pastikan row selalu kelihatan
+	// 					var bDiv = $(element).closest(".ui-jqgrid-bdiv");
+	// 					var targetRow = $(element).find(`tr#${id}`)[0];
+	// 					if (targetRow) {
+	// 						var bDivTop = bDiv.offset().top;
+	// 						var bDivBottom = bDivTop + bDiv.height();
+	// 						var rowTop = $(targetRow).offset().top;
+	// 						var rowBottom = rowTop + $(targetRow).height();
+
+	// 						// Kalau row di bawah viewport → scroll ke bawah
+	// 						if (rowBottom > bDivBottom) {
+	// 							bDiv.scrollTop(bDiv.scrollTop() + (rowBottom - bDivBottom));
+	// 						}
+	// 						// Kalau row di atas viewport → scroll ke atas
+	// 						else if (rowTop < bDivTop) {
+	// 							bDiv.scrollTop(bDiv.scrollTop() - (bDivTop - rowTop));
+	// 						}
+	// 					}
+	// 				}
+
+	// 				event.preventDefault();
+
+	// 			}
+
+
+	// 			// // arrow up
+  //       // if (event.which == 38) {
+
+  //       //   let selrow = $(element).jqGrid('getGridParam', 'selrow');
+  //       //   let ids = $(element).getDataIDs();
+  //       //   let index = ids.indexOf(selrow);
+  //       //   if (index > 0) {
+	// 			// 		let targetId = ids[index - 1];
+  //       //     $(element).jqGrid('setSelection', targetId, true, event);
+	// 			// 		$(element).find(`tr#${targetId}`).focus();
+  //       //     if (typeof scrollGridSelectionIntoView !== "undefined") {
+	// 			// 			console.log('harusnya si stay dulu ya diatas')
+  //       //       scrollGridSelectionIntoView(element, targetId);
+  //       //     }
+  //       //   }
+  //       //   event.preventDefault();
+  //       // }
+
+  //       // // arrow down
+  //       // if (event.which == 40) {
+  //       //   let selrow = $(element).jqGrid('getGridParam', 'selrow');
+  //       //   let ids = $(element).getDataIDs();
+  //       //   let index = ids.indexOf(selrow);
+  //       //   if (index < ids.length - 1) {
+	// 			// 		let targetId = ids[index + 1];
+  //       //     $(element).jqGrid('setSelection', targetId, true, event);
+	// 			// 		$(element).find(`tr#${targetId}`).focus();
+  //       //     if (typeof scrollGridSelectionIntoView !== "undefined") {
+	// 			// 			console.log('harusnya si stay dulu ya dibawah')
+  //       //       scrollGridSelectionIntoView(element, targetId);
+  //       //     }
+  //       //   }
+  //       //   event.preventDefault();
+  //       // }
+	// 		});
+	// 	});
+
+	// 	return this;
+	// },
 	loadClearFilter: function () {
 		return this.each(function () {
 			let self = this;
