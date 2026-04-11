@@ -86,15 +86,15 @@
     ];
   }
 
-  $(document).ready(async function() {
+  GridPreferenceManager.configure({
+    mode: 'server',
+    serverUrl: API_URL + '/grid-preferences',
+  });
 
-    GridPreferenceManager.configure({
-      mode: 'server',
-      serverUrl: API_URL + '/grid-preferences',
-    });
+  const savedPrefs = GridPreferenceManager.load(GRID_PREF_KEY);
+  const finalColModel = GridPreferenceManager.apply(getBaseColModel(), savedPrefs);
 
-    const savedPrefs = await GridPreferenceManager.load(GRID_PREF_KEY);
-    const finalColModel = GridPreferenceManager.apply(getBaseColModel(), savedPrefs);
+  $(document).ready(function() {
 
     const grid = createJqGrid({
       gridId: masterGrid,

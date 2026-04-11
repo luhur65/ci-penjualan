@@ -143,6 +143,15 @@ function focusToGrid() {
 		.find(`tr[id="${$(activeGrid).getDataIDs()[selectedIndex]}"]`)
 		.click();
 }
+function scrollGridSelectionIntoView(grid, rowId) {
+	var $grid = $(grid);
+	var escapedId = typeof $.jgrid !== 'undefined' ? $.jgrid.jqID(rowId) : $.escapeSelector(rowId);
+	var rowEl = $grid.find("tr#" + escapedId)[0];
+
+	if (rowEl) {
+		rowEl.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'nearest' });
+	}
+}
 
 function changeJqGridRowListText() {
 	$(document).find('select[id$="rowList"] option[value=0]').text("ALL");
@@ -479,14 +488,18 @@ function setErrorMessages(form, errors) {
 }
 
 function setCustomBindKeysLazy(grid) {
-	$(grid).off("keydown");
+	// $(grid).off("keydown");
 
 	setSidebarBindKeys();
 
-	var ns = 'lazyBind_' + grid.replace(/[^a-zA-Z0-9]/g, '');
-	$(document).off('keydown.' + ns).on('keydown.' + ns, function (e) {
+	// var ns = 'lazyBind_' + grid.replace(/[^a-zA-Z0-9]/g, '');
+	$(document).off('keydown.lazyGrid').on('keydown.lazyGrid', function (e) {
 
-		if (sidebarIsOpen) return;
+		var isFromInput = $(e.target).is("input, textarea, select");
+		var isPageKey = [33, 34, 35, 36].includes(e.keyCode);
+
+		// Kalau dari input dan bukan page key → skip (biarkan toolbarBindKeys handle)
+		if (sidebarIsOpen || (isFromInput && !isPageKey)) return;
 
 		var $grid = $(grid);
 
@@ -582,14 +595,11 @@ function setCustomBindKeysLazy(grid) {
 		if (e.keyCode === 38) {
 			if (currentIndex - 1 >= 0) {
 				$grid.resetSelection().setSelection(gridIds[currentIndex - 1]);
-				var rowHeight = $grid.getGridParam("rowHeight") || 26;
-				var bDiv = $grid.closest(".ui-jqgrid-bdiv");
-				var rowIdx = $grid.jqGrid("getInd", $grid.getGridParam("selrow"));
-				if (rowIdx < loader.totalRecord - 10) {
-					bDiv.scrollTop(bDiv.scrollTop() - rowHeight - 2);
+				if (typeof scrollGridSelectionIntoView !== "undefined") {
+					scrollGridSelectionIntoView($grid, gridIds[currentIndex - 1]);
 				}
 			} else if (currentPage > 1) {
-				loader.loadGridData(postData, currentPage - 1, rowsPerPage, 'up', 'jump', function () { focusRow('last'); });
+				loader.loadGridData(postData, currentPage - 1, rowsPerPage, 'up', 'jump');
 			}
 		}
 
@@ -597,14 +607,11 @@ function setCustomBindKeysLazy(grid) {
 		if (e.keyCode === 40) {
 			if (currentIndex + 1 < gridIds.length) {
 				$grid.resetSelection().setSelection(gridIds[currentIndex + 1]);
-				var rowHeight = $grid.getGridParam("rowHeight") || 26;
-				var bDiv = $grid.closest(".ui-jqgrid-bdiv");
-				var rowIdx = $grid.jqGrid("getInd", $grid.getGridParam("selrow"));
-				if (rowIdx > 12) {
-					bDiv.scrollTop(bDiv.scrollTop() + rowHeight + 2);
+				if (typeof scrollGridSelectionIntoView !== "undefined") {
+					scrollGridSelectionIntoView($grid, gridIds[currentIndex + 1]);
 				}
 			} else if (currentPage < totalPages) {
-				loader.loadGridData(postData, currentPage + 1, rowsPerPage, 'down', 'jump', function () { focusRow('first'); });
+				loader.loadGridData(postData, currentPage + 1, rowsPerPage, 'down', 'jump');
 			}
 		}
 
@@ -631,7 +638,14 @@ function setCustomBindKeys(grid) {
 
 	setSidebarBindKeys();
 
-	$(document).off("keydown.normalBind").on("keydown.normalBind", function (e) {
+	$(document).off("keydown").on("keydown", function (e) {
+
+		var isFromInput = $(e.target).is("input, textarea, select");
+		var isPageKey = [33, 34, 35, 36].includes(e.keyCode);
+	
+		// Kalau dari input dan bukan page key → skip (biarkan toolbarBindKeys handle)
+		if (sidebarIsOpen || (isFromInput && !isPageKey)) return;
+		
 		if (!sidebarIsOpen && activeGrid) {
 			if ($(activeGrid).data('lazyLoader')) return;
 			if (
@@ -779,27 +793,8 @@ function setCustomBindKeys(grid) {
 								.resetSelection()
 								.setSelection(gridIds[currentIndex - 1]);
 
-							var selInRow = $(activeGrid).getGridParam("selrow");
-
-							indexRowSelect = $(activeGrid).jqGrid(
-								"getInd",
-								selInRow
-							);
-
-							var currentRowHeight =
-								$(activeGrid).getGridParam("rowHeight") || 26;
-
-							var currentScrollTop = $(activeGrid)
-								.closest(".ui-jqgrid-bdiv")
-								.scrollTop();
-							var recordScrollUp =
-								$(activeGrid).getGridParam("reccount") - 10;
-							if (indexRowSelect < recordScrollUp) {
-								$(activeGrid)
-									.closest(".ui-jqgrid-bdiv")
-									.scrollTop(
-										currentScrollTop - currentRowHeight - 2
-									);
+							if (typeof scrollGridSelectionIntoView !== "undefined") {
+								scrollGridSelectionIntoView(activeGrid, gridIds[currentIndex - 1]);
 							}
 						}
 					}
@@ -808,27 +803,9 @@ function setCustomBindKeys(grid) {
 							$(activeGrid)
 								.resetSelection()
 								.setSelection(gridIds[currentIndex + 1]);
-							var currentRowHeight =
-								$(activeGrid).getGridParam("rowHeight") || 26;
 
-							var selInRow = $(activeGrid).getGridParam("selrow");
-							indexRowSelect = $(activeGrid).jqGrid(
-								"getInd",
-								selInRow
-							);
-
-							var currentScrollTop = $(activeGrid)
-								.closest(".ui-jqgrid-bdiv")
-								.scrollTop();
-
-							var recordsAll =
-								$(activeGrid).getGridParam("records");
-							if (indexRowSelect > 12) {
-								$(activeGrid)
-									.closest(".ui-jqgrid-bdiv")
-									.scrollTop(
-										currentScrollTop + currentRowHeight + 2
-									);
+							if (typeof scrollGridSelectionIntoView !== "undefined") {
+								scrollGridSelectionIntoView(activeGrid, gridIds[currentIndex + 1]);
 							}
 						}
 					}
@@ -844,11 +821,6 @@ function setCustomBindKeys(grid) {
 						}
 					}
 				}
-
-				$(".ui-jqgrid-bdiv").find("tbody").animate({
-					scrollTop: 200,
-				});
-				// $(".table-success").position().top > 300;
 			}
 		}
 	});
@@ -1117,4 +1089,29 @@ function setupKeyboardShortcuts() {
 
 		entry.btn.click();
 	});
+}
+
+
+// Helper Function untuk sinkronisasi filter toolbar
+function syncActiveFilterWithSelectedRow(grid, rowId) {
+	let gridEl = $(grid);
+	let activeEl = $(document.activeElement);
+
+	// Cek apakah kursor benar-benar sedang berada di dalam baris pencarian (filter toolbar)
+	if (activeEl.length && activeEl.closest('.ui-search-toolbar').length) {
+
+		// Ambil nama kolom dari atribut 'name' milik input pencarian tersebut
+		let colName = activeEl.attr('name');
+
+		if (colName) {
+			let rowData = gridEl.jqGrid('getRowData', rowId);
+			let rawContent = rowData[colName] || '';
+
+			// Bersihkan dari sisa tag HTML (seperti span/badge)
+			let cleanText = $('<div>').html(rawContent).text().trim();
+
+			// Timpa teks HANYA pada kotak input yang sedang aktif ini saja
+			activeEl.val(cleanText);
+		}
+	}
 }

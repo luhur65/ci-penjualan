@@ -1,11 +1,10 @@
 <script>
-
-function gridAcoColModel() {
+  function gridAcoColModel() {
     return [{
         label: '',
         name: '',
-        width: 40,
-        align: 'center',
+        width: 80,
+        align: 'left',
         sortable: false,
         clear: false,
         stype: 'input',
@@ -15,7 +14,12 @@ function gridAcoColModel() {
           clearSearch: false,
           dataInit: function(element) {
             $(element).removeClass('form-control')
-            $(element).parent().addClass('text-center')
+            $(element).parent().removeClass('text-center').css({
+              'text-align': 'left',
+              'padding-left': '12px', // Dorong sedikit ke kanan
+              'white-space': 'nowrap'
+            });
+            $(element).after("<span style='margin-left: 8px; font-weight: bold; vertical-align: middle; cursor: pointer;'>NO.</span>");
             $(element).on('click', function() {
               $(element).attr('disabled', true)
               if ($(this).is(':checked')) {
@@ -26,9 +30,11 @@ function gridAcoColModel() {
             })
           }
         },
-        formatter: (value, rowOptions, rowData) => {
-          return `<input type="checkbox" name="aco_ids[]" value="${rowData.id}" onchange="checkboxHandler(this)">`
-        },
+        formatter: function(value, rowOptions, rowData) {
+          // 3. Mensejajarkan checkbox Baris Data di bawah (Gunakan padding yang sama persis)
+          // DITULIS DALAM SATU BARIS TANPA ENTER
+          return "<div style='white-space: nowrap; padding-left: 14px;'><input type='checkbox' name='aco_ids[]' value='" + rowData.id + "' onchange='checkboxHandler(this)' style='margin: 0; vertical-align: middle; cursor: pointer;'><span class='custom-rn-text' style='display: inline-block; vertical-align: middle; margin-left: 8px;'></span></div>";
+        }
       },
       {
         label: 'CLASS',
@@ -73,7 +79,7 @@ function gridAcoColModel() {
         autowidth: true,
         shrinkToFit: false,
         height: 350,
-        rownumbers: true,
+        // rownumbers: true,
         rownumWidth: 45,
         rowList: [10, 20, 50, 0],
         rowNum: 10,
@@ -84,7 +90,7 @@ function gridAcoColModel() {
         prmNames: {
           sort: 'sortIndex',
           order: 'sortOrder',
-          rows: 'limit'
+          rows: 'rows'
         },
         jsonReader: {
           root: 'data',
@@ -108,6 +114,19 @@ function gridAcoColModel() {
         },
         loadComplete: function(data) {
           let grid = $(this)
+
+          let page = grid.jqGrid('getGridParam', 'page');
+          let rowNum = grid.jqGrid('getGridParam', 'rowNum');
+          let ids = grid.getDataIDs();
+
+          // Hitung index awal berdasarkan halaman (jika rowNum 0 / All, set index ke 0)
+          let startIndex = (rowNum == 0) ? 0 : (page - 1) * parseInt(rowNum);
+
+          $.each(ids, function(index, id) {
+            let currentNumber = startIndex + index + 1;
+            // Tembak angka tersebut ke dalam span di masing-masing baris
+            grid.find(`tr#${id} span.custom-rn-text`).text(currentNumber);
+          });
 
           changeJqGridRowListText()
 
@@ -157,11 +176,11 @@ function gridAcoColModel() {
           clearGlobalSearch($('#acoGrid'))
         },
       })
+      .toolbarBindKeys()
+      // .customBindKeys()
       .customPager()
 
     // loadClearFilter($('#acoGrid'))
     initGlobalSearch($('#acoGrid'), urlMaster)
   }
-
-
 </script>
