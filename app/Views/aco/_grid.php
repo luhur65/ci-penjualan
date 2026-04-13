@@ -103,7 +103,7 @@
           setGridLastRequest($(this), jqXHR)
         },
         onSelectRow: function(id, status, event) {
-          activeGrid = $(this)
+          // activeGrid = $(this)
           indexRow = $(this).jqGrid('getCell', id, 'rn') - 1
           page = $(this).jqGrid('getGridParam', 'page')
           let rows = $(this).jqGrid('getGridParam', 'postData').limit
@@ -130,8 +130,8 @@
 
           changeJqGridRowListText()
 
-          $(document).unbind('keydown')
-          setCustomBindKeys($(this))
+          $(document).unbind('keydown.detailGrid')
+          setDetailGridBindKeys($(this))
           // initResize($(this))
 
           $.each(selectedRows, function(key, value) {
@@ -176,7 +176,7 @@
           clearGlobalSearch($('#acoGrid'))
         },
       })
-      .toolbarBindKeys()
+      // .toolbarBindKeys()
       // .customBindKeys()
       .customPager()
 

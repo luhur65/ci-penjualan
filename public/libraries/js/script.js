@@ -1,4 +1,4 @@
-let activeGrid;
+// let activeGrid;
 
 let sm_dekstop_1 = "50px";
 let sm_dekstop_2 = "100px";
@@ -488,7 +488,7 @@ function setErrorMessages(form, errors) {
 }
 
 function setCustomBindKeysLazy(grid) {
-	// $(grid).off("keydown");
+	$(grid).off("keydown");
 
 	setSidebarBindKeys();
 
@@ -620,6 +620,71 @@ function setCustomBindKeysLazy(grid) {
 			var rowId = $grid.getGridParam("selrow");
 			var handler = $grid.jqGrid("getGridParam", "ondblClickRow");
 			if (handler) handler.call($grid[0], rowId);
+		}
+	});
+}
+
+function setDetailGridBindKeys(grid) {
+	$(document).off('keydown.detailGrid').on('keydown.detailGrid', function (e) {
+		// Kalau activeGrid masih master, jangan proses
+		if (activeGrid && activeGrid[0] === $(masterGrid)[0]) return;
+
+		var isFromInput = $(e.target).is("input, textarea, select");
+		if (isFromInput) return;
+
+		var $grid = $(grid);
+		var gridIds = $grid.getDataIDs();
+		var selectedRow = $grid.getGridParam("selrow");
+		var currentIndex = gridIds.indexOf(selectedRow);
+
+		// Arrow Up
+		if (e.keyCode === 38) {
+			e.preventDefault();
+			if (currentIndex > 0) {
+				$grid.resetSelection().setSelection(gridIds[currentIndex - 1]);
+				scrollGridSelectionIntoView($grid, gridIds[currentIndex - 1]);
+			}
+		}
+
+		// Arrow Down
+		if (e.keyCode === 40) {
+			e.preventDefault();
+			if (currentIndex < gridIds.length - 1) {
+				$grid.resetSelection().setSelection(gridIds[currentIndex + 1]);
+				scrollGridSelectionIntoView($grid, gridIds[currentIndex + 1]);
+			}
+		}
+
+		// Page Up
+		if (e.keyCode === 33) {
+			e.preventDefault();
+			let currentPage = $grid.getGridParam("page");
+			if (currentPage > 1) {
+				$grid.setGridParam({ page: currentPage - 1 }).trigger("reloadGrid");
+			}
+		}
+
+		// Page Down
+		if (e.keyCode === 34) {
+			e.preventDefault();
+			let currentPage = $grid.getGridParam("page");
+			let lastPage = $grid.getGridParam("lastpage");
+			if (currentPage < lastPage) {
+				$grid.setGridParam({ page: currentPage + 1 }).trigger("reloadGrid");
+			}
+		}
+
+		// Home
+		if (e.keyCode === 36) {
+			e.preventDefault();
+			$grid.setGridParam({ page: 1 }).trigger("reloadGrid");
+		}
+
+		// End
+		if (e.keyCode === 35) {
+			e.preventDefault();
+			let lastPage = $grid.getGridParam("lastpage");
+			$grid.setGridParam({ page: lastPage }).trigger("reloadGrid");
 		}
 	});
 }
@@ -1089,6 +1154,37 @@ function setupKeyboardShortcuts() {
 
 		entry.btn.click();
 	});
+
+	// $(document).on('keydown.focusSwitch', function (e) {
+	// 	// TAB untuk pindah fokus dari master ke detail yang aktif
+	// 	if (e.keyCode === 9 && !e.shiftKey) {
+	// 		let activeTabIndex = $("#tabs").tabs('option', 'active');
+	// 		let activeTabId = $("#tabs .ui-tabs-panel").eq(activeTabIndex).attr('id');
+
+	// 		if (activeGrid && activeGrid[0] === $(masterGrid)[0]) {
+	// 			// Pindah dari master ke detail
+	// 			e.preventDefault();
+	// 			if (activeTabId === 'role-tab') {
+	// 				activeGrid = $('#userRoleGrid');
+	// 				let selrow = activeGrid.getGridParam('selrow') || activeGrid.getDataIDs()[0];
+	// 				if (selrow) activeGrid.setSelection(selrow);
+	// 			} else if (activeTabId === 'acl-tab') {
+	// 				activeGrid = $('#userAclGrid');
+	// 				let selrow = activeGrid.getGridParam('selrow') || activeGrid.getDataIDs()[0];
+	// 				if (selrow) activeGrid.setSelection(selrow);
+	// 			}
+	// 		} else {
+	// 			// Pindah balik dari detail ke master
+	// 			e.preventDefault();
+	// 			activeGrid = $(masterGrid);
+	// 			let selrow = activeGrid.getGridParam('selrow') || activeGrid.getDataIDs()[0];
+	// 			if (selrow) {
+	// 				activeGrid.setSelection(selrow);
+	// 				$(`${masterGrid} tr[id="${selrow}"]`).focus();
+	// 			}
+	// 		}
+	// 	}
+	// });
 }
 
 

@@ -65,7 +65,7 @@
             // (Opsional) Logika simpan lebar kolom
           },
           onSelectRow: function(id) {
-            activeGrid = $(this);
+            // activeGrid = $(this);
             indexRow = $(this).jqGrid('getCell', id, 'rn') - 1;
             page = $(this).jqGrid('getGridParam', 'page');
             let rows = $(this).jqGrid('getGridParam', 'postData').limit || 10;
@@ -73,8 +73,9 @@
           },
           loadComplete: function(data) {
             changeJqGridRowListText();
+            
             $(document).off('keydown.detailGrid');
-            setCustomBindKeys($(this));
+            setDetailGridBindKeys($(this));
 
             if (typeof initResize === "function") initResize($(this));
 

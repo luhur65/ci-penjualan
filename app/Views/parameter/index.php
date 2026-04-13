@@ -200,6 +200,7 @@
             innerHTML: '<i class="fa fa-plus"></i> ADD',
             class: 'btn btn-primary btn-md mr-1',
             shortcut: 'a',
+            right: 'add',
             onClick: () => {
               createparameter()
             }
@@ -209,6 +210,7 @@
             innerHTML: '<i class="fa fa-pen"></i> EDIT',
             class: 'btn btn-success btn-md mr-1',
             shortcut: 'e',
+            right: 'edit',
             onClick: () => {
               selectedId = $("#jqGrid").jqGrid('getGridParam', 'selrow')
               updateparameter(selectedId)
@@ -219,6 +221,7 @@
             innerHTML: '<i class="fa fa-trash"></i> DELETE',
             class: 'btn btn-danger btn-md mr-1',
             shortcut: 'd',
+            right: 'delete',
             onClick: () => {
               selectedId = $("#jqGrid").jqGrid('getGridParam', 'selrow')
               deleteparameter(selectedId)
@@ -229,6 +232,7 @@
             innerHTML: '<i class="fa fa-print"></i> REPORT',
             class: 'btn btn-info btn-md mr-1',
             shortcut: 'r',
+            right: 'report',
             onClick: () => {
 
             }
@@ -238,6 +242,7 @@
             innerHTML: '<i class="fa fa-file-export"></i> EXPORT',
             class: 'btn btn-warning btn-md mr-1',
             shortcut: 'x',
+            right: 'export',
             onClick: () => {
 
             }

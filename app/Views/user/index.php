@@ -55,6 +55,7 @@
   let lazyLoader;
   let selectedId = null;
   let selectedRows = [];
+  let activeGrid = null;
   let sortname = 'fullname';
   let sortorder = 'asc';
   const GRID_PREF_KEY = 'user_master_grid';
@@ -236,7 +237,7 @@
             changeJqGridRowListText();
             triggerClick = true;
 
-            $(this).off('keydown.custom');
+            $(this).off('keydown.lazygrid');
             setCustomBindKeysLazy(masterGrid);
 
             let ids = $(this).getDataIDs();
@@ -256,10 +257,10 @@
 
                 selectedRowId = ids[indexRow];
                 $(`${masterGrid} tr[id="${selectedRowId}"]`).click();
-                // $(`${masterGrid} tr[id="${selectedRowId}"]`).focus();
-                if (!$(document.activeElement).is("input, textarea, select")) {
-                  $(`${masterGrid} tr[id="${selectedRowId}"]`).focus();
-                }
+                $(`${masterGrid} tr[id="${selectedRowId}"]`).focus();
+                // if (!$(document.activeElement).is("input, textarea, select")) {
+                //   $(`${masterGrid} tr[id="${selectedRowId}"]`).focus();
+                // }
                 triggerClick = false;
 
               } else {
@@ -267,10 +268,10 @@
                 selectedRowId = ids[indexRow];
                 $(masterGrid).setSelection(selectedRowId);
 
-                // $(`${masterGrid} tr[id="${selectedRowId}"]`).focus();
-                if (!$(document.activeElement).is("input, textarea, select")) {
-                  $(`${masterGrid} tr[id="${selectedRowId}"]`).focus();
-                }
+                $(`${masterGrid} tr[id="${selectedRowId}"]`).focus();
+                // if (!$(document.activeElement).is("input, textarea, select")) {
+                //   $(`${masterGrid} tr[id="${selectedRowId}"]`).focus();
+                // }
               }
 
 
@@ -289,6 +290,7 @@
             innerHTML: '<i class="fa fa-plus"></i> ADD',
             class: 'btn btn-primary mr-1',
             shortcut: 'a',
+            right: 'add',
             onClick: () => createUser()
           },
           {
@@ -296,6 +298,7 @@
             innerHTML: '<i class="fa fa-pen"></i> EDIT',
             class: 'btn btn-success mr-1',
             shortcut: 'e',
+            right: 'edit',
             onClick: () => updateUser($("#jqGrid").jqGrid('getGridParam', 'selrow'))
           },
           {
@@ -303,6 +306,7 @@
             innerHTML: '<i class="fa fa-trash"></i> DELETE',
             class: 'btn btn-danger mr-1',
             shortcut: 'd',
+            right: 'delete',
             onClick: () => deleteUser($("#jqGrid").jqGrid('getGridParam', 'selrow'))
           },
           {
@@ -310,6 +314,7 @@
             innerHTML: '<i class="fa fa-print"></i> REPORT',
             class: 'btn btn-info mr-1',
             shortcut: 'r',
+            right: 'report',
             onClick: () => {}
           },
           {
@@ -317,6 +322,7 @@
             innerHTML: '<i class="fa fa-file-export"></i> EXPORT',
             class: 'btn btn-warning mr-1',
             shortcut: 'x',
+            right: 'export',
             onClick: () => exportExcel()
           },
         ]
@@ -327,10 +333,12 @@
 
     loadUserRoleGrid();
     loadUserAclGrid();
-
+  
     // Setup Pintasan Keyboard Global
     setupKeyboardShortcuts();
 
+    // activeGrid = $(masterGrid);
+    
     $("#tabs").tabs({
       activate: function(event, ui) {
         let selectedMasterId = $(masterGrid).jqGrid('getGridParam', 'selrow');

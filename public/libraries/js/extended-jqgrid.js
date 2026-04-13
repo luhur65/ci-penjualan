@@ -996,6 +996,10 @@ $.jgrid.extend({
 													buttonElement.setAttribute('data-shortcut', button.shortcut);
 												}
 
+												if (button.right) {
+													buttonElement.setAttribute('data-right', button.right);
+												}
+
 												if (button.onClick) {
 													$(document).on(
 														"click",

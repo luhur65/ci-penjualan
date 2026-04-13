@@ -65,7 +65,7 @@
             // uploadUserPreferencesToServer(authUserId, namaMenuUserRole, preferences);
           },
           onSelectRow: function(id) {
-            activeGrid = $(this);
+            // activeGrid = $(this);
             indexRow = $(this).jqGrid('getCell', id, 'rn') - 1;
             page = $(this).jqGrid('getGridParam', 'page');
             let rows = $(this).jqGrid('getGridParam', 'postData').rows || 10;
@@ -74,8 +74,8 @@
           loadComplete: function(data) {
             changeJqGridRowListText();
 
-            $(document).unbind('keydown');
-            setCustomBindKeys($(this));
+            $(document).unbind('keydown.detailGrid');
+            setDetailGridBindKeys($(this));
 
             if (typeof initResize === "function") initResize($(this));
 
