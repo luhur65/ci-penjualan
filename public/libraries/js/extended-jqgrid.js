@@ -983,10 +983,12 @@ $.jgrid.extend({
 														let underline = document.createElement("u");
 														underline.textContent = text[index];
 														let after = document.createTextNode(text.substring(index + 1));
+														let parent = textNode.parentNode;
 
-														temp.appendChild(before);
-														temp.appendChild(underline);
-														temp.appendChild(after);
+														parent.insertBefore(before, textNode);
+														parent.insertBefore(underline, textNode);
+														parent.insertBefore(after, textNode);
+														parent.removeChild(textNode);
 													}
 												}
 
