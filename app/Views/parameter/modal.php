@@ -161,7 +161,7 @@
             <i class="fa fa-check"></i>
             Save
           </button>
-          <button type="button" class="btn btn-outline-primaryy" data-dismiss="modal">
+          <button type="button" class="btn btn-outline-primary" data-dismiss="modal">
             <i class="fa fa-times"></i>
             Cancel
           </button>

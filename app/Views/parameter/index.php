@@ -26,6 +26,7 @@
   let lazyLoader;
   let sortname = 'menukode';
   let sortorder = 'asc';
+  let activeGrid = null;
   const GRID_PREF_KEY = 'parameter_master_grid';
   const urlMaster = '/parameters';
   const masterGrid = '#jqGrid';
@@ -293,7 +294,7 @@
         ]
       })
       .permissions(accessRights);
-      
+
     // Drag and Drop Column
     $(`${masterGrid}`).closest('.ui-jqgrid-view')
       .find('thead tr.ui-jqgrid-labels')
