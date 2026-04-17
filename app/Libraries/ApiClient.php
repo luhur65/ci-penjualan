@@ -20,7 +20,7 @@ class ApiClient
       'http_errors' => false, // Kunci Utama: Cegah cURL melempar Exception pada error 4xx/5xx
       'headers' => [
         'Accept'          => 'application/json',
-        'Accept-Encoding' => 'gzip',
+        // 'Accept-Encoding' => 'gzip',
       ],
     ];
 

@@ -16,8 +16,7 @@ if (!function_exists('fetch_combo_status')) {
 
     $client = new ApiClient();
 
-    $apiUrl = '/parameter/combo?grp=' . rawurlencode($grp)
-      . '&subgrp=' . rawurlencode($subgrp);
+    $apiUrl = '/parameter/combo?grp=' . urlencode($grp) . '&subgrp=' . urlencode($subgrp);
 
     try {
 
@@ -27,7 +26,7 @@ if (!function_exists('fetch_combo_status')) {
         return [];
       }
 
-      $data = json_decode($response->getBody(), true) ?: [];
+      $data = json_decode($response->getBody(), true) ?? [];
     } catch (\Exception $e) {
 
       log_message('error', "fetch_combo_status: " . $e->getMessage());
