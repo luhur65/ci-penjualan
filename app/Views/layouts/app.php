@@ -138,7 +138,9 @@
   <script src="<?= base_url('public/my-component/ColumnSettingsManager.js?version=' . config('App')->version) ?>"></script>
   <script src="<?= base_url('public/my-component/JqGridVirtualDOM.js?version=' . config('App')->version) ?>"></script>
   <script src="<?= base_url('public/my-component/DraftFormManager.js?version=' . config('App')->version) ?>"></script>
-  <script src="<?= base_url('public/my-component/LookupComponent.js?version=' . config('App')->version) ?>"></script>
+  <script src="<?= base_url('public/my-component/lookup/LookupRegistry.js?version=' . config('App')->version) ?>"></script>
+  <script src="<?= base_url('public/my-component/lookup/LookupV6.js?version=' . config('App')->version) ?>"></script>
+  <!-- <script src="<?= base_url('public/my-component/LookupComponent.js?version=' . config('App')->version) ?>"></script> -->
   <!-- <script src="<?= base_url('public/my-component/Socket.js?version=' . config('App')->version) ?>"></script> -->
   <!-- Custom JS -->
   <script>
@@ -641,7 +643,11 @@
         // Simpan current value jika ada di specialFields
         if (specialFields.includes(key)) {
           element.data('current-value', value);
+          element.trigger('change');
+          const lookupInstance = element.getLookupV6();
+          if (lookupInstance) lookupInstance._toggleClearBtn();
         }
+
       });
     }
 
@@ -674,6 +680,20 @@
       }
 
       return 'Terjadi kesalahan';
+    }
+
+    /** 
+     * Scroll ke baris tertentu
+     * @param {jQuery} grid - grid element
+     * @param {string} rowId - row id
+     */
+    function scrollToRow(grid, rowId) {
+      let bDiv = grid.parents('.ui-jqgrid-bdiv');
+      let rowEl = grid.find(`tr#${rowId}`);
+      if (rowEl.length > 0) {
+        let scrollPos = rowEl.position().top + bDiv.scrollTop() - (bDiv.height() / 2) + (rowEl.height() / 2);
+        bDiv.scrollTop(scrollPos);
+      }
     }
 
 
@@ -712,6 +732,24 @@
           $(`#${buttonId}`).hide();
         }
       }
+    }
+
+    function fetchMultipleData(requestArray) {
+      const promises = requestArray.map(({
+        url,
+        postData
+      }) => dataLookup(url, postData))
+
+      return Promise.all(promises)
+    }
+
+    function dataLookup(url, postData) {
+      return ajaxWithRefresh({
+        url: url,
+        method: 'GET',
+        dataType: 'json',
+        data: postData
+      });
     }
   </script>
   <?= $this->renderSection('scripts') ?>

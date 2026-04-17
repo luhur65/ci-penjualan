@@ -4,7 +4,7 @@
       <div class="modal-content">
 
         <div class="modal-header">
-          <p class="modal-title" id="crudModalTitle"></p>
+          <p class="modal-title mx-2" id="crudModalTitle"></p>
           <button type="button" class="close" data-dismiss="modal" aria-label="Close">
           </button>
         </div>
@@ -172,9 +172,9 @@
             <i class="fa fa-times"></i>
             Cancel
           </button>
-          <button type="button" id="btnGetLastData" class="btn btn-info ml-auto" style="display: none;">
+          <!-- <button type="button" id="btnGetLastData" class="btn btn-info ml-auto" style="display: none;">
             <i class="fa fa-history"></i> Last Data
-          </button>
+          </button> -->
         </div>
       </div>
     </form>
@@ -185,16 +185,15 @@
   let drafManager;
   let modalBody = $('#crudModal').find('.modal-body').html();
 
-  $(document).ready(function() {
+  draftManager = new DraftFormManager('#crudForm', {
+    debug: false,
+    expiry: 1000 * 60 * 60 * 24
+  });
 
-    draftManager = new DraftFormManager('#crudForm', {
-      debug: true,
-      expiry: 1000 * 60 * 60 * 24
-    });
+  $(document).ready(function() {
 
     let submitButton = $('#btnSubmit');
     let cancelButton = $('#btnCancel');
-    let getLastDataButton = $('#btnGetLastData');
 
     submitButton.click(async function(e) {
       e.preventDefault();
@@ -267,15 +266,15 @@
           data: JSON.stringify(data)
         });
 
-        if (action === 'add') {
+        if (typeof draftManager !== 'undefined' && action === 'add') {
           draftManager.clear();
-          getLastDataButton.hide();
         }
 
         // Success handling
         form.trigger('reset');
         $('#crudModal').modal('hide');
         selectedRows = [];
+
         id = response.data.id;
         let payload = response.data;
         let grid = $(masterGrid);
@@ -286,50 +285,30 @@
           loader.resetGridState(false);
 
           if (action === 'delete') {
-            id = payload.id || '';
-            indexRow = payload.offset % loader.rowsPerPage;
+            let targetId = payload.id || '';
+            let targetIndex = payload.offset % loader.rowsPerPage;
 
             loader.loadGridData(postData, payload.page, loader.rowsPerPage, 'down', 'jump', function() {
               setTimeout(() => {
                 let ids = grid.getDataIDs();
-                let bDiv = grid.parents('.ui-jqgrid-bdiv');
-                let targetId = payload.id || ids[Math.min(indexRow, ids.length - 1)];
+                let finalId = targetId || ids[Math.min(targetIndex, ids.length - 1)];
+                if (!finalId) return;
 
-                if (!targetId) return;
-
-                grid.jqGrid('setSelection', targetId, true);
-
-                let rowEl = grid.find(`tr#${targetId}`);
-                if (rowEl.length > 0) {
-                  let scrollPos = rowEl.position().top + bDiv.scrollTop() -
-                    (bDiv.height() / 2) +
-                    (rowEl.height() / 2);
-                  bDiv.scrollTop(scrollPos);
-                }
+                grid.jqGrid('setSelection', finalId, true);
+                scrollToRow(grid, finalId);
               }, 100);
             });
           } else {
             // ADD / EDIT
-
             loader.loadGridData(postData, payload.page, loader.rowsPerPage, 'down', 'jump', function() {
               setTimeout(() => {
                 grid.jqGrid('setSelection', payload.id, true);
-
-                let bDiv = grid.parents('.ui-jqgrid-bdiv');
-                let selectedRow = grid.find(`tr#${payload.id}`);
-
-                if (selectedRow.length > 0) {
-                  let scrollPos = selectedRow.position().top + bDiv.scrollTop() -
-                    (bDiv.height() / 2) +
-                    (selectedRow.height() / 2);
-                  bDiv.scrollTop(scrollPos);
-                }
+                scrollToRow(grid, payload.id);
               }, 100);
             });
           }
-
         } else {
-          $('#jqGrid').jqGrid('setGridParam', {
+          grid.jqGrid('setGridParam', {
             page: response.data.page
           }).trigger('reloadGrid');
         }
@@ -364,12 +343,6 @@
       $('#crudModal').find('.modal-body').html(modalBody);
     });
 
-    getLastDataButton.click(function() {
-      draftManager.restore();
-
-      // (Opsional) Sembunyikan tombol setelah draf berhasil dimuat
-      $(this).hide();
-    });
 
   });
 
@@ -427,14 +400,12 @@
     $('.invalid-feedback').remove();
 
 
+    await setStatusAktifOptions(form);
+
     // menampilkan tombol
     if (localStorage.getItem(draftManager.getKey())) {
-      $('#btnGetLastData').show();
-    } else {
-      $('#btnGetLastData').hide();
+      draftManager.restore();
     }
-
-    await setStatusAktifOptions(form);
 
     $('#crudModal').modal('show')
     $('.modal-loader').addClass('d-none')
@@ -533,6 +504,13 @@
 
     $('#processingLoader').removeClass('d-none');
 
+    const data = {
+      rows: 0,
+      sord: $(masterGrid).jqGrid('getGridParam', 'sortorder'),
+      sidx: $(masterGrid).jqGrid('getGridParam', 'sortname'),
+      filters: $(masterGrid).jqGrid('getGridParam', 'postData').filters,
+    }
+
     try {
       // 1. Panggil API menggunakan ajaxWithRefresh yang sudah kita racik sebelumnya
       const response = await ajaxWithRefresh({
@@ -542,12 +520,7 @@
         xhrFields: {
           responseType: 'arraybuffer'
         },
-        data: {
-          rows: 0,
-          sord: $(masterGrid).jqGrid('getGridParam', 'sortorder'),
-          sidx: $(masterGrid).jqGrid('getGridParam', 'sortname'),
-          filters: $(masterGrid).jqGrid('getGridParam', 'postData').filters,
-        }
+        data: JSON.stringify(data)
       });
 
       // 3. Jika berhasil, rakit file Excel dari binary response tersebut
@@ -596,56 +569,6 @@
 
 
   function initLookup() {
-
-    // --- INSTANSIASI CLASS ---
-    // new LookupComponent('.jenisorder-lookup', {
-    //   title: 'Testing Lookup',
-    //   endpoint: 'menu', // Endpoint API
-    //   searching: ['keterangan'],
-
-    //   // Hook sebelum request ke server
-    //   beforeProcess: function() {
-    //     // 'this' mengacu pada instance class, kita update properti postData
-    //     // this.settings.postData = {
-    //     //   Aktif: 'AKTIF',
-    //     //   custom_filter: 'TEST'
-    //     // };
-    //   },
-
-    //   // Saat data dipilih
-    //   onSelectRow: (data, inputEl) => {
-    //     // Kita pakai document.querySelector untuk ambil elemen lain (pengganti jquery selector)
-    //     // Mengisi Input Hidden ID
-    //     const idInput = document.querySelector('[name="jenisorder_id"]');
-    //     if (idInput) idInput.value = data.id;
-
-    //     // Mengisi Input Teks (Display)
-    //     inputEl.value = data.keterangan;
-    //   },
-
-    //   // Saat tombol silang / cancel ditekan
-    //   onCancel: (inputEl) => {
-    //     // Class otomatis menyimpan nilai lama di 'this.currentValue'
-    //     // Tapi karena kita passing element, kita kembalikan logic manualnya
-    //     // (Note: Di class ini saya sudah handle logic revert valuenya sebenarnya)
-    //   },
-
-    //   // Saat input dihapus manual
-    //   onClear: (inputEl) => {
-    //     // Reset Hidden ID
-    //     const idInput = document.querySelector('[name="jenisorder_id"]');
-    //     if (idInput) idInput.value = '';
-
-    //     // Reset Form Lain
-    //     const upahId = document.querySelector('[name="upah_id"]');
-    //     if (upahId) upahId.value = '';
-
-    //     const upah = document.querySelector('[name="upah"]');
-    //     if (upah) upah.value = '';
-
-    //     inputEl.value = '';
-    //   }
-    // });
 
   }
 

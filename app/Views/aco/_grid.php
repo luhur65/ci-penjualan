@@ -54,14 +54,14 @@
         label: 'KETERANGAN',
         name: 'keterangan',
         align: 'left',
-        width: 200,
-        // width: (detectDeviceType() == "desktop") ? md_dekstop_2 : md_mobile_2,
+        // width: 200,
+        width: (detectDeviceType() == "desktop") ? md_dekstop_2 : md_mobile_2,
       },
       {
         label: 'Nama',
         name: 'nama',
-        width: 200,
-        // width: (detectDeviceType() == "desktop") ? lg_dekstop_2 : lg_mobile_2,
+        // width: 200,
+        width: (detectDeviceType() == "desktop") ? lg_dekstop_2 : lg_mobile_2,
       },
     ];
   }

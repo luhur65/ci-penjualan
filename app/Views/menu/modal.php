@@ -3,7 +3,7 @@
     <form method="POST" id="crudForm">
       <div class="modal-content">
         <div class="modal-header">
-          <p class="modal-title" id="crudModalTitle"></p>
+          <p class="modal-title mx-2" id="crudModalTitle"></p>
           <button type="button" class="close" data-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
@@ -81,13 +81,13 @@
             <i class="fa fa-check"></i>
             Save
           </button>
-          <button type="button" class="btn btn-secondary" data-dismiss="modal">
+          <button type="button" class="btn btn-outline-primary" data-dismiss="modal">
             <i class="fa fa-times"></i>
             Cancel
           </button>
-          <button type="button" id="btnGetLastData" class="btn btn-info ml-auto" style="display: none;">
+          <!-- <button type="button" id="btnGetLastData" class="btn btn-info ml-auto" style="display: none;">
             <i class="fa fa-history"></i> Last Data
-          </button>
+          </button> -->
         </div>
       </div>
     </form>
@@ -98,16 +98,16 @@
   let draftManager;
   let modalBody = $('#crudModal').find('.modal-body').html();
 
+  draftManager = new DraftFormManager('#crudForm', {
+    debug: true,
+    expiry: 1000 * 60 * 60 * 24
+  });
+
   $(document).ready(function() {
 
-    draftManager = new DraftFormManager('#crudForm', {
-      debug: true,
-      expiry: 1000 * 60 * 60 * 24
-    });
 
     let submitButton = $('#btnSubmit');
     let cancelButton = $('#btnCancel');
-    let getLastDataButton = $('#btnGetLastData');
 
     submitButton.click(async function(e) {
       e.preventDefault();
@@ -121,7 +121,7 @@
 
       // Ambil semua elemen dengan name
       const data = {};
-      form.find('[name]').each(function() {
+      form.find('[name]').not('.ui-jqgrid [name]').each(function() {
         const el = $(this);
         const name = el.attr('name').replace('[]', '');
         let value = el.val();
@@ -171,9 +171,8 @@
           data: JSON.stringify(data)
         });
 
-        if (action === 'add') {
+        if (typeof draftManager !== 'undefined' && action === 'add') {
           draftManager.clear();
-          getLastDataButton.hide();
         }
 
         // Success handling
@@ -190,26 +189,17 @@
           loader.resetGridState(false);
 
           if (action === 'delete') {
-            id = payload.id || '';
-            indexRow = payload.offset % loader.rowsPerPage;
+            let targetId = payload.id || '';
+            let targetIndex = payload.offset % loader.rowsPerPage;
 
             loader.loadGridData(postData, payload.page, loader.rowsPerPage, 'down', 'jump', function() {
               setTimeout(() => {
                 let ids = grid.getDataIDs();
-                let bDiv = grid.parents('.ui-jqgrid-bdiv');
-                let targetId = payload.id || ids[Math.min(indexRow, ids.length - 1)];
+                let finalId = targetId || ids[Math.min(targetIndex, ids.length - 1)];
+                if (!finalId) return;
 
-                if (!targetId) return;
-
-                grid.jqGrid('setSelection', targetId, true);
-
-                let rowEl = grid.find(`tr#${targetId}`);
-                if (rowEl.length > 0) {
-                  let scrollPos = rowEl.position().top + bDiv.scrollTop() -
-                    (bDiv.height() / 2) +
-                    (rowEl.height() / 2);
-                  bDiv.scrollTop(scrollPos);
-                }
+                grid.jqGrid('setSelection', finalId, true);
+                scrollToRow(grid, finalId);
               }, 100);
             });
           } else {
@@ -217,16 +207,7 @@
             loader.loadGridData(postData, payload.page, loader.rowsPerPage, 'down', 'jump', function() {
               setTimeout(() => {
                 grid.jqGrid('setSelection', payload.id, true);
-
-                let bDiv = grid.parents('.ui-jqgrid-bdiv');
-                let selectedRow = grid.find(`tr#${payload.id}`);
-
-                if (selectedRow.length > 0) {
-                  let scrollPos = selectedRow.position().top + bDiv.scrollTop() -
-                    (bDiv.height() / 2) +
-                    (selectedRow.height() / 2);
-                  bDiv.scrollTop(scrollPos);
-                }
+                scrollToRow(grid, payload.id);
               }, 100);
             });
           }
@@ -250,13 +231,6 @@
 
     cancelButton.click(function() {
       $('#crudModal').find('.modal-body').html(modalBody);
-    });
-
-    getLastDataButton.click(function() {
-      draftManager.restore();
-
-      // (Opsional) Sembunyikan tombol setelah draf berhasil dimuat
-      $(this).hide();
     });
 
   })
@@ -284,9 +258,7 @@
 
       // menampilkan tombol
       if (localStorage.getItem(draftManager.getKey())) {
-        $('#btnGetLastData').show();
-      } else {
-        $('#btnGetLastData').hide();
+        draftManager.restore();
       }
 
       modal.modal('show')
@@ -432,5 +404,4 @@
       throw error; // agar bisa ditangkap di caller
     }
   }
-
 </script>

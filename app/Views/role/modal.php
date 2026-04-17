@@ -4,170 +4,52 @@
       <div class="modal-content">
 
         <div class="modal-header">
-          <p class="modal-title" id="crudModalTitle"></p>
+          <p class="modal-title mx-2" id="crudModalTitle"></p>
           <button type="button" class="close" data-dismiss="modal" aria-label="Close">
           </button>
         </div>
-        <form action="" method="post">
-          <div class="modal-body">
-            <div class="row form-group">
-              <div class="col-12 col-sm-3 col-md-2" style="display:none">
-                <label class="col-form-label">ID</label>
-              </div>
-              <div class="col-12 col-sm-9 col-md-10" style="display:none">
-                <input type="hidden" name="id" class="form-control" readonly>
-              </div>
+        <div class="modal-body">
+          <div class="row form-group">
+            <div class="col-12 col-sm-3 col-md-2" style="display:none">
+              <label class="col-form-label">ID</label>
             </div>
-            <!-- <input type="text" name="id" class="form-control" hidden> -->
-            <!-- <div class="row form-group">
-              <div class="col-12 col-sm-3 col-md-2">
-                <label class="col-form-label">
-                  Nama Lengkap <span class="text-danger">*</span>
-                </label>
-              </div>
-              <div class="col-12 col-sm-9 col-md-10">
-                <input type="text" name="fullname" class="form-control">
-              </div>
-            </div> -->
-            <div class="row form-group">
-              <div class="col-12 col-sm-3 col-md-2">
-                <label class="col-form-label">
-                  Role Name <span class="text-danger">*</span>
-                </label>
-              </div>
-              <div class="col-12 col-sm-9 col-md-10">
-                <input type="text" name="rolename" class="form-control">
-              </div>
-            </div>
-            <!-- <div class="row form-group">
-              <div class="col-12 col-sm-3 col-md-2">
-                <label class="col-form-label">
-                  Email <span class="text-danger">*</span>
-                </label>
-              </div>
-              <div class="col-12 col-sm-9 col-md-10">
-                <input type="text" name="email" class="form-control">
-              </div>
-            </div> -->
-            <!-- <div class="row form-group sometimes">
-              <div class="col-12 col-sm-3 col-md-2">
-                <label class="col-form-label">
-                  Password <span class="text-danger">*</span>
-                </label>
-              </div>
-              <div class="col-12 col-sm-9 col-md-10">
-                <div class="input-group">
-                  <input type="password" name="password" class="form-control password">
-                  <div class="input-group-append">
-                    <div class="input-group-text focusPass">
-                      <span class="fas fa-eye toggle-password" toggle=".password"></span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div> -->
-            <!-- <div class="row form-group">
-              <div class="col-12 col-sm-3 col-md-2">
-                <label class="col-form-label">
-                  Cabang <span class="text-danger">*</span>
-                </label>
-              </div>
-              <div class="col-12 col-sm-9 col-md-10">
-                <input type="hidden" name="cabang_id">
-                <input type="text" name="cabang" id="cabang" class="form-control cabang-lookup">
-              </div>
-            </div> -->
-            <!-- <div class="row form-group">
-              <div class="col-12 col-sm-3 col-md-2">
-                <label class="col-form-label">
-                  Karyawan ID <span class="text-danger">*</span>
-                </label>
-              </div>
-              <div class="col-12 col-sm-9 col-md-10">
-                <input type="hidden" name="karyawan_id">
-                <input type="text" name="karyawan_id_nama" id="karyawan_id_nama" class="form-control lg-form karyawanhr_lookup">
-              </div>
-            </div> -->
-            <!-- <div class="row form-group">
-              <div class="col-12 col-sm-3 col-md-2">
-                <label class="col-form-label">
-                  Status Karyawan <span class="text-danger">*</span>
-                </label>
-              </div>
-              <div class="col-12 col-sm-9 col-md-10">
-                <select name="karyawan_id" class="form-select select2bs4" style="width: 100%;">
-                  <option value="">-- PILIH STATUS KARYAWAN --</option>
-                </select>
-              </div>
-            </div> -->
-            <!-- <div class="row form-group">
-              <div class="col-12 col-sm-3 col-md-2">
-                <label class="col-form-label">
-                  Dashboard
-                </label>
-              </div>
-              <div class="col-12 col-sm-9 col-md-10">
-                <input type="text" name="dashboard" class="form-control">
-              </div>
-            </div> -->
-
-            <!-- <div class="row form-group">
-              <div class="col-12 col-sm-3 col-md-2">
-                <label class="col-form-label">
-                  Status Aktif <span class="text-danger">*</span>
-                </label>
-              </div>
-              <div class="col-12 col-sm-9 col-md-10">
-                <input type="hidden" name="statusaktif">
-                <input type="text" name="statusaktifnama" id="statusaktifnama" class="form-control lg-form statusaktif-lookup">
-
-              </div>
-            </div> -->
-            <!-- <div class="row form-group">
-              <div class="col-12 col-sm-3 col-md-2">
-                <label class="col-form-label">
-                  Status Akses <span class="text-danger">*</span>
-                </label>
-              </div>
-              <div class="col-12 col-sm-9 col-md-10">
-                <input type="hidden" name="statusakses">
-                <input type="text" name="statusaksesnama" id="statusaksesnama" class="form-control lg-form statusakses-lookup">
-              </div>
-            </div> -->
-
-            <!-- <div class="row form-group rolediv">
-              <div class="col-12 col-sm-3 col-md-2">
-                <label class="col-form-label">
-                  Role <span class="text-danger"></span>
-                </label>
-              </div>
-              <div class="col-12 col-sm-9 col-md-10">
-                <select name="role_ids[]" id="multiple" class="select2bs4 form-control" multiple="multiple"></select>
-              </div>
-            </div> -->
-
-            <div class="row form-group">
-              <div class="col-12">
-
-                <table id="acoGrid"></table>
-
-              </div>
+            <div class="col-12 col-sm-9 col-md-10" style="display:none">
+              <input type="hidden" name="id" class="form-control" readonly>
             </div>
           </div>
-          <div class="modal-footer justify-content-start">
-            <button type="submit" id="btnSubmit" class="btn btn-primary">
-              <i class="fa fa-check"></i>
-              Save
-            </button>
-            <button type="button" class="btn btn-secondary" data-dismiss="modal">
-              <i class="fa fa-times"></i>
-              Cancel
-            </button>
-            <button type="button" id="btnGetLastData" class="btn btn-info ml-auto" style="display: none;">
-              <i class="fa fa-history"></i> Last Data
-            </button>
+          <div class="row form-group">
+            <div class="col-12 col-sm-3 col-md-2">
+              <label class="col-form-label">
+                Role Name <span class="text-danger">*</span>
+              </label>
+            </div>
+            <div class="col-12 col-sm-9 col-md-10">
+              <input type="text" name="rolename" class="form-control">
+            </div>
           </div>
-        </form>
+
+          <div class="row form-group">
+            <div class="col-12">
+
+              <table id="acoGrid"></table>
+
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer justify-content-start">
+          <button type="submit" id="btnSubmit" class="btn btn-primary">
+            <i class="fa fa-check"></i>
+            Save
+          </button>
+          <button type="button" class="btn btn-outline-primary" data-dismiss="modal">
+            <i class="fa fa-times"></i>
+            Cancel
+          </button>
+          <!-- <button type="button" id="btnGetLastData" class="btn btn-info ml-auto" style="display: none;">
+            <i class="fa fa-history"></i> Last Data
+          </button> -->
+        </div>
+
       </div>
     </form>
   </div>
@@ -177,16 +59,15 @@
   let draftManager;
   let modalBody = $('#crudModal').find('.modal-body').html();
 
-  $(document).ready(function() {
+  draftManager = new DraftFormManager('#crudForm', {
+    debug: true,
+    expiry: 1000 * 60 * 60 * 24
+  });
 
-    draftManager = new DraftFormManager('#crudForm', {
-      debug: true,
-      expiry: 1000 * 60 * 60 * 24
-    });
+  $(document).ready(function() {
 
     let submitButton = $('#btnSubmit');
     let cancelButton = $('#btnCancel');
-    let getLastDataButton = $('#btnGetLastData');
 
     submitButton.click(async function(e) {
       e.preventDefault();
@@ -196,11 +77,11 @@
       let form = $('#crudForm');
       let action = form.data('action');
       let formData = form.serialize();
-      let userId = form.find('[name=id]').val()
+      let roleId = form.find('[name=id]').val()
 
       // Ambil semua elemen dengan name
       const data = {};
-      form.find('[name]').each(function() {
+      form.find('[name]').not('.ui-jqgrid [name]').each(function() {
         const el = $(this);
         const name = el.attr('name').replace('[]', '');
         let value = el.val();
@@ -230,11 +111,11 @@
           break;
         case 'edit':
           method = 'PATCH';
-          url = `${API_URL}/roles/${userId}`;
+          url = `${API_URL}/roles/${roleId}`;
           break;
         case 'delete':
           method = 'DELETE';
-          url = `${API_URL}/roles/${userId}`;
+          url = `${API_URL}/roles/${roleId}`;
           break;
         default:
           method = 'POST';
@@ -256,9 +137,8 @@
           data: JSON.stringify(data)
         });
 
-        if (action === 'add') {
+        if (typeof draftManager !== 'undefined' && action === 'add') {
           draftManager.clear();
-          getLastDataButton.hide();
         }
 
         // Success handling
@@ -275,26 +155,17 @@
           loader.resetGridState(false);
 
           if (action === 'delete') {
-            id = payload.id || '';
-            indexRow = payload.offset % loader.rowsPerPage;
+            let targetId = payload.id || '';
+            let targetIndex = payload.offset % loader.rowsPerPage;
 
             loader.loadGridData(postData, payload.page, loader.rowsPerPage, 'down', 'jump', function() {
               setTimeout(() => {
                 let ids = grid.getDataIDs();
-                let bDiv = grid.parents('.ui-jqgrid-bdiv');
-                let targetId = payload.id || ids[Math.min(indexRow, ids.length - 1)];
+                let finalId = targetId || ids[Math.min(targetIndex, ids.length - 1)];
+                if (!finalId) return;
 
-                if (!targetId) return;
-
-                grid.jqGrid('setSelection', targetId, true);
-
-                let rowEl = grid.find(`tr#${targetId}`);
-                if (rowEl.length > 0) {
-                  let scrollPos = rowEl.position().top + bDiv.scrollTop() -
-                    (bDiv.height() / 2) +
-                    (rowEl.height() / 2);
-                  bDiv.scrollTop(scrollPos);
-                }
+                grid.jqGrid('setSelection', finalId, true);
+                scrollToRow(grid, finalId);
               }, 100);
             });
           } else {
@@ -302,16 +173,7 @@
             loader.loadGridData(postData, payload.page, loader.rowsPerPage, 'down', 'jump', function() {
               setTimeout(() => {
                 grid.jqGrid('setSelection', payload.id, true);
-
-                let bDiv = grid.parents('.ui-jqgrid-bdiv');
-                let selectedRow = grid.find(`tr#${payload.id}`);
-
-                if (selectedRow.length > 0) {
-                  let scrollPos = selectedRow.position().top + bDiv.scrollTop() -
-                    (bDiv.height() / 2) +
-                    (selectedRow.height() / 2);
-                  bDiv.scrollTop(scrollPos);
-                }
+                scrollToRow(grid, payload.id);
               }, 100);
             });
           }
@@ -336,13 +198,6 @@
 
     cancelButton.click(function() {
       $('#crudModal').find('.modal-body').html(modalBody);
-    });
-
-    getLastDataButton.click(function() {
-      draftManager.restore();
-
-      // (Opsional) Sembunyikan tombol setelah draf berhasil dimuat
-      $(this).hide();
     });
 
   });
@@ -402,9 +257,7 @@
 
     // menampilkan tombol
     if (localStorage.getItem(draftManager.getKey())) {
-      $('#btnGetLastData').show();
-    } else {
-      $('#btnGetLastData').hide();
+      draftManager.restore();
     }
 
     $('#crudModal').modal('show')
@@ -490,85 +343,9 @@
 
 
   function initLookup() {
-
-    // --- INSTANSIASI CLASS ---
-    // new LookupComponent('.jenisorder-lookup', {
-    //   title: 'Testing Lookup',
-    //   endpoint: 'menu', // Endpoint API
-    //   searching: ['keterangan'],
-
-    //   // Hook sebelum request ke server
-    //   beforeProcess: function() {
-    //     // 'this' mengacu pada instance class, kita update properti postData
-    //     // this.settings.postData = {
-    //     //   Aktif: 'AKTIF',
-    //     //   custom_filter: 'TEST'
-    //     // };
-    //   },
-
-    //   // Saat data dipilih
-    //   onSelectRow: (data, inputEl) => {
-    //     // Kita pakai document.querySelector untuk ambil elemen lain (pengganti jquery selector)
-    //     // Mengisi Input Hidden ID
-    //     const idInput = document.querySelector('[name="jenisorder_id"]');
-    //     if (idInput) idInput.value = data.id;
-
-    //     // Mengisi Input Teks (Display)
-    //     inputEl.value = data.keterangan;
-    //   },
-
-    //   // Saat tombol silang / cancel ditekan
-    //   onCancel: (inputEl) => {
-    //     // Class otomatis menyimpan nilai lama di 'this.currentValue'
-    //     // Tapi karena kita passing element, kita kembalikan logic manualnya
-    //     // (Note: Di class ini saya sudah handle logic revert valuenya sebenarnya)
-    //   },
-
-    //   // Saat input dihapus manual
-    //   onClear: (inputEl) => {
-    //     // Reset Hidden ID
-    //     const idInput = document.querySelector('[name="jenisorder_id"]');
-    //     if (idInput) idInput.value = '';
-
-    //     // Reset Form Lain
-    //     const upahId = document.querySelector('[name="upah_id"]');
-    //     if (upahId) upahId.value = '';
-
-    //     const upah = document.querySelector('[name="upah"]');
-    //     if (upah) upah.value = '';
-
-    //     inputEl.value = '';
-    //   }
-    // });
-
+    // daftar lookup
+    
   }
-
-  // async function setRoleOptions(relatedForm) {
-  //   try {
-  //     // Kosongkan select
-  //     relatedForm.find('[name="role_ids[]"]').empty();
-
-  //     // Ambil data roles dari API
-  //     const response = await ajaxWithRefresh({
-  //       url: `${API_URL}/role`,
-  //       method: 'GET',
-  //       dataType: 'JSON'
-  //     });
-
-  //     // Tambahkan option ke select
-  //     response.data.forEach(role => {
-  //       const option = new Option(role.rolename, role.id);
-  //       relatedForm.find('[name="role_ids[]"]').append(option);
-  //     });
-
-  //     // Trigger change di akhir sekali saja
-  //     relatedForm.find('[name="role_ids[]"]').trigger('change');
-
-  //   } catch (error) {
-  //     console.error('Error loading roles:', error);
-  //     throw error; // agar bisa ditangkap di caller
-  //   }
-  // }
 
 
   async function showRole(form, roleId) {
@@ -583,5 +360,4 @@
     selectedRows = response.acos.map((aco) => aco.aco_id); // get aco_id from response
 
   }
-
 </script>

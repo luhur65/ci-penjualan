@@ -160,11 +160,11 @@
     serverUrl: API_URL + '/grid-preferences',
   });
 
-  const savedPrefs = GridPreferenceManager.load(GRID_PREF_KEY);
-  const finalColModel = GridPreferenceManager.apply(getBaseColModel(), savedPrefs);
 
-  $(document).ready(function() {
+  $(document).ready(async function() {
 
+    const savedPrefs = await GridPreferenceManager.load(GRID_PREF_KEY);
+    const finalColModel = GridPreferenceManager.apply(getBaseColModel(), savedPrefs);
 
     const grid = createJqGrid({
         gridId: masterGrid,
@@ -197,18 +197,18 @@
           },
           onSelectRow: function(id) {
             activeGrid = $(this)
-            indexRow = $(this).jqGrid('getCell', id, 'rn') - 1
-            limit = $(this).jqGrid('getGridParam', 'rowNum')
-            page = $(this).jqGrid('getGridParam', 'page')
-            // let rows = $(this).jqGrid('getGridParam', 'postData').limit
-            // if (indexRow >= rows) indexRow = (indexRow - rows * (page - 1))
+            selectedId = $(masterGrid).jqGrid('getCell', id, 'id')
+            page = $(masterGrid).jqGrid('getGridParam', 'page')
+            indexRow = $(masterGrid).jqGrid('getCell', id, 'rn') - 1
+            let limit = $(masterGrid).jqGrid('getGridParam', 'postData').limit
+            if (indexRow >= limit) indexRow = (indexRow - limit * (page - 1))
           },
           loadComplete: function(data) {
             changeJqGridRowListText();
             triggerClick = true;
 
-            $(document).unbind('keydown')
-            setCustomBindKeys($(this))
+            $(this).off('keydown.lazygrid');
+            setCustomBindKeysLazy(masterGrid);
 
             let ids = $(this).getDataIDs();
             let selectedRowId = ids[0];
@@ -217,19 +217,13 @@
               if (triggerClick) {
 
                 if (id != '') {
-                  // Mencari indeks lokal menggunakan ID terdekat dari Backend
                   let localIndex = parseInt($(masterGrid).jqGrid('getInd', id)) - 1;
 
                   if (!isNaN(localIndex) && localIndex >= 0 && localIndex < ids.length) {
                     indexRow = localIndex;
                   }
-                  // Jika getInd gagal, indexRow akan otomatis menggunakan nilai terakhirnya 
-                  // yang sudah merupakan indeks lokal (0-9).
                   id = '';
                 }
-
-                // Amankan indexRow agar tidak melebihi jumlah data yang ada di halaman saat ini
-                // (Mencegah error saat menghapus baris terakhir)
                 if (indexRow >= ids.length) {
                   indexRow = ids.length > 0 ? ids.length - 1 : 0;
                 }
@@ -250,6 +244,7 @@
           }
         }
       })
+      .toolbarBindKeys()
       .loadClearFilter()
       .clearGlobalSearch()
       .customPager({
@@ -308,6 +303,20 @@
       })
       .permissions(accessRights);
 
+    // Drag and Drop Column
+    $(`${masterGrid}`).closest('.ui-jqgrid-view')
+      .find('thead tr.ui-jqgrid-labels')
+      .sortable({
+        items: 'th:not(:first-child)', // skip kolom pertama (biasanya rn/checkbox)
+        cursor: 'grabbing',
+        opacity: 0.7,
+        stop: function(event, ui) {
+          const prefs = GridPreferenceManager.extractFromDom(masterGrid);
+          GridPreferenceManager.save(GRID_PREF_KEY, prefs);
+          console.log('[Grid] Urutan kolom tersimpan setelah drag:', prefs);
+        }
+      });
+
     ColumnSettingsManager.init(masterGrid, GRID_PREF_KEY, getBaseColModel());
 
     // Setup Pintasan Keyboard Global
@@ -335,6 +344,12 @@
     }
 
     draftManager.resume();
+  })
+
+  $('#crudModal').on('hidden.bs.modal', () => {
+    activeGrid = $(masterGrid)
+
+    $('#crudModal').find('.modal-body').html(modalBody)
   })
 </script>
 

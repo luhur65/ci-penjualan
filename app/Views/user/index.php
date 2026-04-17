@@ -84,24 +84,10 @@
         key: true,
       },
       {
-        label: 'NAMA LENGKAP',
-        name: 'fullname',
-        width: (detectDeviceType() == "desktop") ? md_dekstop_2 : sm_mobile_2,
-      },
-      {
-        label: 'NAMA PENGGUNA',
-        name: 'username',
-        width: (detectDeviceType() == "desktop") ? md_dekstop_2 : sm_mobile_2,
-      },
-      {
-        label: 'EMAIL',
-        name: 'email',
-        width: (detectDeviceType() == "desktop") ? md_dekstop_2 : sm_mobile_2,
-      },
-      {
         label: 'STATUS AKTIF',
         name: 'statusaktif',
-        width: (detectDeviceType() == "desktop") ? sm_dekstop_3 : sm_mobile_3,
+        align: 'center',
+        width: (detectDeviceType() == "desktop") ? sm_dekstop_1 : sm_mobile_1,
         stype: 'select',
         searchoptions: {
           value: "<?= combo_status('STATUS AKTIF', 'STATUS AKTIF'); ?>",
@@ -143,6 +129,21 @@
         }
       },
       {
+        label: 'NAMA LENGKAP',
+        name: 'fullname',
+        width: (detectDeviceType() == "desktop") ? md_dekstop_2 : sm_mobile_2,
+      },
+      {
+        label: 'NAMA PENGGUNA',
+        name: 'username',
+        width: (detectDeviceType() == "desktop") ? md_dekstop_2 : sm_mobile_2,
+      },
+      {
+        label: 'EMAIL',
+        name: 'email',
+        width: (detectDeviceType() == "desktop") ? md_dekstop_2 : sm_mobile_2,
+      },
+      {
         label: 'MODIFIED BY',
         name: 'modifiedby',
         align: 'left',
@@ -177,11 +178,25 @@
     serverUrl: API_URL + '/grid-preferences',
   });
 
-  const savedPrefs = GridPreferenceManager.load(GRID_PREF_KEY);
-  const finalColModel = GridPreferenceManager.apply(getBaseColModel(), savedPrefs);
 
-  $(document).ready(function() {
-    $("#tabs").tabs();
+  $(document).ready(async function() {
+    $("#tabs").tabs({
+      activate: function(event, ui) {
+        let selectedMasterId = $(masterGrid).jqGrid('getGridParam', 'selrow');
+        if (!selectedMasterId) return;
+
+        // 1. Dapatkan ID Tab yang baru saja dibuka oleh pengguna
+        let activeTabId = ui.newPanel.attr('id');
+
+        // 2. [EKSEKUSI MODULAR]: Panggil fungsinya dari kamus!
+        if (tabLoaders[activeTabId]) {
+          tabLoaders[activeTabId](selectedMasterId);
+        }
+      }
+    });
+
+    const savedPrefs = await GridPreferenceManager.load(GRID_PREF_KEY);
+    const finalColModel = GridPreferenceManager.apply(getBaseColModel(), savedPrefs);
 
     const grid = createJqGrid({
         gridId: masterGrid,
@@ -258,20 +273,13 @@
                 selectedRowId = ids[indexRow];
                 $(`${masterGrid} tr[id="${selectedRowId}"]`).click();
                 $(`${masterGrid} tr[id="${selectedRowId}"]`).focus();
-                // if (!$(document.activeElement).is("input, textarea, select")) {
-                //   $(`${masterGrid} tr[id="${selectedRowId}"]`).focus();
-                // }
                 triggerClick = false;
 
               } else {
                 if (indexRow >= ids.length) indexRow = ids.length - 1;
                 selectedRowId = ids[indexRow];
                 $(masterGrid).setSelection(selectedRowId);
-
                 $(`${masterGrid} tr[id="${selectedRowId}"]`).focus();
-                // if (!$(document.activeElement).is("input, textarea, select")) {
-                //   $(`${masterGrid} tr[id="${selectedRowId}"]`).focus();
-                // }
               }
 
 
@@ -282,7 +290,6 @@
         }
       })
       .toolbarBindKeys()
-      // .customBindKeys()
       .loadClearFilter()
       .customPager({
         buttons: [{
@@ -328,33 +335,66 @@
         ]
       })
       .permissions(accessRights);
-
+    
+    // Drag and Drop Column
+    $(`${masterGrid}`).closest('.ui-jqgrid-view')
+    .find('thead tr.ui-jqgrid-labels')
+    .sortable({
+      items: 'th:not(:first-child)', // skip kolom pertama (biasanya rn/checkbox)
+      cursor: 'grabbing',
+      opacity: 0.7,
+      stop: function(event, ui) {
+        const prefs = GridPreferenceManager.extractFromDom(masterGrid);
+        GridPreferenceManager.save(GRID_PREF_KEY, prefs);
+        console.log('[Grid] Urutan kolom tersimpan setelah drag:', prefs);
+      }
+    });
+    
     ColumnSettingsManager.init(masterGrid, GRID_PREF_KEY, getBaseColModel());
 
     loadUserRoleGrid();
     loadUserAclGrid();
-  
+
     // Setup Pintasan Keyboard Global
     setupKeyboardShortcuts();
 
-    // activeGrid = $(masterGrid);
-    
-    $("#tabs").tabs({
-      activate: function(event, ui) {
-        let selectedMasterId = $(masterGrid).jqGrid('getGridParam', 'selrow');
-        if (!selectedMasterId) return;
 
-        // 1. Dapatkan ID Tab yang baru saja dibuka oleh pengguna
-        let activeTabId = ui.newPanel.attr('id');
+    // let gridScrollActive = true;
+    // const gridBody = $(masterGrid).closest('.ui-jqgrid-bdiv')[0];
 
-        // 2. [EKSEKUSI MODULAR]: Panggil fungsinya dari kamus!
-        if (tabLoaders[activeTabId]) {
-          tabLoaders[activeTabId](selectedMasterId);
-        }
-      }
-    });
+    // function onWheelOutsideGrid(e) {
+    //     const isOverGrid = $(e.target).closest('.ui-jqgrid-bdiv, .ui-jqgrid').length > 0;
+    //     if (isOverGrid) return;
+
+    //     e.preventDefault();
+    //     gridBody.scrollTop += e.deltaY;
+    // }
+
+    // // Pasang saat pertama load
+    // window.addEventListener('wheel', onWheelOutsideGrid, { passive: false });
+
+    // // Lepas saat klik di luar grid
+    // $(document).on('click.gridScroll', function(e) {
+    //     const isOutsideGrid = $(e.target).closest('.ui-jqgrid').length === 0;
+    //     if (isOutsideGrid) {
+    //         window.removeEventListener('wheel', onWheelOutsideGrid);
+    //     }
+    // });
+
+    // // Pasang lagi saat klik di dalam grid
+    // $(masterGrid).closest('.ui-jqgrid').on('click.gridScroll', function() {
+    //     // Lepas dulu biar tidak dobel
+    //     window.removeEventListener('wheel', onWheelOutsideGrid);
+    //     window.addEventListener('wheel', onWheelOutsideGrid, { passive: false });
+    // });
 
   });
+
+  $('#crudModal').on('hidden.bs.modal', () => {
+    activeGrid = $(masterGrid)
+
+    $('#crudModal').find('.modal-body').html(modalBody)
+  })
 
   $('#crudModal').on('shown.bs.modal', () => {
     let form = $('#crudForm')
@@ -374,13 +414,6 @@
         width: '100%',
         dropdownParent: $('#crudModal')
       })
-
-    let currentKey = draftManager.getKey();
-    if (localStorage.getItem(currentKey)) {
-      $('#btnGetLastData').show();
-    } else {
-      $('#btnGetLastData').hide();
-    }
 
     draftManager.resume();
 
