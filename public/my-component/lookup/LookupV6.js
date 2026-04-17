@@ -160,6 +160,7 @@ class LookupV6 {
           this._handlePaste(val);
         } else if (!val) {
           this.close();
+          this._toggleClearBtn();
           this.settings.onCancel(this.element);
         } else {
           this.close();
@@ -203,14 +204,18 @@ class LookupV6 {
       || this.settings.colModel.find(c => !c.hidden)?.name
       || 'id';
 
-    let result = this.settings.data.find(row =>
-      (row[equalField] || '').toString().toLowerCase() === searchValue.toLowerCase()
-    );
+    let result = null;
 
-    if (!result) {
+    if (Array.isArray(this.settings.data) && this.settings.data.length > 0) {
       result = this.settings.data.find(row =>
-        (row[equalField] || '').toString().toLowerCase().includes(searchValue.toLowerCase())
+        (row[equalField] || '').toString().toLowerCase() === searchValue.toLowerCase()
       );
+
+      if (!result) {
+        result = this.settings.data.find(row =>
+          (row[equalField] || '').toString().toLowerCase().includes(searchValue.toLowerCase())
+        );
+      }
     }
 
     if (!result) {
@@ -300,29 +305,39 @@ class LookupV6 {
       $(e.target).closest('.ui-jqgrid-hdiv').length > 0;
 
     const keyMap = {
-      38: () => {
+      38: () => { // Arrow Up
         if (idx > 0) {
-          grid.setSelection(ids[idx - 1]);
+          const newId = ids[idx - 1];
+          grid.setSelection(newId);
           this._scrollToSelected();
+          // if (typeof this._previewSelectedRow === 'function') {
+          //   this._previewSelectedRow(newId);
+          // }
         }
         if (!isFilterToolbar) {
           this.element.focus();
         }
       },
-      40: () => {
+      40: () => { // Arrow Down
         if (idx < ids.length - 1) {
-          grid.setSelection(ids[idx + 1]);
+          const newId = ids[idx + 1];
+          grid.setSelection(newId);
           this._scrollToSelected();
+          // if (typeof this._previewSelectedRow === 'function') {
+          //   this._previewSelectedRow(newId);
+          // }
         }
         if (!isFilterToolbar) {
           this.element.focus();
         }
       },
-      13: () => {
+      13: () => { // Enter
         if (sel) this._selectRow(sel);
       },
-      27: () => {
+      27: () => { // Escape
         this.close();
+        this.element.val('');
+        this._toggleClearBtn();
         this.settings.onCancel(this.element);
       },
       33: () => { },
@@ -345,7 +360,6 @@ class LookupV6 {
     this.selectedId = null;
     LookupV6.closeAll(this.inputId);
 
-    // Hancurkan instance lama jika entah bagaimana masih tersisa
     this._destroyContainer();
 
     $(document).off(`keydown.lv6_${this.inputId}`).on(`keydown.lv6_${this.inputId}`, (e) => {
@@ -415,7 +429,7 @@ class LookupV6 {
     }
     const container = this._getContainer();
     if (container.length) {
-      container.remove(); // Hapus permanen dari DOM
+      container.remove();
     }
   }
 
@@ -603,8 +617,6 @@ class LookupV6 {
         }
       });
 
-      // gridEl.closest('.ui-jqgrid-hdiv').find('input[name], select[name]').removeAttr('name');
-
       if (this.settings.typeData === 'LOCAL') {
         const gridColModel = gridEl.jqGrid('getGridParam', 'colModel');
         gridColModel.forEach(cm => {
@@ -649,23 +661,66 @@ class LookupV6 {
   }
 
   // =========================================================
+  // PREVIEW ROW — Autocomplete saat navigasi keyboard
+  // =========================================================
+  _previewSelectedRow(id) {
+    const stripHtml = (str) => {
+      if (!str) return '';
+      // Decode entity dulu
+      const decoded = $('<textarea>').html(str).val();
+      // Baru strip tag
+      return $('<div>').html(decoded).text().trim();
+    };
+
+    // ← Selalu ambil dari data original, bukan dari grid
+    let rawRowData = null;
+
+    if (Array.isArray(this.settings.data) && this.settings.data.length > 0) {
+      rawRowData = this.settings.data.find(row => row.id == id);
+    }
+
+    if (!rawRowData) {
+      // Fallback ke grid tapi strip HTML
+      const gridData = this._getGrid().getRowData(id);
+      rawRowData = {};
+      Object.keys(gridData).forEach(key => {
+        rawRowData[key] = stripHtml(gridData[key]);
+      });
+    }
+
+    const displayCol = this.settings.colModel.find(c => !c.hidden);
+    const rawVal = displayCol ? (rawRowData[displayCol.name] ?? '') : '';
+    const displayVal = stripHtml(rawVal);
+
+    this.element.val(displayVal);
+  }
+
+  // =========================================================
   // SELECT ROW
   // =========================================================
   _selectRow(id) {
     const grid = this._getGrid();
 
     const stripHtml = (str) => {
-      if (str === null || str === undefined) return '';
-      if (typeof str !== 'string') return str;
-      return $('<div>').html(str).text().trim();
+      if (!str || typeof str !== 'string') return str;
+      return $('<textarea>').html(str).val()  // decode entity
+        .replace(/<\/?[^>]+(>|$)/gi, '')    // strip tag
+        .trim();
     };
 
-    let rawRowData;
-    if (this.settings.typeData === 'LOCAL' || this.settings.data?.length > 0) {
+    let rawRowData = null;
+
+    if (Array.isArray(this.settings.data) && this.settings.data.length > 0) {
       rawRowData = this.settings.data.find(row => row.id == id);
-      if (!rawRowData) rawRowData = grid.getRowData(id);
-    } else {
-      rawRowData = grid.getRowData(id);
+    }
+
+    if (!rawRowData) {
+      const gridRowData = grid.getRowData(id);
+      // ← Strip HTML dari semua field
+      rawRowData = {};
+      Object.keys(gridRowData).forEach(key => {
+        rawRowData[key] = stripHtml(gridRowData[key]);
+      });
     }
 
     const displayCol = this.settings.colModel.find(c => !c.hidden);
@@ -695,7 +750,6 @@ class LookupV6 {
   // APPLY HIGHLIGHT
   // =========================================================
   _applyHighlight(gridEl) {
-    // 1. Bersihkan highlight lama dari seluruh sel
     gridEl.find('tbody td').each(function () {
       const cell = $(this);
       cell.find('span.highlight').each(function () {
@@ -707,7 +761,6 @@ class LookupV6 {
     const gridId = gridEl.attr('id');
     const searchText = this._lastSearch || '';
 
-    // 2. Skenario A: Pencarian Global (dari input utama Lookup)
     if (searchText) {
       const escapedText = searchText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const regex = new RegExp(`(${escapedText})`, 'gi');
@@ -728,11 +781,9 @@ class LookupV6 {
         });
       });
     }
-    // 3. Skenario B: Pencarian dari Filter Toolbar (Ekstrak dari postData)
     else if (this.settings.filterToolbar) {
       const postData = gridEl.jqGrid('getGridParam', 'postData');
 
-      // Pastikan ada filter yang sedang aktif
       if (postData && postData.filters) {
         try {
           const filters = JSON.parse(postData.filters);
@@ -746,7 +797,6 @@ class LookupV6 {
                 const escapedText = gsValue.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                 const regex = new RegExp(`(${escapedText})`, 'gi');
 
-                // Sorot hanya pada kolom yang sesuai dengan aturan filter
                 gridEl.find(`tbody td[aria-describedby="${gridId}_${field}"]`).each(function () {
                   const cell = $(this);
                   const text = cell.text();
@@ -774,6 +824,7 @@ class LookupV6 {
     const ids = grid.getDataIDs();
     if (ids.length > 0) {
       this._selectRow(ids[0]);
+      this._toggleClearBtn();
     } else {
       this.close();
       this.settings.onCancel(this.element);
@@ -865,7 +916,7 @@ class LookupV6 {
       if (instance) {
         instance.close();
       } else {
-        $(this).remove(); // Fallback jika instance hilang
+        $(this).remove();
       }
     });
   }

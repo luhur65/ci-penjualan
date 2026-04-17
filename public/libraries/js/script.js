@@ -1,6 +1,6 @@
 // let activeGrid;
 
-let sm_dekstop_1 = "50px";
+let sm_dekstop_1 = "70px";
 let sm_dekstop_2 = "100px";
 let sm_dekstop_3 = "150px";
 let sm_dekstop_4 = "200px";
@@ -26,7 +26,7 @@ let lg_mobile_2 = "600px";
 let lg_mobile_3 = "650px";
 let lg_mobile_4 = "700px";
 
-let sm_extendSize_1 = 50;
+let sm_extendSize_1 = 70;
 let sm_extendSize_2 = 100;
 let sm_extendSize_3 = 150;
 let sm_extendSize_4 = 200;
@@ -181,6 +181,10 @@ function showDialog(state, message, buttons = []) {
 			icon: "fa fa-exclamation-triangle",
 			color: "text-danger",
 		},
+		warning: {
+			icon: "fa fa-exclamation-triangle",
+			color: "text-warning",
+		},
 		question: {
 			icon: "fas fa-question-circle",
 			color: "text-warning",
@@ -215,21 +219,31 @@ function showDialog(state, message, buttons = []) {
   
 
 function setHighlight(grid) {
+	const gridId = $(grid).getGridParam('id');
+	const postData = $(grid).jqGrid("getGridParam", "postData");
+
+	if (!postData.filters) return;
+
 	let filters;
-	let gridId;
-
-	gridId = $(grid).getGridParam().id;
-	filters = $(grid).jqGrid("getGridParam", "postData").filters;
-
-	if (filters) {
-		$.each(filters, (index, filter) => {
-			let filterText = filter.split(":")[1];
-
-			$(grid)
-				.find(`tbody tr td[aria-describedby=${gridId}_${index}]`)
-				.highlight(filterText);
-		});
+	try {
+		filters = JSON.parse(postData.filters);
+	} catch (e) {
+		return;
 	}
+
+	if (!filters.rules || filters.rules.length === 0) return;
+
+	// Clear highlight dulu (penting!)
+	$(grid).find("td").unhighlight();
+
+	filters.rules.forEach(rule => {
+		const field = rule.field;
+		const text = rule.data;
+
+		$(grid)
+			.find(`td[aria-describedby="${gridId}_${field}"]`)
+			.highlight(text);
+	});
 }
 
 // function initSelect2(element, dropdownParent = null) {

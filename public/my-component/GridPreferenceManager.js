@@ -1,10 +1,14 @@
 /**
- * GridPreferenceManager — Fix request headers (Authorization + baseURL)
+ * GridPreferenceManager
+ * Fix double request: gunakan $.ajax biasa (bukan ajaxWithRefresh).
  * 
- * Perubahan dari versi sebelumnya:
- *   1. serverUrl sekarang pakai APP_URL yang sudah ada di app.php (bukan path hardcode)
- *   2. Semua request menyertakan Authorization: Bearer <token>
- *   3. Tambah helper _getAuthHeader() agar token selalu fresh (tidak stale)
+ * KENAPA bukan ajaxWithRefresh:
+ *   $.ajaxPrefilter sudah intercept 401 dan handle refresh untuk SEMUA $.ajax.
+ *   ajaxWithRefresh juga intercept 401 di .catch dan handle refresh lagi.
+ *   Akibatnya satu request 401 ditangani DUA kali → 2x retry setelah refresh.
+ *
+ * Solusinya: pakai $.ajax biasa. $.ajaxPrefilter otomatis menangani 401 + refresh.
+ * ajaxWithRefresh hanya perlu dipakai kalau kamu butuh slow threshold warning.
  */
 
 const GridPreferenceManager = (function () {
@@ -13,16 +17,8 @@ const GridPreferenceManager = (function () {
     localPrefix: 'grid_pref_',
     serverUrl: `${typeof APP_URL !== 'undefined' ? APP_URL.replace(/\/$/, '') : ''}/api/grid-preferences`,
     debounceMs: 800,
-    mode: 'server',   // 'local' | 'server'
+    mode: 'server',
   };
-
-  // ─── Ambil token terbaru dari variabel global di app.php ──────
-  // ACCESS_TOKEN sudah dideklarasikan di app.php:
-  //   let ACCESS_TOKEN = `<?= session()->get('accessToken') ?>`;
-  function _getAuthHeader() {
-    const token = typeof ACCESS_TOKEN !== 'undefined' ? ACCESS_TOKEN : '';
-    return token ? { 'Authorization': `Bearer ${token}` } : {};
-  }
 
   function debounce(fn, delay) {
     let timer;
@@ -59,64 +55,54 @@ const GridPreferenceManager = (function () {
     localStorage.removeItem(localKey(gridName));
   }
 
-  // ─── Server ───────────────────────────────────────────────────
-  async function saveServer(gridName, prefs) {
-    try {
-      const res = await fetch(CONFIG.serverUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest',
-          ..._getAuthHeader(),   // ← Authorization: Bearer <token>
-        },
-        body: JSON.stringify({ grid_name: gridName, preferences: prefs }),
-      });
+  // ─── Server — pakai $.ajax biasa ─────────────────────────────
+  // $.ajaxSetup → Authorization header otomatis disertakan
+  // $.ajaxPrefilter → 401 → refresh token → retry  (sudah cukup)
+  // JANGAN pakai ajaxWithRefresh — akan double handle 401
 
-      if (!res.ok) {
-        console.warn('[GridPref] Gagal simpan ke server:', res.status, res.statusText);
+  function saveServer(gridName, prefs) {
+    // Return promise agar bisa di-await
+    return $.ajax({
+      url: CONFIG.serverUrl,
+      type: 'POST',
+      contentType: 'application/json',
+      dataType: 'json',
+      data: JSON.stringify({ grid_name: gridName, preferences: prefs }),
+    }).fail(function (jqXHR) {
+      // 401 sudah di-handle ajaxPrefilter, ini untuk error lain
+      if (jqXHR.status !== 401) {
+        console.warn('[GridPref] Gagal simpan ke server:', jqXHR.status, jqXHR.statusText);
       }
-    } catch (e) {
-      console.warn('[GridPref] Gagal simpan ke server:', e);
-    }
+    });
   }
 
-  async function loadServer(gridName) {
-    try {
-      const url = `${CONFIG.serverUrl}?grid_name=${encodeURIComponent(gridName)}`;
-      const res = await fetch(url, {
-        headers: {
-          'X-Requested-With': 'XMLHttpRequest',
-          ..._getAuthHeader(),   // ← Authorization: Bearer <token>
-        },
+  function loadServer(gridName) {
+    return $.ajax({
+      url: `${CONFIG.serverUrl}?grid_name=${encodeURIComponent(gridName)}`,
+      type: 'GET',
+      dataType: 'json',
+    })
+      .then(function (res) {
+        return res?.preferences ?? null;
+      })
+      .catch(function (jqXHR) {        // ← ganti .fail() ke .catch()
+        if (jqXHR.status !== 401) {
+          console.warn('[GridPref] Gagal baca dari server:', jqXHR.status);
+        }
+        return null;                  // ← sekarang return null berfungsi
       });
-
-      if (!res.ok) return null;
-
-      const json = await res.json();
-      return json.preferences || null;
-
-    } catch (e) {
-      console.warn('[GridPref] Gagal baca dari server:', e);
-      return null;
-    }
   }
 
-  async function deleteServer(gridName) {
-    try {
-      const res = await fetch(`${CONFIG.serverUrl}/${encodeURIComponent(gridName)}`, {
-        method: 'DELETE',
-        headers: {
-          'X-Requested-With': 'XMLHttpRequest',
-          ..._getAuthHeader(),   // ← Authorization: Bearer <token>
-        },
-      });
-
-      if (!res.ok) {
-        console.warn('[GridPref] Gagal delete dari server:', res.status);
+  function deleteServer(gridName) {
+    return $.ajax({
+      url: `${CONFIG.serverUrl}/${encodeURIComponent(gridName)}`,
+      type: 'DELETE',
+      dataType: 'json',
+    }).fail(function (jqXHR) {
+      if (jqXHR.status !== 401) {
+        console.warn('[GridPref] Gagal delete dari server:', jqXHR.status, jqXHR.statusText);
       }
-    } catch (e) {
-      console.warn('[GridPref] Gagal delete dari server:', e);
-    }
+    });
   }
 
   // ─── Ekstrak dari grid ────────────────────────────────────────
@@ -126,6 +112,34 @@ const GridPreferenceManager = (function () {
       name: col.name,
       width: col.width,
       hidden: col.hidden || false,
+      order: index,
+    }));
+  }
+
+  function extractFromDom(gridSelector) {
+    const colModel = $(gridSelector).jqGrid('getGridParam', 'colModel');
+
+    // Buat map name → col data
+    const colMap = {};
+    colModel.forEach(col => { colMap[col.name] = col; });
+
+    // Baca urutan kolom dari DOM header
+    const orderedNames = [];
+    $(gridSelector).closest('.ui-jqgrid-view')
+      .find('thead tr.ui-jqgrid-labels th')
+      .each(function () {
+        // jqGrid biasanya set id="jqGrid_colName" di setiap th
+        const thId = $(this).attr('id') || '';
+        const colName = thId.replace(/^.*_/, '');
+        if (colName && colMap[colName]) {
+          orderedNames.push(colName);
+        }
+      });
+
+    return orderedNames.map((name, index) => ({
+      name: name,
+      width: colMap[name].width,
+      hidden: colMap[name].hidden || false,
       order: index,
     }));
   }
@@ -160,11 +174,14 @@ const GridPreferenceManager = (function () {
   function attachListeners(gridSelector, gridName, onSaved) {
     const grid = $(gridSelector);
 
-    const debouncedSave = debounce(async function () {
+    const debouncedSave = debounce(function () {
       const prefs = extractFromGrid(gridSelector);
       saveLocal(gridName, prefs);
-      if (CONFIG.mode === 'server') await saveServer(gridName, prefs);
-      if (typeof onSaved === 'function') onSaved(prefs);
+      if (CONFIG.mode === 'server') {
+        saveServer(gridName, prefs).then(function () {
+          if (typeof onSaved === 'function') onSaved(prefs);
+        });
+      }
     }, CONFIG.debounceMs);
 
     const originalResizeStop = grid.jqGrid('getGridParam', 'resizeStop');
@@ -179,20 +196,20 @@ const GridPreferenceManager = (function () {
   }
 
   // ─── Reset ────────────────────────────────────────────────────
-  async function reset(gridName) {
+  function reset(gridName) {
     clearLocal(gridName);
     if (CONFIG.mode === 'server') {
-      await deleteServer(gridName);
+      deleteServer(gridName);
     }
   }
 
   // ─── API Publik ───────────────────────────────────────────────
   return {
     configure(options) {
-      // Kalau serverUrl di-override dari luar, hormati itu
       Object.assign(CONFIG, options);
     },
 
+    // load() tetap async karena loadServer perlu await
     async load(gridName) {
       const local = loadLocal(gridName);
       if (local) return local;
@@ -200,18 +217,19 @@ const GridPreferenceManager = (function () {
       if (CONFIG.mode === 'server') {
         const serverPrefs = await loadServer(gridName);
         if (serverPrefs) saveLocal(gridName, serverPrefs);
-        return serverPrefs;
+        return serverPrefs ?? null;   // ← pastikan selalu return nilai
       }
       return null;
     },
 
-    async save(gridName, prefs) {
+    save(gridName, prefs) {
       saveLocal(gridName, prefs);
-      if (CONFIG.mode === 'server') await saveServer(gridName, prefs);
+      if (CONFIG.mode === 'server') return saveServer(gridName, prefs);
     },
 
     apply: applyToColModel,
     extract: extractFromGrid,
+    extractFromDom,
     attach: attachListeners,
     reset,
     _localKey: localKey,
