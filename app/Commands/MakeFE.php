@@ -7,23 +7,26 @@ use CodeIgniter\CLI\CLI;
 
 class MakeFE extends BaseCommand
 {
-  protected $group = 'Generators';
-  protected $name = 'make:fe';
-  protected $description = 'Generate Full FE (Controller + View + Modal + JS)';
+  protected $group       = 'Generators';
+  protected $name        = 'make:fe';
+  protected $description = 'Generate Full FE (Controller + View + Modal + JS) secara interaktif';
 
   public function run(array $params)
   {
-    if (empty($params)) {
-      CLI::error('Gunakan: php spark make:fe namamodule');
-      return;
-    }
-
-    $module = strtolower($params[0]);
+    // 1. Ambil nama module dari parameter atau prompt jika kosong
+    $module = $params[0] ?? CLI::prompt('Masukkan nama module (contoh: user)', null, 'required');
+    $module = strtolower($module);
     $class  = ucfirst($module);
 
+    // 2. Tanya user: Mau pakai Lazy Loading / Datatable server-side?
+    $useLazy = CLI::prompt('Gunakan tabel lazy loading?', ['y', 'n'], 'n');
+    $isLazy  = ($useLazy === 'y');
+
+    CLI::write("Memproses module: {$class} " . ($isLazy ? "(Lazy Grid)" : "(Standar)"), 'yellow');
+
     $this->makeController($class, $module);
-    $this->makeView($module);
-    $this->makeModal($module);
+    $this->makeView($module, $isLazy);
+    $this->makeModal($module, $isLazy);
 
     CLI::write("🔥 Module {$class} siap tempur!", 'green');
   }
@@ -32,45 +35,69 @@ class MakeFE extends BaseCommand
   {
     $path = APPPATH . "Controllers/{$class}Controller.php";
 
+    // Cek folder Controllers
+    if (!is_dir(APPPATH . "Controllers")) mkdir(APPPATH . "Controllers", 0777, true);
+
     $template = <<<PHP
-    <?php
+<?php
 
-    namespace App\Controllers;
+namespace App\Controllers;
 
-    use App\Controllers\BaseController;
+use App\Controllers\BaseController;
 
-    class {$class}Controller extends BaseController
+class {$class}Controller extends BaseController
+{
+    public function index(): string
     {
-        public function index(): string
-        {
-            return view('{$module}/index');
-        }
+        return view('{$module}/index');
     }
-    PHP;
+}
+PHP;
 
     file_put_contents($path, $template);
+    CLI::write("- Controller created: {$class}Controller.php", 'cyan');
   }
 
-  private function makeView($module)
+  private function makeView($module, $isLazy)
   {
-    $dir = APPPATH . "Views/{$module}";
+    $dir  = APPPATH . "Views/{$module}";
     $path = "{$dir}/index.php";
 
     if (!is_dir($dir)) mkdir($dir, 0777, true);
 
-    $template = file_get_contents(APPPATH . 'Commands/Stubs/view.stub');
+    // Pilih stub berdasarkan pilihan user
+    $stubFile = $isLazy ? 'view_lazygrid.stub' : 'view.stub';
+    $stubPath = APPPATH . 'Commands/Stubs/' . $stubFile;
+
+    if (!file_exists($stubPath)) {
+      CLI::error("File stub tidak ditemukan: {$stubFile}");
+      return;
+    }
+
+    $template = file_get_contents($stubPath);
     $template = str_replace('{{module}}', $module, $template);
 
     file_put_contents($path, $template);
+    CLI::write("- View created: {$module}/index.php", 'cyan');
   }
 
-  private function makeModal($module)
+  private function makeModal($module, $isLazy)
   {
     $path = APPPATH . "Views/{$module}/modal.php";
 
-    $template = file_get_contents(APPPATH . 'Commands/Stubs/modal.stub');
+    // Pilih stub berdasarkan pilihan user
+    $stubFile = $isLazy ? 'modal_lazygrid.stub' : 'modal.stub';
+    $stubPath = APPPATH . 'Commands/Stubs/' . $stubFile;
+
+    if (!file_exists($stubPath)) {
+      CLI::error("File stub tidak ditemukan: {$stubFile}");
+      return;
+    }
+
+    $template = file_get_contents($stubPath);
     $template = str_replace('{{module}}', $module, $template);
 
     file_put_contents($path, $template);
+    CLI::write("- Modal created: {$module}/modal.php", 'cyan');
   }
 }
