@@ -128,7 +128,7 @@
   <script src="<?= base_url('public/libraries/adminlte/plugins/dropzone/min/dropzone.min.js') ?>"></script>
 
   <!-- Socket IO -->
-  <!-- <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script> -->
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
   <script src="<?= base_url('public/libraries/js/extended-jqgrid.js?version=' . config('App')->version) ?>"></script>
   <script src="<?= base_url('public/libraries/js/navbar.js?version=' . config('App')->version) ?>"></script>

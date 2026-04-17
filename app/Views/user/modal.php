@@ -512,56 +512,21 @@
     }
 
     try {
-      // 1. Panggil API menggunakan ajaxWithRefresh yang sudah kita racik sebelumnya
       const response = await ajaxWithRefresh({
-        url: `${API_URL}/users/export`, // Sesuaikan endpoint CI 4 Anda
+        url: `${API_URL}/users/export`,
         method: 'GET',
-        // 2. Beri tahu browser bahwa responsnya adalah data mentah biner, bukan JSON!
-        xhrFields: {
-          responseType: 'arraybuffer'
-        },
-        data: JSON.stringify(data)
+        data: data
       });
 
-      // 3. Jika berhasil, rakit file Excel dari binary response tersebut
-      if (response !== undefined) {
-        // Tipe MIME standar untuk file .xlsx
-        let blob = new Blob([response], {
-          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        });
-
-        let link = document.createElement('a');
-        link.href = window.URL.createObjectURL(blob);
-        link.download = `LAPORAN USER ${new Date().getTime()}.xlsx`;
-
-        // Simulasikan klik untuk memicu unduhan di browser
-        document.body.appendChild(link);
-        link.click();
-
-        // Bersihkan elemen link yang baru saja dibuat
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(link.href);
+      if (response && response.message) {
+        showDialog('success', response.message);
       }
 
     } catch (error) {
-      console.error("Gagal export excel:", error);
-      // Tangani error, misal jika response 404 atau 400 dari backend
-      let errorMsg = 'Gagal mengekspor data atau data tidak ditemukan.';
-
-      // Jika Backend mengirim JSON (misal {message: "TIDAK ADA DATA"}) padahal settingnya arraybuffer,
-      // ini cara mengekstrak pesannya:
-      if (error.responseJSON) {
-        errorMsg = getErrorMessage(error);
-      } else if (error.responseText) {
-        // Jika terjadi error pada mode arraybuffer, responseText tidak bisa dibaca normal,
-        // tapi kita bisa asumsikan itu adalah error server/tidak ada data
-        errorMsg = 'TIDAK ADA DATA';
-      }
-
+      console.error("Gagal memulai export:", error);
+      let errorMsg = getErrorMessage(error) || 'Gagal mengekspor data.';
       showDialog('error', errorMsg);
-
     } finally {
-      // Matikan loader apapun yang terjadi
       $('#processingLoader').addClass('d-none');
     }
   }

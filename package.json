@@ -22,6 +22,7 @@
   },
   "homepage": "https://github.com/luhur65/ci-penjualan#readme",
   "dependencies": {
-    "express": "^4.22.1"
+    "express": "^4.22.1",
+    "socket.io": "^4.8.3"
   }
 }

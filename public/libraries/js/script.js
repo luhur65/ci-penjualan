@@ -143,6 +143,62 @@ function focusToGrid() {
 		.find(`tr[id="${$(activeGrid).getDataIDs()[selectedIndex]}"]`)
 		.click();
 }
+function showToastNotification(title, message, actionUrl) {
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            title: title,
+            text: message,
+            icon: 'info',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: true,
+            confirmButtonText: 'Download',
+            timer: 10000,
+            timerProgressBar: true,
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = actionUrl;
+            }
+        });
+    } else {
+        alert(title + "\\n" + message);
+        if (confirm("Download file?")) {
+            window.location.href = actionUrl;
+        }
+    }
+}
+
+// Websocket setup for notifications
+if (typeof io !== 'undefined') {
+    const socket = io('http://localhost:3000'); // Ensure this matches your socket server port
+
+    socket.on('connect', () => {
+        console.log('Connected to WebSocket server');
+    });
+
+    socket.on('notification', (data) => {
+        console.log('Received notification:', data);
+        if (data && data.title && data.message && data.action_url) {
+            const actionUrl = `${API_URL}/notifications/download/` + data.action_url.split('/').pop();
+            showToastNotification(data.title, data.message, actionUrl);
+
+            if (data.id) {
+                $.ajax({
+                    url: `${API_URL}/notifications/read/${data.id}`,
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    }
+                });
+            }
+        }
+    });
+
+    socket.on('disconnect', () => {
+        console.log('Disconnected from WebSocket server');
+    });
+}
+
 function scrollGridSelectionIntoView(grid, rowId) {
 	var $grid = $(grid);
 	var escapedId = typeof $.jgrid !== 'undefined' ? $.jgrid.jqID(rowId) : $.escapeSelector(rowId);
