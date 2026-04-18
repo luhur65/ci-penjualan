@@ -170,16 +170,25 @@ function showToastNotification(title, message, actionUrl) {
 
 // Websocket setup for notifications
 if (typeof io !== 'undefined') {
-    const socket = io('http://localhost:3000'); // Ensure this matches your socket server port
+    const socketUrl = typeof SOCKET_URL !== 'undefined' ? SOCKET_URL : 'http://localhost:3000';
+    const socket = io(socketUrl); // Use configurable socket URL
 
     socket.on('connect', () => {
         console.log('Connected to WebSocket server');
+        // Retrieve user ID from localStorage or another global variable
+        // This is a common pattern in SPAs or apps that store auth data client-side
+        const userId = localStorage.getItem('user_id') || (typeof CURRENT_USER_ID !== 'undefined' ? CURRENT_USER_ID : null);
+        if (userId) {
+            socket.emit('join_room', userId);
+        }
     });
 
     socket.on('notification', (data) => {
         console.log('Received notification:', data);
         if (data && data.title && data.message && data.action_url) {
-            const actionUrl = `${API_URL}/notifications/download/` + data.action_url.split('/').pop();
+            // Using base URL to properly resolve actionUrl for file download APIs
+            const baseUrl = typeof API_URL !== 'undefined' ? API_URL : '';
+            const actionUrl = `${baseUrl}/notifications/download/` + data.action_url.split('/').pop();
             showToastNotification(data.title, data.message, actionUrl);
 
             if (data.id) {
