@@ -147,6 +147,7 @@
     const APP_URL = `<?= base_url() ?>`
     const API_URL = `<?= config('Api')->apiURL ?>`
     let ACCESS_TOKEN = `<?= session()->get('accessToken') ?>`;
+    const CURRENT_USER_ID = `<?= session()->get('user_data')['id'] ?? '' ?>`;
     let addedRules = null;
     let isRefreshing = false; // Flag untuk mendeteksi apakah refresh sedang berlangsung
     let refreshSubscribers = []; // Menyimpan request yang menunggu token baru
