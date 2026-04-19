@@ -143,34 +143,92 @@ function focusToGrid() {
 		.find(`tr[id="${$(activeGrid).getDataIDs()[selectedIndex]}"]`)
 		.click();
 }
-function showToastNotification(title, message, actionUrl) {
-    if (typeof Swal !== 'undefined') {
-        Swal.fire({
-            title: title,
-            text: message,
-            icon: 'info',
-            toast: true,
-            position: 'top-end',
-            showConfirmButton: true,
-            confirmButtonText: 'Download',
-            timer: 10000,
-            timerProgressBar: true,
-        }).then((result) => {
-            if (result.isConfirmed) {
-                window.location.href = actionUrl;
-            }
-        });
-    } else {
-        alert(title + "\\n" + message);
-        if (confirm("Download file?")) {
-            window.location.href = actionUrl;
-        }
+
+function getAuthToken() {
+    // Prioritas 1: PHP session via inline script
+    if (typeof ACCESS_TOKEN !== 'undefined' && ACCESS_TOKEN && ACCESS_TOKEN !== 'null' && ACCESS_TOKEN !== '') {
+        return ACCESS_TOKEN;
     }
+    // Prioritas 2: localStorage (fallback)
+    return localStorage.getItem('token') || localStorage.getItem('access_token');
+}
+
+// function showToastNotification(title, message, actionUrl) {
+//     if (typeof Swal !== 'undefined') {
+//         Swal.fire({
+//             title: title,
+//             text: message,
+//             icon: 'info',
+//             toast: true,
+//             position: 'top-end',
+//             showConfirmButton: true,
+//             confirmButtonText: 'Download',
+//             timer: 10000,
+//             timerProgressBar: true,
+//         }).then((result) => {
+//             if (result.isConfirmed) {
+// 								downloadFileWithAuth(actionUrl);
+//             }
+//         });
+//     } else {
+//         alert(title + "\\n" + message);
+//         if (confirm("Download file?")) {
+// 					downloadFileWithAuth(actionUrl);
+//         }
+//     }
+// }
+
+function showToastNotification(title, message, actionUrl) {
+    // Hapus dialog lama jika ada
+    $('#notif-download-dialog').remove();
+
+    const dialog = $(`
+        <div id="notif-download-dialog" title="${title}" class="text-center">
+            <span class="fas fa-info-circle text-info" style="font-size:30px;"></span>
+            <p class="mt-2">${message}</p>
+        </div>
+    `);
+
+    $('body').append(dialog);
+
+    dialog.dialog({
+        modal: false,
+        width: 350,
+        position: { my: 'right top', at: 'right top', of: window },
+        closeOnEscape: true,
+        buttons: [
+            {
+                text: 'Download',
+                class: 'btn btn-primary btn-sm',
+                click: function () {
+                    $(this).dialog('close');
+                    downloadFileWithAuth(actionUrl);
+                }
+            },
+            {
+                text: 'Tutup',
+                class: 'btn btn-secondary btn-sm',
+                click: function () {
+                    $(this).dialog('close');
+                }
+            }
+        ],
+        close: function () {
+            $(this).dialog('destroy').remove();
+        }
+    });
+
+    // Auto close setelah 10 detik jika tidak direspon
+    setTimeout(() => {
+        if (dialog.dialog('instance')) {
+            dialog.dialog('close');
+        }
+    }, 10000);
 }
 
 // Websocket setup for notifications
 if (typeof io !== 'undefined') {
-    const socketUrl = typeof SOCKET_URL !== 'undefined' ? SOCKET_URL : 'http://localhost:3000';
+    const socketUrl = typeof SOCKET_URL !== 'undefined' ? SOCKET_URL : 'https://projects.karaya.site';
     const socket = io(socketUrl); // Use configurable socket URL
 
     socket.on('connect', () => {
@@ -187,8 +245,9 @@ if (typeof io !== 'undefined') {
         console.log('Received notification:', data);
         if (data && data.title && data.message && data.action_url) {
             // Using base URL to properly resolve actionUrl for file download APIs
-            const baseUrl = typeof API_URL !== 'undefined' ? API_URL : '';
-            const actionUrl = `${baseUrl}/notifications/download/` + data.action_url.split('/').pop();
+            // const baseUrl = typeof API_URL !== 'undefined' ? API_URL : '';
+            // const actionUrl = `${baseUrl}/notifications/download/` + data.action_url.split('/').pop();
+						const actionUrl = data.action_url;
             showToastNotification(data.title, data.message, actionUrl);
 
             if (data.id) {
@@ -196,7 +255,7 @@ if (typeof io !== 'undefined') {
                     url: `${API_URL}/notifications/read/${data.id}`,
                     method: 'PATCH',
                     headers: {
-                        'Authorization': 'Bearer ' + localStorage.getItem('token')
+                        'Authorization': `Bearer ${getAuthToken()}`
                     }
                 });
             }
@@ -206,6 +265,75 @@ if (typeof io !== 'undefined') {
     socket.on('disconnect', () => {
         console.log('Disconnected from WebSocket server');
     });
+}
+
+function downloadFileWithAuth(url) {
+	console.log('=== DEBUG DOWNLOAD ===');
+  console.log('1. URL yang akan didownload:', url);
+
+	const token = getAuthToken();
+
+	console.log('2. Token ada?', token ? 'YA (length: ' + token.length + ')' : 'TIDAK ADA');
+	console.log('3. Token value (50 char pertama):', token ? token.substring(0, 50) + '...' : 'null');
+
+	fetch(url, {
+		method: 'GET',
+		headers: {
+			'Authorization': `Bearer ${token}`
+		}
+	})
+		.then(response => {
+			console.log('4. Response status:', response.status);
+			console.log('5. Response ok?', response.ok);
+			console.log('6. Response URL (final, setelah redirect):', response.url);
+			console.log('7. Response type:', response.type);
+			console.log('8. Content-Type:', response.headers.get('Content-Type'));
+			console.log('9. Content-Disposition:', response.headers.get('Content-Disposition'));
+
+			if (!response.ok) {
+				// Baca body error untuk tahu alasan gagal
+				return response.text().then(text => {
+					console.error('10. Response body (error):', text);
+					throw new Error('HTTP ' + response.status + ' — ' + text);
+				});
+			}
+
+			// Ambil nama file dari Content-Disposition jika tersedia
+			const disposition = response.headers.get('Content-Disposition');
+			let fileName = url.split('/').pop(); // fallback dari URL
+			if (disposition) {
+				const match = disposition.match(/filename[^;=\n]*=(['"]?)([^\n]*)\1/);
+				if (match?.[2]) fileName = match[2].trim();
+			}
+
+			console.log('10. Nama file yang akan didownload:', fileName);
+
+			return response.blob().then(blob => {
+				console.log('11. Blob size:', blob.size, 'bytes');
+				console.log('12. Blob type:', blob.type);
+				return { blob, fileName };
+			});
+		})
+		.then(({ blob, fileName }) => {
+			console.log('13. Membuat link download...');
+			const blobUrl = window.URL.createObjectURL(blob);
+			const a = document.createElement('a');
+			a.href = blobUrl;
+			a.download = fileName;
+			document.body.appendChild(a);
+			console.log('14. Klik link download...');
+			a.click();
+			a.remove();
+			window.URL.revokeObjectURL(blobUrl);
+			console.log('15. Download selesai!');
+		})
+		.catch(err => {
+			console.error('=== DOWNLOAD GAGAL ===');
+			console.error('Error:', err.message);
+			if (typeof showDialog === 'function') {
+				showDialog('error', 'Gagal mendownload file. Silakan coba lagi.');
+			}
+		});
 }
 
 function scrollGridSelectionIntoView(grid, rowId) {

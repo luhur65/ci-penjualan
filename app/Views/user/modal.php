@@ -512,24 +512,26 @@
     }
 
     try {
+      // Remove xhrFields: { responseType: 'arraybuffer' }
       const response = await ajaxWithRefresh({
         url: `${API_URL}/users/export`,
         method: 'GET',
         data: data
       });
 
+      // Instead of downloading, just show the toast notification
       if (response && response.message) {
-        showDialog('success', response.message);
+        showDialog('success', response.message); 
       }
 
     } catch (error) {
-      console.error("Gagal memulai export:", error);
-      let errorMsg = getErrorMessage(error) || 'Gagal mengekspor data.';
+      console.error("Gagal export excel:", error);
+      let errorMsg = getErrorMessage(error) || 'Gagal memulai ekspor data.';
       showDialog('error', errorMsg);
     } finally {
       $('#processingLoader').addClass('d-none');
     }
-  }
+}
 
 
 

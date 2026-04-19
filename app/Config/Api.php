@@ -7,6 +7,7 @@ use CodeIgniter\Config\BaseConfig;
 class Api extends BaseConfig
 {
     public string $apiURL;
+    public string $socketURL;
 
     public function __construct()
     {
@@ -14,5 +15,6 @@ class Api extends BaseConfig
         $host   = $_SERVER['HTTP_HOST'] ?? 'localhost';
 
         $this->apiURL = $scheme . '://' . $host . '/' . trim(getenv('api.path') ?? '', '/');
+        $this->socketURL = $scheme . '://' . $host . '/' . trim(getenv('socket.path') ?? '', '/');
     }
 }
