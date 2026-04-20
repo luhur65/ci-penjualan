@@ -178,7 +178,7 @@ function getAuthToken() {
 //     }
 // }
 
-function showToastNotification(title, message, actionUrl) {
+function showToastNotification(title, message, actionUrl, notifId = null) {
     // Hapus dialog lama jika ada
     $('#notif-download-dialog').remove();
 
@@ -197,27 +197,36 @@ function showToastNotification(title, message, actionUrl) {
         position: { my: 'center', at: 'center', of: window },
         closeOnEscape: true,
         buttons: [
-            {
-                text: 'Download',
-                class: 'btn btn-primary btn-sm',
-                click: function () {
-                    $(this).dialog('close');
-                    downloadFileWithAuth(actionUrl);
-										return;
-                }
-            },
-            {
-                text: 'Tutup',
-                class: 'btn btn-secondary btn-sm',
-                click: function () {
-                    $(this).dialog('close');
-										return;
-                }
-            }
+					{
+							text: 'Download',
+							class: 'btn btn-primary btn-sm',
+							click: function () {
+								$(this).dialog('close');
+								downloadFileWithAuth(actionUrl);
+									
+								if (notifId) {
+										$.ajax({
+												url: `${API_URL}/notifications/read/${notifId}`,
+												method: 'PATCH',
+												headers: {
+														'Authorization': `Bearer ${getAuthToken()}`
+												}
+										});
+								}
+							}
+					},
+					{
+							text: 'Tutup',
+							class: 'btn btn-secondary btn-sm',
+							click: function () {
+								$(this).dialog('close');
+								return;
+							}
+					}
         ],
         close: function () {
-            $(this).dialog('destroy').remove();
-						return;
+					$(this).dialog('destroy').remove();
+					return;
         }
     });
 
@@ -231,6 +240,7 @@ function showToastNotification(title, message, actionUrl) {
 
 // Websocket setup for notifications
 if (typeof io !== 'undefined') {
+	
     const socketUrl = typeof SOCKET_URL !== 'undefined' ? SOCKET_URL : 'https://projects.karaya.site';
     const socket = io(socketUrl, {
 			transports: ['websocket']
@@ -253,23 +263,174 @@ if (typeof io !== 'undefined') {
             // const baseUrl = typeof API_URL !== 'undefined' ? API_URL : '';
             // const actionUrl = `${baseUrl}/notifications/download/` + data.action_url.split('/').pop();
 						const actionUrl = data.action_url;
-            showToastNotification(data.title, data.message, actionUrl);
+            showToastNotification(data.title, data.message, actionUrl, data.id);
 
-            if (data.id) {
-                $.ajax({
-                    url: `${API_URL}/notifications/read/${data.id}`,
-                    method: 'PATCH',
-                    headers: {
-                        'Authorization': `Bearer ${getAuthToken()}`
-                    }
-                });
-            }
+            // if (data.id) {
+            //     $.ajax({
+            //         url: `${API_URL}/notifications/read/${data.id}`,
+            //         method: 'PATCH',
+            //         headers: {
+            //             'Authorization': `Bearer ${getAuthToken()}`
+            //         }
+            //     });
+            // }
         }
     });
 
     socket.on('disconnect', () => {
         console.log('Disconnected from WebSocket server');
     });
+
+
+	// =============================================
+	// NOTIFICATION MANAGER
+	// =============================================
+
+	function loadUnreadNotifications() {
+		$.ajax({
+			url: `${API_URL}/notifications/unread`,
+			method: 'GET',
+			headers: { 'Authorization': `Bearer ${getAuthToken()}` },
+			success: function (data) {
+				renderNotifications(data);
+			},
+			error: function () {
+				console.warn('Gagal load notifikasi');
+			}
+		});
+	}
+
+	function markNotifAsRead(notifId, itemEl) {
+		$.ajax({
+			url: `${API_URL}/notifications/read/${notifId}`,
+			method: 'PATCH',
+			headers: { 'Authorization': `Bearer ${getAuthToken()}` },
+			success: function () {
+				// Hapus dari dropdown setelah dibaca
+				itemEl.next('.dropdown-divider').remove();
+				itemEl.remove();
+
+				// Update badge
+				const remaining = $('#notifList .notif-item').length;
+				if (remaining === 0) {
+					$('#notifList').html('<div class="dropdown-item text-center text-muted">Tidak ada notifikasi</div>');
+					$('#notifBadge').hide();
+				} else {
+					$('#notifBadge').text(remaining);
+				}
+			}
+		});
+	}
+	
+	function buildNotifItem(notif, createdAt = null) {
+		return `
+				<div class="dropdown-item d-flex align-items-start notif-item" 
+						 style="white-space:normal; cursor:default;" 
+						 data-id="${notif.id ?? ''}" 
+						 data-url="${notif.action_url}">
+						<i class="fas fa-file-excel text-success mt-1 mr-3" style="font-size:18px;"></i>
+						<div class="flex-grow-1" style="min-width:0;">
+								<div class="font-weight-bold">${notif.title}</div>
+								<div class="text-muted small">${notif.message}</div>
+								<div class="text-muted smaller">
+										<i class="far fa-clock mr-1"></i>${formatRelativeTime(createdAt ?? notif.created_at)}
+								</div>
+						</div>
+						<button class="btn btn-xs btn-download-notif ml-2" title="Download">
+								<i class="fas fa-download"></i>
+						</button>
+				</div>
+				<div class="dropdown-divider"></div>
+		`;
+	}
+
+	function renderNotifications(notifications) {
+		const list = $('#notifList');
+		const badge = $('#notifBadge');
+		const badgeText = $('#notifBadgeText');
+
+		list.empty();
+
+		if (!notifications || notifications.length === 0) {
+			list.html('<div class="dropdown-item text-center text-muted" style="padding:20px;">Tidak ada notifikasi</div>');
+			badge.hide();
+			badgeText.hide();
+			return;
+		}
+
+		const count = notifications.length;
+		badge.text(count).show();
+		badgeText.text(count + ' baru').show();
+
+		notifications.forEach(notif => {
+			list.append(buildNotifItem(notif));
+		});
+	}
+
+	// Klik tombol download di dalam dropdown notifikasi
+	$(document).on('click', '.btn-download-notif', function (e) {
+		e.stopPropagation(); // cegah dropdown tertutup
+
+		const item = $(this).closest('.notif-item');
+		const notifId = item.data('id');
+		const url = item.data('url');
+
+		downloadFileWithAuth(url);
+		markNotifAsRead(notifId, item);
+	});
+
+	// Load notifikasi saat pertama kali halaman dibuka
+	$(document).ready(function () {
+		if (typeof API_URL !== 'undefined') {
+			loadUnreadNotifications();
+		}
+	});
+
+	// Update notifikasi saat ada yang masuk via WebSocket
+	socket.on('notification', (data) => {
+		if (data && data.title && data.message && data.action_url) {
+			showToastNotification(data.title, data.message, data.action_url);
+
+			// Tambahkan ke dropdown tanpa reload
+			addNotifToDropdown(data);
+		}
+	});
+
+
+	function addNotifToDropdown(notif) {
+		const list = $('#notifList');
+		const badge = $('#notifBadge');
+
+		list.find('.dropdown-item:not(.notif-item)').remove();
+
+		list.prepend(buildNotifItem(notif, new Date().toISOString()));
+
+		const count = $('#notifList .notif-item').length;
+		badge.text(count).show();
+	}
+
+	function formatRelativeTime(dateStr) {
+		if (!dateStr) return '';
+
+		const date = new Date(dateStr);
+		const now = new Date();
+		const diff = Math.floor((now - date) / 1000); // selisih dalam detik
+
+		if (diff < 60) return 'Baru saja';
+		if (diff < 3600) return Math.floor(diff / 60) + ' menit yang lalu';
+		if (diff < 86400) return Math.floor(diff / 3600) + ' jam yang lalu';
+		if (diff < 86400 * 2) return 'Kemarin';
+		if (diff < 86400 * 7) return Math.floor(diff / 86400) + ' hari yang lalu';
+
+		// Lebih dari 7 hari — tampilkan tanggal lengkap
+		return date.toLocaleDateString('id-ID', {
+			day: '2-digit',
+			month: 'long',
+			year: 'numeric',
+			hour: '2-digit',
+			minute: '2-digit'
+		});
+	}
 }
 
 function downloadFileWithAuth(url) {

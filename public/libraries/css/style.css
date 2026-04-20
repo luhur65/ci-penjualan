@@ -31,6 +31,26 @@ html.dark-mode .card.bordered .card-header {
   border-color: var(--card-header-dark-mode)!important;	
 }
 
+.main-header.navbar {
+    display: flex;
+    align-items: center;
+}
+
+.main-header .navbar-nav {
+    align-items: center;
+}
+
+.main-header .nav-item {
+    display: flex;
+    align-items: center;
+}
+
+.datetime-place {
+    font-size: 12px;
+    color: #495057;
+    line-height: 1;
+    white-space: nowrap;
+}
 
 @font-face {
 	font-family: dejavu;
@@ -1996,6 +2016,85 @@ body.dark-mode .table-scroll tfoot,
 body.dark-mode .table-scroll tfoot th,
 body.dark-mode .table-scroll tfoot td {
     background: var(--content-dark-mode) !important;
+}
+
+/* Notifikasi Dropdown */
+#notifDropdown {
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+    border: 1px solid #e8ecf0;
+    padding: 0;
+    overflow: hidden;
+}
+
+#notifDropdown .dropdown-header {
+    background: #f8f9fa;
+    border-bottom: 1px solid #e8ecf0;
+    padding: 12px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #495057;
+    letter-spacing: 0.5px;
+}
+
+.notif-item {
+    padding: 12px 16px !important;
+    border-left: 3px solid transparent;
+    transition: all 0.2s ease;
+    background: #fff;
+}
+
+.notif-item:hover {
+    background: #f0f7ff !important;
+    border-left-color: #4a90d9;
+}
+
+.notif-item .font-weight-bold {
+    font-size: 13px;
+    color: #2d3748;
+    text-transform: capitalize;
+    letter-spacing: 0;
+}
+
+.notif-item .text-muted.small {
+    font-size: 12px;
+    color: #718096 !important;
+    margin-top: 2px;
+    text-transform: none;
+}
+
+.notif-item .text-muted.smaller {
+    font-size: 11px;
+    color: #a0aec0 !important;
+    margin-top: 4px;
+    text-transform: none;
+}
+
+.notif-item .btn-download-notif {
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 12px;
+    border-color: #4a90d9;
+    color: #4a90d9;
+    flex-shrink: 0;
+    align-self: center;
+    transition: all 0.2s ease;
+}
+
+.notif-item .btn-download-notif:hover {
+    background: #4a90d9;
+    color: #fff;
+}
+
+#notifDropdown .dropdown-divider {
+    margin: 0;
+    border-color: #f0f0f0;
+}
+
+#notifDropdown .text-center.text-muted {
+    padding: 20px;
+    color: #a0aec0 !important;
+    font-size: 13px;
 }
 
 
