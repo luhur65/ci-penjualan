@@ -194,7 +194,7 @@ function showToastNotification(title, message, actionUrl) {
     dialog.dialog({
         modal: false,
         width: 350,
-        position: { my: 'right top', at: 'right top', of: window },
+        position: { my: 'center', at: 'center', of: window },
         closeOnEscape: true,
         buttons: [
             {
@@ -203,6 +203,7 @@ function showToastNotification(title, message, actionUrl) {
                 click: function () {
                     $(this).dialog('close');
                     downloadFileWithAuth(actionUrl);
+										return;
                 }
             },
             {
@@ -210,26 +211,30 @@ function showToastNotification(title, message, actionUrl) {
                 class: 'btn btn-secondary btn-sm',
                 click: function () {
                     $(this).dialog('close');
+										return;
                 }
             }
         ],
         close: function () {
             $(this).dialog('destroy').remove();
+						return;
         }
     });
 
     // Auto close setelah 10 detik jika tidak direspon
-    setTimeout(() => {
-        if (dialog.dialog('instance')) {
-            dialog.dialog('close');
-        }
-    }, 10000);
+    // setTimeout(() => {
+    //     if (dialog.dialog('instance')) {
+    //         dialog.dialog('close');
+    //     }
+    // }, 20000);
 }
 
 // Websocket setup for notifications
 if (typeof io !== 'undefined') {
     const socketUrl = typeof SOCKET_URL !== 'undefined' ? SOCKET_URL : 'https://projects.karaya.site';
-    const socket = io(socketUrl); // Use configurable socket URL
+    const socket = io(socketUrl, {
+			transports: ['websocket']
+		}); // Use configurable socket URL
 
     socket.on('connect', () => {
         console.log('Connected to WebSocket server');
