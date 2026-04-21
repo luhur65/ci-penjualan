@@ -27,6 +27,7 @@
   let lazyLoader;
   let selectedId = null;
   let selectedRows = [];
+  let activeGrid = null;
   let sortname = 'menukode';
   let sortorder = 'asc';
   const GRID_PREF_KEY = '{{module}}_master_grid';

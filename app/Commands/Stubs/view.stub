@@ -25,6 +25,7 @@
   let autoNumericElements = [];
   let rowNum = 10;
   let sortname = 'menukode';
+  let activeGrid = null;
   let sortorder = 'asc';
 
   const urlMaster = '/{{module}}';
