@@ -407,7 +407,6 @@
         let lazyLoader = new JqGridLazyLoader(
           config.gridId,
           API_URL + config.url,
-          ACCESS_TOKEN,
           config.lazyLoadOptions || {}
         );
 

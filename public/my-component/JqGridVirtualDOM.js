@@ -1,10 +1,9 @@
 // --- JqGrid Lazy Loader ---
 class JqGridLazyLoader {
-  constructor(gridId, apiUrl, accessToken, options = {}) {
+  constructor(gridId, apiUrl, options = {}) {
     this.gridId = gridId;
     this.grid = $(gridId);
     this.apiUrl = apiUrl || this.grid.jqGrid('getGridParam', 'url');
-    this.accessToken = accessToken;
 
     this.page = 1;
     this.totalPages = 1;
@@ -181,9 +180,6 @@ class JqGridLazyLoader {
     $.ajax({
       url: this.apiUrl,
       type: "GET",
-      headers: {
-        'Authorization': `Bearer ${this.accessToken}`
-      },
       data: fullPostData,
       success: function (res) {
         self.grid.parents('.ui-jqgrid-bdiv').find('.loading').hide();
