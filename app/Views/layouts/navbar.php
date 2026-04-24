@@ -25,16 +25,22 @@
         <i class="far fa-bell" style="font-size: 16px;"></i>
         <span class="badge badge-danger navbar-badge" id="notifBadge" style="display:none; position:absolute; top:2px; right:2px; font-size:9px; padding: 2px 4px; min-width:16px; height:16px; line-height:12px; border-radius:50%; text-align:center;">0</span>
       </a>
-      <div class="dropdown-menu dropdown-menu-right" id="notifDropdown" style="width:350px; max-height:400px; overflow-y:auto;">
-        <div class="d-flex align-items-center justify-content-between px-3 py-2" style="border-bottom: 1px solid #e8ecf0; background:#f8f9fa;">
+      <div class="dropdown-menu dropdown-menu-right" id="notifDropdown" style="width:350px; max-height:400px; overflow:hidden; padding:0;">
+
+        <!-- Header — sticky, tidak ikut scroll -->
+        <div class="d-flex align-items-center justify-content-between px-3 py-2"
+          style="border-bottom: 1px solid #e8ecf0; background:#f8f9fa; position:sticky; top:0; z-index:1;">
           <span style="font-size:13px; font-weight:600; color:#495057;">
             <i class="far fa-bell mr-1"></i> Notifikasi
           </span>
           <span id="notifBadgeText" class="badge badge-primary" style="display:none;">0 baru</span>
         </div>
-        <div id="notifList">
+
+        <!-- List — yang scroll -->
+        <div id="notifList" style="max-height:340px; overflow-y:auto;">
           <div class="dropdown-item text-center text-muted">Tidak ada notifikasi</div>
         </div>
+
       </div>
     </li>
   </ul>
