@@ -1,0 +1,457 @@
+# Instincts generated from https://github.com/luhur65/ci-penjualan
+# Generated: 2026-06-06T02:34:35.603Z
+# Version: 2.0
+# NOTE: This file supplements (does not replace) any existing curated instincts.
+# High-confidence manually curated instincts should be preserved alongside these.
+
+---
+id: ci-penjualan-commit-conventional
+trigger: "when writing a commit message"
+confidence: 0.85
+domain: git
+source: repo-analysis
+source_repo: https://github.com/luhur65/ci-penjualan
+---
+
+# Ci Penjualan Commit Conventional
+
+## Action
+
+Use conventional commit format with prefixes: feat, fix, refactor
+
+## Evidence
+
+- 9 commits analyzed
+- Detected conventional commit pattern
+- Examples: feat: Replace polling with websocket for queue notifications, refactor: center dialog position, add explicit returns, increase timeout duration, and force websocket transport
+
+---
+id: ci-penjualan-commit-length
+trigger: "when writing a commit message"
+confidence: 0.6
+domain: git
+source: repo-analysis
+source_repo: https://github.com/luhur65/ci-penjualan
+---
+
+# Ci Penjualan Commit Length
+
+## Action
+
+Write moderate-length commit messages (~63 characters)
+
+## Evidence
+
+- Average commit message length: 63 chars
+- Based on 9 commits
+
+---
+id: ci-penjualan-naming-files
+trigger: "when creating a new file"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/luhur65/ci-penjualan
+---
+
+# Ci Penjualan Naming Files
+
+## Action
+
+Use camelCase naming convention
+
+## Evidence
+
+- Analyzed file naming patterns in repository
+- Dominant pattern: camelCase
+
+---
+id: ci-penjualan-import-relative
+trigger: "when importing modules"
+confidence: 0.75
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/luhur65/ci-penjualan
+---
+
+# Ci Penjualan Import Relative
+
+## Action
+
+Use relative imports for project files
+
+## Evidence
+
+- Import analysis shows relative import pattern
+- Example: import { x } from '../lib/x'
+
+---
+id: ci-penjualan-export-style
+trigger: "when exporting from a module"
+confidence: 0.7
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/luhur65/ci-penjualan
+---
+
+# Ci Penjualan Export Style
+
+## Action
+
+Prefer named exports
+
+## Evidence
+
+- Export pattern analysis
+- Dominant style: named
+
+---
+id: ci-penjualan-test-separate
+trigger: "when writing tests"
+confidence: 0.8
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/luhur65/ci-penjualan
+---
+
+# Ci Penjualan Test Separate
+
+## Action
+
+Place tests in the tests/ or __tests__/ directory, mirroring src structure
+
+## Evidence
+
+- Separate test directory pattern detected
+- Tests live in dedicated test folders
+
+---
+id: ci-penjualan-workflow-feature-development
+trigger: "when implementing a new feature"
+confidence: 0.9
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/luhur65/ci-penjualan
+---
+
+# Ci Penjualan Workflow Feature Development
+
+## Action
+
+Follow the feature-development workflow:
+1. Add feature implementation
+2. Add tests for feature
+3. Update documentation
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~20x per month
+- Files: public/my-component/*, **/api/**
+
+---
+id: ci-penjualan-workflow-implement-real-time-notifications-websocket
+trigger: "when doing implement real time notifications websocket"
+confidence: 0.6
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/luhur65/ci-penjualan
+---
+
+# Ci Penjualan Workflow Implement Real Time Notifications Websocket
+
+## Action
+
+Follow the implement-real-time-notifications-websocket workflow:
+1. Add or update Socket.IO client initialization in public/libraries/js/script.js
+2. Update or create server-side websocket handler (e.g., public/my-component/Socket.js)
+3. Modify layout or modal views to inject websocket-related variables or UI (e.g., app/Views/layouts/app.php, app/Views/user/modal.php)
+4. Update notification display logic (e.g., using Swal.fire or dropdown in app/Views/layouts/navbar.php)
+5. Update configuration files if necessary (e.g., app/Config/Api.php)
+6. Add or update notification-related database migrations (e.g., app/Database/Migrations/...)
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~2x per month
+- Files: public/libraries/js/script.js, public/my-component/Socket.js, app/Views/layouts/app.php
+
+---
+id: ci-penjualan-workflow-feature-ui-backend-integration
+trigger: "when doing feature ui backend integration"
+confidence: 0.6
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/luhur65/ci-penjualan
+---
+
+# Ci Penjualan Workflow Feature Ui Backend Integration
+
+## Action
+
+Follow the feature-ui-backend-integration workflow:
+1. Add or update backend controller (e.g., app/Controllers/...)
+2. Update routing configuration (e.g., app/Config/Routes.php)
+3. Create or update frontend view files (e.g., app/Views/feature/index.php, app/Views/feature/modal.php)
+4. Optionally, update debug or test output (e.g., writable/debugbar/index.html)
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~2x per month
+- Files: app/Controllers/, app/Config/Routes.php, app/Views/*/index.php
+
+---
+id: ci-penjualan-instinct-file-naming
+trigger: "When creating or renaming a file in the codebase"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: luhur65/ci-penjualan
+---
+
+# Ci Penjualan Instinct File Naming
+
+## Action
+
+Use camelCase for file names
+
+## Evidence
+
+- Pattern in namingConventions.files
+- Observed in files like public/my-component/Socket.js
+
+---
+id: ci-penjualan-instinct-function-naming
+trigger: "When defining a new function"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: luhur65/ci-penjualan
+---
+
+# Ci Penjualan Instinct Function Naming
+
+## Action
+
+Use camelCase for function names
+
+## Evidence
+
+- Pattern in namingConventions.functions
+
+---
+id: ci-penjualan-instinct-class-naming
+trigger: "When defining a new class"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: luhur65/ci-penjualan
+---
+
+# Ci Penjualan Instinct Class Naming
+
+## Action
+
+Use PascalCase for class names
+
+## Evidence
+
+- Pattern in namingConventions.classes
+
+---
+id: ci-penjualan-instinct-constant-naming
+trigger: "When defining a constant"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: luhur65/ci-penjualan
+---
+
+# Ci Penjualan Instinct Constant Naming
+
+## Action
+
+Use SCREAMING_SNAKE_CASE for constants
+
+## Evidence
+
+- Pattern in namingConventions.constants
+
+---
+id: ci-penjualan-instinct-import-style
+trigger: "When importing modules"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: luhur65/ci-penjualan
+---
+
+# Ci Penjualan Instinct Import Style
+
+## Action
+
+Use relative import paths
+
+## Evidence
+
+- Pattern in importStyle: relative
+- Seen in public/my-component/Socket.js
+
+---
+id: ci-penjualan-instinct-export-style
+trigger: "When exporting modules or functions"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: luhur65/ci-penjualan
+---
+
+# Ci Penjualan Instinct Export Style
+
+## Action
+
+Use named exports
+
+## Evidence
+
+- Pattern in exportStyle: named
+
+---
+id: ci-penjualan-instinct-try-catch-error-handling
+trigger: "When handling errors in code"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: luhur65/ci-penjualan
+---
+
+# Ci Penjualan Instinct Try Catch Error Handling
+
+## Action
+
+Use try-catch blocks for error handling
+
+## Evidence
+
+- Pattern in errorHandling.style: try-catch
+
+---
+id: ci-penjualan-instinct-git-commit-format
+trigger: "When writing a git commit message"
+confidence: 0.9
+domain: git
+source: repo-analysis
+source_repo: luhur65/ci-penjualan
+---
+
+# Ci Penjualan Instinct Git Commit Format
+
+## Action
+
+Use conventional commit format with prefixes: feat, fix, refactor
+
+## Evidence
+
+- Seen in commits: 'feat: Replace polling with websocket for queue notifications', 'fix: set navbar sticky'
+- Pattern in commits.prefixes
+
+---
+id: ci-penjualan-instinct-git-commit-length
+trigger: "When writing a git commit message"
+confidence: 0.7
+domain: git
+source: repo-analysis
+source_repo: luhur65/ci-penjualan
+---
+
+# Ci Penjualan Instinct Git Commit Length
+
+## Action
+
+Keep commit message concise, around 60-70 characters
+
+## Evidence
+
+- Pattern in commits.averageLength: 63
+
+---
+id: ci-penjualan-instinct-feature-development-tests
+trigger: "When implementing a new feature"
+confidence: 0.7
+domain: testing
+source: repo-analysis
+source_repo: luhur65/ci-penjualan
+---
+
+# Ci Penjualan Instinct Feature Development Tests
+
+## Action
+
+Add tests for the feature after implementation
+
+## Evidence
+
+- feature-development workflow commitSequence: 'Add feature implementation', 'Add tests for feature'
+- Pattern in workflow: feature-development
+
+---
+id: ci-penjualan-instinct-feature-development-docs
+trigger: "When implementing a new feature"
+confidence: 0.7
+domain: workflow
+source: repo-analysis
+source_repo: luhur65/ci-penjualan
+---
+
+# Ci Penjualan Instinct Feature Development Docs
+
+## Action
+
+Update documentation after adding tests
+
+## Evidence
+
+- feature-development workflow commitSequence: 'Update documentation'
+- Pattern in workflow: feature-development
+
+---
+id: ci-penjualan-instinct-realtime-notification-workflow
+trigger: "When someone wants to add or enhance real-time notification capabilities (e.g., replacing polling, adding dropdowns, improving notification UX)"
+confidence: 0.9
+domain: workflow
+source: repo-analysis
+source_repo: luhur65/ci-penjualan
+---
+
+# Ci Penjualan Instinct Realtime Notification Workflow
+
+## Action
+
+Follow the workflow: update Socket.IO client, server handler, modify views for websocket variables/UI, update notification display logic, update config, and add/update notification-related migrations
+
+## Evidence
+
+- implement-real-time-notifications-websocket workflow steps and files
+- Seen in commits: 'feat: Replace polling with websocket for queue notifications', 'feat: implement notification dropdown in navbar with real-time updates and read status management'
+
+---
+id: ci-penjualan-instinct-feature-ui-backend-integration-workflow
+trigger: "When someone wants to add a new entity, feature, or test scenario that requires both backend and frontend changes"
+confidence: 0.85
+domain: workflow
+source: repo-analysis
+source_repo: luhur65/ci-penjualan
+---
+
+# Ci Penjualan Instinct Feature Ui Backend Integration Workflow
+
+## Action
+
+Follow the workflow: add/update backend controller, update routing, create/update frontend view files, optionally update debug/test output
+
+## Evidence
+
+- feature-ui-backend-integration workflow steps and files
+- Seen in workflow example commits and files
+
