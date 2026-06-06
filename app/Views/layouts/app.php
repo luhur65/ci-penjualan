@@ -128,7 +128,7 @@
   <script src="<?= base_url('public/libraries/adminlte/plugins/dropzone/min/dropzone.min.js') ?>"></script>
 
   <!-- Socket IO -->
-  <!-- <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script> -->
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
   <script src="<?= base_url('public/libraries/js/extended-jqgrid.js?version=' . config('App')->version) ?>"></script>
   <script src="<?= base_url('public/libraries/js/navbar.js?version=' . config('App')->version) ?>"></script>
@@ -147,6 +147,7 @@
     const APP_URL = `<?= base_url() ?>`
     const API_URL = `<?= config('Api')->apiURL ?>`
     let ACCESS_TOKEN = `<?= session()->get('accessToken') ?>`;
+    const CURRENT_USER_ID = `<?= session()->get('user_data')['id'] ?? '' ?>`;
     let addedRules = null;
     let isRefreshing = false; // Flag untuk mendeteksi apakah refresh sedang berlangsung
     let refreshSubscribers = []; // Menyimpan request yang menunggu token baru

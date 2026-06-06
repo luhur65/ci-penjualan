@@ -14,13 +14,19 @@ class MakeFE extends BaseCommand
   public function run(array $params)
   {
     // 1. Ambil nama module dari parameter atau prompt jika kosong
-    $module = $params[0] ?? CLI::prompt('Masukkan nama module (contoh: user)', null, 'required');
+    $module = $params[0] ?? CLI::prompt(
+      'Masukkan nama module (contoh: user)',
+      'required'
+    );
+
     $module = strtolower($module);
     $class  = ucfirst($module);
 
-    // 2. Tanya user: Mau pakai Lazy Loading / Datatable server-side?
-    $useLazy = CLI::prompt('Gunakan tabel lazy loading?', ['y', 'n'], 'n');
-    $isLazy  = ($useLazy === 'y');
+    // 2. Tanya user mau pakai lazy atau tidak
+    $inputUser = CLI::prompt('Gunakan tabel lazy loading? (y/n)');
+    $useLazy = strtolower($inputUser ?: 'n');
+
+    $isLazy = ($useLazy === 'y');
 
     CLI::write("Memproses module: {$class} " . ($isLazy ? "(Lazy Grid)" : "(Standar)"), 'yellow');
 

@@ -143,6 +143,365 @@ function focusToGrid() {
 		.find(`tr[id="${$(activeGrid).getDataIDs()[selectedIndex]}"]`)
 		.click();
 }
+
+function getAuthToken() {
+    // Prioritas 1: PHP session via inline script
+    if (typeof ACCESS_TOKEN !== 'undefined' && ACCESS_TOKEN && ACCESS_TOKEN !== 'null' && ACCESS_TOKEN !== '') {
+        return ACCESS_TOKEN;
+    }
+    // Prioritas 2: localStorage (fallback)
+    return localStorage.getItem('token') || localStorage.getItem('access_token');
+}
+
+// function showToastNotification(title, message, actionUrl) {
+//     if (typeof Swal !== 'undefined') {
+//         Swal.fire({
+//             title: title,
+//             text: message,
+//             icon: 'info',
+//             toast: true,
+//             position: 'top-end',
+//             showConfirmButton: true,
+//             confirmButtonText: 'Download',
+//             timer: 10000,
+//             timerProgressBar: true,
+//         }).then((result) => {
+//             if (result.isConfirmed) {
+// 								downloadFileWithAuth(actionUrl);
+//             }
+//         });
+//     } else {
+//         alert(title + "\\n" + message);
+//         if (confirm("Download file?")) {
+// 					downloadFileWithAuth(actionUrl);
+//         }
+//     }
+// }
+
+function showToastNotification(title, message, actionUrl, notifId = null) {
+    // Hapus dialog lama jika ada
+    $('#notif-download-dialog').remove();
+
+    const dialog = $(`
+        <div id="notif-download-dialog" title="${title}" class="text-center">
+            <span class="fas fa-info-circle text-info" style="font-size:30px;"></span>
+            <p class="mt-2">${message}</p>
+        </div>
+    `);
+
+    $('body').append(dialog);
+
+    dialog.dialog({
+        modal: false,
+        width: 350,
+        position: { my: 'center', at: 'center', of: window },
+        closeOnEscape: true,
+        buttons: [
+					{
+							text: 'Download',
+							class: 'btn btn-primary btn-sm',
+							click: function () {
+								$(this).dialog('close');
+								downloadFileWithAuth(actionUrl);
+									
+								if (notifId) {
+										$.ajax({
+												url: `${API_URL}/notifications/read/${notifId}`,
+												method: 'PATCH',
+												headers: {
+														'Authorization': `Bearer ${getAuthToken()}`
+												}
+										});
+								}
+							}
+					},
+					{
+							text: 'Tutup',
+							class: 'btn btn-secondary btn-sm',
+							click: function () {
+								$(this).dialog('close');
+								return;
+							}
+					}
+        ],
+        close: function () {
+					$(this).dialog('destroy').remove();
+					return;
+        }
+    });
+
+    // Auto close setelah 10 detik jika tidak direspon
+    // setTimeout(() => {
+    //     if (dialog.dialog('instance')) {
+    //         dialog.dialog('close');
+    //     }
+    // }, 20000);
+}
+
+// Websocket setup for notifications
+if (typeof io !== 'undefined') {
+	
+    const socketUrl = typeof SOCKET_URL !== 'undefined' ? SOCKET_URL : 'https://projects.karaya.site';
+    const socket = io(socketUrl, {
+			transports: ['websocket']
+		}); // Use configurable socket URL
+
+    socket.on('connect', () => {
+        console.log('Connected to WebSocket server');
+        // Retrieve user ID from localStorage or another global variable
+        // This is a common pattern in SPAs or apps that store auth data client-side
+        const userId = localStorage.getItem('user_id') || (typeof CURRENT_USER_ID !== 'undefined' ? CURRENT_USER_ID : null);
+        if (userId) {
+            socket.emit('join_room', userId);
+        }
+    });
+
+    socket.on('notification', (data) => {
+        console.log('Received notification:', data);
+        if (data && data.title && data.message && data.action_url) {
+            // Using base URL to properly resolve actionUrl for file download APIs
+            // const baseUrl = typeof API_URL !== 'undefined' ? API_URL : '';
+            // const actionUrl = `${baseUrl}/notifications/download/` + data.action_url.split('/').pop();
+						const actionUrl = data.action_url;
+            showToastNotification(data.title, data.message, actionUrl, data.id);
+
+            // if (data.id) {
+            //     $.ajax({
+            //         url: `${API_URL}/notifications/read/${data.id}`,
+            //         method: 'PATCH',
+            //         headers: {
+            //             'Authorization': `Bearer ${getAuthToken()}`
+            //         }
+            //     });
+            // }
+        }
+    });
+
+    socket.on('disconnect', () => {
+        console.log('Disconnected from WebSocket server');
+    });
+
+
+	// =============================================
+	// NOTIFICATION MANAGER
+	// =============================================
+
+	function loadUnreadNotifications() {
+		$.ajax({
+			url: `${API_URL}/notifications/unread`,
+			method: 'GET',
+			headers: { 'Authorization': `Bearer ${getAuthToken()}` },
+			success: function (data) {
+				renderNotifications(data);
+			},
+			error: function () {
+				console.warn('Gagal load notifikasi');
+			}
+		});
+	}
+
+	function markNotifAsRead(notifId, itemEl) {
+		$.ajax({
+			url: `${API_URL}/notifications/read/${notifId}`,
+			method: 'PATCH',
+			headers: { 'Authorization': `Bearer ${getAuthToken()}` },
+			success: function () {
+				// Hapus dari dropdown setelah dibaca
+				itemEl.next('.dropdown-divider').remove();
+				itemEl.remove();
+
+				// Update badge
+				const remaining = $('#notifList .notif-item').length;
+				if (remaining === 0) {
+					$('#notifList').html('<div class="dropdown-item text-center text-muted">Tidak ada notifikasi</div>');
+					$('#notifBadge').hide();
+				} else {
+					$('#notifBadge').text(remaining);
+				}
+			}
+		});
+	}
+	
+	function buildNotifItem(notif, createdAt = null) {
+		return `
+				<div class="dropdown-item d-flex align-items-start notif-item" 
+						 style="white-space:normal; cursor:default;" 
+						 data-id="${notif.id ?? ''}" 
+						 data-url="${notif.action_url}">
+						<i class="fas fa-file-excel text-success mt-1 mr-3" style="font-size:18px;"></i>
+						<div class="flex-grow-1" style="min-width:0;">
+								<div class="font-weight-bold">${notif.title}</div>
+								<div class="text-muted small">${notif.message}</div>
+								<div class="text-muted smaller">
+										<i class="far fa-clock mr-1"></i>${formatRelativeTime(createdAt ?? notif.created_at)}
+								</div>
+						</div>
+						<button class="btn btn-xs btn-download-notif ml-2" title="Download">
+								<i class="fas fa-download"></i>
+						</button>
+				</div>
+				<div class="dropdown-divider"></div>
+		`;
+	}
+
+	function renderNotifications(notifications) {
+		const list = $('#notifList');
+		const badge = $('#notifBadge');
+		const badgeText = $('#notifBadgeText');
+
+		list.empty();
+
+		if (!notifications || notifications.length === 0) {
+			list.html('<div class="dropdown-item text-center text-muted" style="padding:20px;">Tidak ada notifikasi</div>');
+			badge.hide();
+			badgeText.hide();
+			return;
+		}
+
+		const count = notifications.length;
+		badge.text(count).show();
+		badgeText.text(count + ' baru').show();
+
+		notifications.forEach(notif => {
+			list.append(buildNotifItem(notif));
+		});
+	}
+
+	// Klik tombol download di dalam dropdown notifikasi
+	$(document).on('click', '.btn-download-notif', function (e) {
+		e.stopPropagation(); // cegah dropdown tertutup
+
+		const item = $(this).closest('.notif-item');
+		const notifId = item.data('id');
+		const url = item.data('url');
+
+		downloadFileWithAuth(url);
+		markNotifAsRead(notifId, item);
+	});
+
+	// Load notifikasi saat pertama kali halaman dibuka
+	$(document).ready(function () {
+		if (typeof API_URL !== 'undefined') {
+			loadUnreadNotifications();
+		}
+	});
+
+	// Update notifikasi saat ada yang masuk via WebSocket
+	socket.on('notification', (data) => {
+		if (data && data.title && data.message && data.action_url) {
+			showToastNotification(data.title, data.message, data.action_url);
+
+			// Tambahkan ke dropdown tanpa reload
+			addNotifToDropdown(data);
+		}
+	});
+
+
+	function addNotifToDropdown(notif) {
+		const list = $('#notifList');
+		const badge = $('#notifBadge');
+
+		list.find('.dropdown-item:not(.notif-item)').remove();
+
+		list.prepend(buildNotifItem(notif, new Date().toISOString()));
+
+		const count = $('#notifList .notif-item').length;
+		badge.text(count).show();
+	}
+
+	function formatRelativeTime(dateStr) {
+		if (!dateStr) return '';
+
+		const date = new Date(dateStr);
+		const now = new Date();
+		const diff = Math.floor((now - date) / 1000); // selisih dalam detik
+
+		if (diff < 60) return 'Baru saja';
+		if (diff < 3600) return Math.floor(diff / 60) + ' menit yang lalu';
+		if (diff < 86400) return Math.floor(diff / 3600) + ' jam yang lalu';
+		if (diff < 86400 * 2) return 'Kemarin';
+		if (diff < 86400 * 7) return Math.floor(diff / 86400) + ' hari yang lalu';
+
+		// Lebih dari 7 hari — tampilkan tanggal lengkap
+		return date.toLocaleDateString('id-ID', {
+			day: '2-digit',
+			month: 'long',
+			year: 'numeric',
+			hour: '2-digit',
+			minute: '2-digit'
+		});
+	}
+}
+
+function downloadFileWithAuth(url) {
+	console.log('=== DEBUG DOWNLOAD ===');
+  console.log('1. URL yang akan didownload:', url);
+
+	const token = getAuthToken();
+
+	console.log('2. Token ada?', token ? 'YA (length: ' + token.length + ')' : 'TIDAK ADA');
+	console.log('3. Token value (50 char pertama):', token ? token.substring(0, 50) + '...' : 'null');
+
+	fetch(url, {
+		method: 'GET',
+		headers: {
+			'Authorization': `Bearer ${token}`
+		}
+	})
+		.then(response => {
+			console.log('4. Response status:', response.status);
+			console.log('5. Response ok?', response.ok);
+			console.log('6. Response URL (final, setelah redirect):', response.url);
+			console.log('7. Response type:', response.type);
+			console.log('8. Content-Type:', response.headers.get('Content-Type'));
+			console.log('9. Content-Disposition:', response.headers.get('Content-Disposition'));
+
+			if (!response.ok) {
+				// Baca body error untuk tahu alasan gagal
+				return response.text().then(text => {
+					console.error('10. Response body (error):', text);
+					throw new Error('HTTP ' + response.status + ' — ' + text);
+				});
+			}
+
+			// Ambil nama file dari Content-Disposition jika tersedia
+			const disposition = response.headers.get('Content-Disposition');
+			let fileName = url.split('/').pop(); // fallback dari URL
+			if (disposition) {
+				const match = disposition.match(/filename[^;=\n]*=(['"]?)([^\n]*)\1/);
+				if (match?.[2]) fileName = match[2].trim();
+			}
+
+			console.log('10. Nama file yang akan didownload:', fileName);
+
+			return response.blob().then(blob => {
+				console.log('11. Blob size:', blob.size, 'bytes');
+				console.log('12. Blob type:', blob.type);
+				return { blob, fileName };
+			});
+		})
+		.then(({ blob, fileName }) => {
+			console.log('13. Membuat link download...');
+			const blobUrl = window.URL.createObjectURL(blob);
+			const a = document.createElement('a');
+			a.href = blobUrl;
+			a.download = fileName;
+			document.body.appendChild(a);
+			console.log('14. Klik link download...');
+			a.click();
+			a.remove();
+			window.URL.revokeObjectURL(blobUrl);
+			console.log('15. Download selesai!');
+		})
+		.catch(err => {
+			console.error('=== DOWNLOAD GAGAL ===');
+			console.error('Error:', err.message);
+			if (typeof showDialog === 'function') {
+				showDialog('error', 'Gagal mendownload file. Silakan coba lagi.');
+			}
+		});
+}
+
 function scrollGridSelectionIntoView(grid, rowId) {
 	var $grid = $(grid);
 	var escapedId = typeof $.jgrid !== 'undefined' ? $.jgrid.jqID(rowId) : $.escapeSelector(rowId);
