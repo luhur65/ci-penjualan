@@ -50,12 +50,14 @@ class JqGridLazyLoader {
 
     this.setupLazyLoadScrollHandler();
 
-    // Initial load
-    let initialPostData = this.grid.jqGrid('getGridParam', 'postData');
-    this.loadGridData(initialPostData, 1, this.rowsPerPage, 'down', 'page');
-
     if (typeof options.onInit === 'function') {
       options.onInit(this);
+    }
+
+    // Initial load
+    if (!this.paused) {
+      let initialPostData = this.grid.jqGrid('getGridParam', 'postData');
+      this.loadGridData(initialPostData, 1, this.rowsPerPage, 'down', 'page');
     }
   }
 
@@ -107,6 +109,8 @@ class JqGridLazyLoader {
   }
 
   loadGridData(postData, pageNumber, rowsCount, direction = 'down', proses = 'page', callback = null, onlyCache = false) {
+    if (this.paused) return;
+
     var self = this;
 
     if (proses !== 'page' && !onlyCache && proses !== 'reload' && proses !== 'jump' && this.minPageLoaded > 0 && this.hasFilterChanged()) {

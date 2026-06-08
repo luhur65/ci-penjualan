@@ -507,6 +507,22 @@
       // Tambahkan Global Search otomatis
       initGlobalSearch(grid, config);
 
+      // --- Logic for red circle clear button based on provided HTML ---
+        $(document).on('keyup input', '.ui-search-input input', function() {
+            const $input = $(this);
+            const $clearBtn = $input.closest('tr').find('.clearsearchclass');
+
+            if ($input.val().length > 0) {
+                $clearBtn.attr('style', 'display: flex !important');
+            } else {
+                $clearBtn.attr('style', 'display: none !important');
+            }
+        });
+
+        $(document).on('click', '.clearsearchclass', function() {
+            $(this).attr('style', 'display: none !important');
+        });
+
 
       return grid;
     }

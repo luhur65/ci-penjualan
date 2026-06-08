@@ -4,8 +4,12 @@
 
 <div class="container-fluid">
   <!-- MASTER GRID: tbl_penjualan -->
-  <table id="jqGrid"></table>
-  <div id="jqGridPager"></div>
+  <div class="row mb-3">
+    <div class="col-12">
+      <table id="jqGrid"></table>
+      <div id="jqGridPager"></div>
+    </div>
+  </div>
 
   <!-- DIVIDER -->
   <div class="mt-3 mb-1 d-flex align-items-center" id="detailGridHeader" style="display:none!important">
@@ -17,8 +21,12 @@
   </div>
 
   <!-- DETAIL GRID: tbl_penjualan_detail -->
-  <table id="jqGridDetail"></table>
-  <div id="jqGridDetailPager"></div>
+  <div class="row">
+    <div class="col-12">
+      <table id="jqGridDetail"></table>
+      <div id="jqGridDetailPager"></div>
+    </div>
+  </div>
 </div>
 
 <?= $this->endSection() ?>
@@ -204,6 +212,11 @@
   $(document).ready(async function() {
 
     // -----------------------------------------------------------
+    // DETAIL GRID (Init first to prevent race condition when master grid completes quickly)
+    // -----------------------------------------------------------
+    await initDetailGrid();
+
+    // -----------------------------------------------------------
     // MASTER GRID
     // -----------------------------------------------------------
     const savedPrefs   = await GridPreferenceManager.load(GRID_PREF_KEY);
@@ -364,10 +377,7 @@
 
     ColumnSettingsManager.init(masterGrid, GRID_PREF_KEY, getBaseColModel());
 
-    // -----------------------------------------------------------
-    // DETAIL GRID
-    // -----------------------------------------------------------
-    await initDetailGrid();
+    // Detail grid init moved to top
 
     // Setup Pintasan Keyboard Global
     setupKeyboardShortcuts();
@@ -444,50 +454,50 @@
     .toolbarBindKeys()
     .clearGlobalSearch()
     .customPager({
-      buttons: [
-        {
-          id: 'detail_add',
-          innerHTML: '<i class="fa fa-plus"></i> ADD ITEM',
-          class: 'btn btn-primary btn-sm mr-1',
-          right: 'add',
-          onClick: () => {
-            if (!selectedMasterId) {
-              showDialog('warning', 'Pilih data penjualan terlebih dahulu!');
-              return;
-            }
-            createDetailItem();
-          }
-        },
-        {
-          id: 'detail_edit',
-          innerHTML: '<i class="fa fa-pen"></i> EDIT ITEM',
-          class: 'btn btn-success btn-sm mr-1',
-          right: 'edit',
-          onClick: () => {
-            selectedDetailId = $(detailGrid).jqGrid('getGridParam', 'selrow');
-            updateDetailItem(selectedDetailId);
-          }
-        },
-        {
-          id: 'detail_delete',
-          innerHTML: '<i class="fa fa-trash"></i> DELETE ITEM',
-          class: 'btn btn-danger btn-sm mr-1',
-          right: 'delete',
-          onClick: () => {
-            selectedDetailId = $(detailGrid).jqGrid('getGridParam', 'selrow');
-            deleteDetailItem(selectedDetailId);
-          }
-        },
-        {
-          id: 'detail_export',
-          innerHTML: '<i class="fa fa-file-export"></i> EXPORT',
-          class: 'btn btn-warning btn-sm mr-1',
-          right: 'export',
-          onClick: () => {
-            exportDetail();
-          }
-        },
-      ]
+      // buttons: [
+      //   {
+      //     id: 'detail_add',
+      //     innerHTML: '<i class="fa fa-plus"></i> ADD ITEM',
+      //     class: 'btn btn-primary btn-sm mr-1',
+      //     right: 'add',
+      //     onClick: () => {
+      //       if (!selectedMasterId) {
+      //         showDialog('warning', 'Pilih data penjualan terlebih dahulu!');
+      //         return;
+      //       }
+      //       createDetailItem();
+      //     }
+      //   },
+      //   {
+      //     id: 'detail_edit',
+      //     innerHTML: '<i class="fa fa-pen"></i> EDIT ITEM',
+      //     class: 'btn btn-success btn-sm mr-1',
+      //     right: 'edit',
+      //     onClick: () => {
+      //       selectedDetailId = $(detailGrid).jqGrid('getGridParam', 'selrow');
+      //       updateDetailItem(selectedDetailId);
+      //     }
+      //   },
+      //   {
+      //     id: 'detail_delete',
+      //     innerHTML: '<i class="fa fa-trash"></i> DELETE ITEM',
+      //     class: 'btn btn-danger btn-sm mr-1',
+      //     right: 'delete',
+      //     onClick: () => {
+      //       selectedDetailId = $(detailGrid).jqGrid('getGridParam', 'selrow');
+      //       deleteDetailItem(selectedDetailId);
+      //     }
+      //   },
+      //   {
+      //     id: 'detail_export',
+      //     innerHTML: '<i class="fa fa-file-export"></i> EXPORT',
+      //     class: 'btn btn-warning btn-sm mr-1',
+      //     right: 'export',
+      //     onClick: () => {
+      //       exportDetail();
+      //     }
+      //   },
+      // ]
     })
     .permissions(accessRights);
 

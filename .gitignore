@@ -127,3 +127,5 @@ _modules/*
 
 # NPM
 node_modules/
+
+*.sql
