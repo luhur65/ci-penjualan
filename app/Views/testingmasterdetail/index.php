@@ -535,26 +535,65 @@
   }
 
   /* ============================================================
-   *  EXPORT FUNCTIONS
+   *  EXPORT FUNCTIONS (queue-based — notifikasi via WebSocket)
    * ============================================================ */
-  function exportMaster() {
+  async function exportMaster() {
+    $('#processingLoader').removeClass('d-none');
+
     const params = $(masterGrid).jqGrid('getGridParam', 'postData') || {};
-    const qs = new URLSearchParams({
-      ...params,
-      rows: 999999,
-      page: 1
-    }).toString();
-    window.open(`${API_URL}/testingmasterdetail/export?${qs}`, '_blank');
+    const data = {
+      rows:    0,
+      sord:    $(masterGrid).jqGrid('getGridParam', 'sortorder'),
+      sidx:    $(masterGrid).jqGrid('getGridParam', 'sortname'),
+      filters: params.filters,
+    };
+
+    try {
+      const response = await ajaxWithRefresh({
+        url:    `${API_URL}/testingmasterdetail/export`,
+        method: 'GET',
+        data:   data
+      });
+      if (response && response.message) {
+        showDialog('success', response.message);
+      }
+    } catch (error) {
+      showDialog('error', getErrorMessage(error) || 'Gagal memulai export master.');
+    } finally {
+      $('#processingLoader').addClass('d-none');
+    }
   }
 
-  function exportDetail() {
+  async function exportDetail() {
     if (!selectedMasterId) {
       showDialog('warning', 'Pilih data penjualan terlebih dahulu!');
       return;
     }
+
+    $('#processingLoader').removeClass('d-none');
+
     const params = $(detailGrid).jqGrid('getGridParam', 'postData') || {};
-    const qs = new URLSearchParams({ ...params, rows: 999999, page: 1 }).toString();
-    window.open(`${API_URL}/testingmasterdetail/${selectedMasterId}/detail/export?${qs}`, '_blank');
+    const data = {
+      rows:    0,
+      sord:    $(detailGrid).jqGrid('getGridParam', 'sortorder'),
+      sidx:    $(detailGrid).jqGrid('getGridParam', 'sortname'),
+      filters: params.filters,
+    };
+
+    try {
+      const response = await ajaxWithRefresh({
+        url:    `${API_URL}/testingmasterdetail/${selectedMasterId}/detail/export`,
+        method: 'GET',
+        data:   data
+      });
+      if (response && response.message) {
+        showDialog('success', response.message);
+      }
+    } catch (error) {
+      showDialog('error', getErrorMessage(error) || 'Gagal memulai export detail.');
+    } finally {
+      $('#processingLoader').addClass('d-none');
+    }
   }
 
   /* ============================================================
@@ -570,7 +609,7 @@
   $('#crudModal').on('hidden.bs.modal', () => {
     activeGrid = $(masterGrid);
     selectedRows = [];
-    $('#crudModal').find('.modal-body').html(modalBody);
+    $('#crudModal').find('.modal-body').html(window.modalBody);
   });
 
   $('#detailModal').on('shown.bs.modal', () => {
@@ -579,7 +618,7 @@
   });
 
   $('#detailModal').on('hidden.bs.modal', () => {
-    $('#detailModal').find('.modal-body').html(detailModalBody);
+    $('#detailModal').find('.modal-body').html(window.detailModalBody);
   });
 
 </script>

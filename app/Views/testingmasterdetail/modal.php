@@ -19,11 +19,19 @@
             <!-- ===== KIRI: Header Penjualan ===== -->
             <div class="col-12">
 
-              <!-- NO. BUKTI -->
+              <!-- NO. BUKTI (auto-generated, readonly) -->
               <div class="form-group row">
-                <label class="col-sm-4 col-form-label">No. Bukti <span class="text-danger">*</span></label>
+                <label class="col-sm-4 col-form-label">No. Bukti</label>
                 <div class="col-sm-8">
-                  <input type="text" name="no_bukti" id="no_bukti" class="form-control" placeholder="INV-0000001" maxlength="100">
+                  <div class="input-group">
+                    <input type="text" name="no_bukti" id="no_bukti" class="form-control" readonly
+                      placeholder="Otomatis..." maxlength="100" style="background:#f8f9fa;">
+                    <div class="input-group-append">
+                      <span class="input-group-text text-muted" title="Nomor otomatis">
+                        <i class="fa fa-magic"></i> AUTO
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -168,7 +176,9 @@
 
 <script>
   let draftManager;
-  let modalBody = $('#crudModal').find('.modal-body').html();
+  // GLOBAL scope supaya accessible dari index.php
+  window.modalBody       = $('#crudModal').find('.modal-body').html();
+  window.detailModalBody = $('#detailModal').find('.modal-body').html();
 
   draftManager = new DraftFormManager('#crudForm', {
     debug: false,
@@ -520,8 +530,23 @@
 
     clearItemTable();
 
+    // Set no_bukti field readonly & tampilkan loading
+    const noBuktiInput = form.find('[name=no_bukti]');
+    noBuktiInput.prop('readonly', true).val('Memuat...');
+
     $('.modal-loader').removeClass('d-none');
-    await setPelangganOptions(form);
+
+    // Fetch next number + pelanggan options secara paralel
+    try {
+      const [pelanggan, nextNoResp] = await Promise.all([
+        setPelangganOptions(form),
+        ajaxWithRefresh({ url: `${API_URL}/testingmasterdetail/nextnumber`, method: 'GET', dataType: 'JSON' })
+      ]);
+      noBuktiInput.val(nextNoResp.next_number || '');
+    } catch (e) {
+      noBuktiInput.val('');
+      await setPelangganOptions(form);
+    }
 
     const today = new Date().toISOString().split('T')[0];
     form.find('[name=tgl_bukti]').val(today);
@@ -557,6 +582,9 @@
       ]);
 
       populateForm(form, response);
+
+      // no_bukti readonly pada mode edit
+      form.find('[name=no_bukti]').prop('readonly', true);
 
       // Load detail items yang sudah ada
       const detailResp = await ajaxWithRefresh({
