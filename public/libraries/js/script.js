@@ -39,7 +39,36 @@ let lg_extendSize_2 = 500;
 let lg_extendSize_3 = 550;
 let lg_extendSize_4 = 600;
 
+// Disable jqGrid row hover globally
+if (typeof $.jgrid !== 'undefined' && $.jgrid.defaults) {
+    $.extend($.jgrid.defaults, { hoverrows: false });
+}
+// Remove table-hover class from Bootstrap UI defaults if it exists
+if (typeof $.jgrid !== 'undefined' && $.jgrid.styleUI) {
+    if ($.jgrid.styleUI.Bootstrap) {
+        if ($.jgrid.styleUI.Bootstrap.table && $.jgrid.styleUI.Bootstrap.table.className) {
+            $.jgrid.styleUI.Bootstrap.table.className = $.jgrid.styleUI.Bootstrap.table.className.replace('table-hover', '');
+        }
+    }
+    if ($.jgrid.styleUI.Bootstrap4) {
+        if ($.jgrid.styleUI.Bootstrap4.table && $.jgrid.styleUI.Bootstrap4.table.className) {
+            $.jgrid.styleUI.Bootstrap4.table.className = $.jgrid.styleUI.Bootstrap4.table.className.replace('table-hover', '');
+        }
+    }
+    if ($.jgrid.styleUI.Bootstrap5) {
+        if ($.jgrid.styleUI.Bootstrap5.table && $.jgrid.styleUI.Bootstrap5.table.className) {
+            $.jgrid.styleUI.Bootstrap5.table.className = $.jgrid.styleUI.Bootstrap5.table.className.replace('table-hover', '');
+        }
+    }
+    
+}
+
+    // Inject CSS to hide disabled sort icons and align active arrows perfectly inline
+    $('<style>th.ui-th-column .ui-grid-ico-sort.ui-disabled { display: none !important; } th.ui-th-column .s-ico { display: inline-block !important; } th.ui-th-column .ui-grid-ico-sort { position: static !important; margin-top: 0 !important; margin-left: 6px !important; font-size: 0.85em !important; transform: translateY(1px) !important; }</style>').appendTo('head');
+
 $(document).ready(function () {
+	replaceJqgridBootstrapIcon();
+
 	$(document).on("show.bs.modal", ".modal", function () {
 		const zIndex = 1040 + 10 * $(".modal:visible").length;
 		$(this).css("z-index", zIndex);
@@ -262,7 +291,7 @@ if (typeof io !== 'undefined') {
             // Using base URL to properly resolve actionUrl for file download APIs
             // const baseUrl = typeof API_URL !== 'undefined' ? API_URL : '';
             // const actionUrl = `${baseUrl}/notifications/download/` + data.action_url.split('/').pop();
-						const actionUrl = data.action_url;
+			const actionUrl = data.action_url;
             showToastNotification(data.title, data.message, actionUrl, data.id);
 
             // if (data.id) {
@@ -928,18 +957,65 @@ function setCustomBindKeysLazy(grid) {
 			}, 150);
 		};
 
+		var singleRowHeight = $grid.find('tr.jqgrow').first().height() || 30;
+		var bDiv = $grid.closest(".ui-jqgrid-bdiv");
+		var visibleRows = Math.floor(bDiv.height() / singleRowHeight) || 10;
+		var safeIndex = Math.max(0, currentIndex);
+		var firstDomAbsIndex = (currentPage - 1) * rowsPerPage;
+		var currentAbsIndex = firstDomAbsIndex + safeIndex;
+		var lastDomAbsIndex = firstDomAbsIndex + gridIds.length - 1;
+		var totRec = parseInt($grid.getGridParam("records")) || (totalPages * rowsPerPage);
+
 		// Page Up (33)
 		if (e.keyCode === 33) {
-			if (currentPage > 1) {
-				loader.loadGridData(postData, currentPage - 1, rowsPerPage, 'up', 'jump', function () { focusRow('first'); });
+			var targetAbsIndex = currentAbsIndex - visibleRows + 1;
+			if (targetAbsIndex < 0) targetAbsIndex = 0;
+
+			if (targetAbsIndex >= firstDomAbsIndex && targetAbsIndex <= lastDomAbsIndex) {
+				var targetDomIdx = targetAbsIndex - firstDomAbsIndex;
+				var targetId = gridIds[targetDomIdx];
+				$grid.resetSelection().setSelection(targetId);
+				if (typeof scrollGridSelectionIntoView !== "undefined") scrollGridSelectionIntoView($grid, targetId);
+			} else if (currentPage > 1) {
+				var targetPageLoad = Math.floor(targetAbsIndex / rowsPerPage) + 1;
+				loader.loadGridData(postData, targetPageLoad, rowsPerPage, 'up', 'jump', function () {
+					var newIds = $grid.getDataIDs();
+					if (newIds.length > 0) {
+						var targetDomIdx = targetAbsIndex - ((targetPageLoad - 1) * rowsPerPage);
+						if (targetDomIdx < 0) targetDomIdx = 0;
+						if (targetDomIdx >= newIds.length) targetDomIdx = newIds.length - 1;
+						var targetId = newIds[targetDomIdx];
+						$grid.resetSelection().setSelection(targetId);
+						if (typeof scrollGridSelectionIntoView !== "undefined") scrollGridSelectionIntoView($grid, targetId);
+					}
+				});
 			}
 			$grid.triggerHandler("jqGridKeyUp");
 		}
 
 		// Page Down (34)
 		if (e.keyCode === 34) {
-			if (currentPage < totalPages) {
-				loader.loadGridData(postData, currentPage + 1, rowsPerPage, 'down', 'jump', function () { focusRow('first'); });
+			var targetAbsIndex = currentAbsIndex + visibleRows - 1;
+			if (targetAbsIndex >= totRec) targetAbsIndex = totRec - 1;
+
+			if (targetAbsIndex >= firstDomAbsIndex && targetAbsIndex <= lastDomAbsIndex) {
+				var targetDomIdx = targetAbsIndex - firstDomAbsIndex;
+				var targetId = gridIds[targetDomIdx];
+				$grid.resetSelection().setSelection(targetId);
+				if (typeof scrollGridSelectionIntoView !== "undefined") scrollGridSelectionIntoView($grid, targetId);
+			} else if (currentPage < totalPages) {
+				var targetPageLoad = Math.floor(targetAbsIndex / rowsPerPage) + 1;
+				loader.loadGridData(postData, targetPageLoad, rowsPerPage, 'down', 'jump', function () {
+					var newIds = $grid.getDataIDs();
+					if (newIds.length > 0) {
+						var targetDomIdx = targetAbsIndex - ((targetPageLoad - 1) * rowsPerPage);
+						if (targetDomIdx < 0) targetDomIdx = 0;
+						if (targetDomIdx >= newIds.length) targetDomIdx = newIds.length - 1;
+						var targetId = newIds[targetDomIdx];
+						$grid.resetSelection().setSelection(targetId);
+						if (typeof scrollGridSelectionIntoView !== "undefined") scrollGridSelectionIntoView($grid, targetId);
+					}
+				});
 			}
 			$grid.triggerHandler("jqGridKeyUp");
 		}
@@ -1569,6 +1645,201 @@ function syncActiveFilterWithSelectedRow(grid, rowId) {
 	// Cek apakah kursor benar-benar sedang berada di dalam baris pencarian (filter toolbar)
 	if (activeEl.length && activeEl.closest('.ui-search-toolbar').length) {
 
+		currentElement = $(".nav-link.active");
+	}
+
+	let upOneLevelElement = currentElement.parents().eq(2);
+
+	if (upOneLevelElement.length > 0) {
+		currentElement.removeClass("selected-link hover");
+		upOneLevelElement.removeClass("menu-is-opening menu-open");
+		upOneLevelElement.find(".nav-link").first().addClass("hover");
+	}
+}
+
+function setDownOneLevelMenu() {
+	let currentElement = $(".nav-link.hover").first();
+
+	if (currentElement.length <= 0) {
+		currentElement = $(".nav-link.selected-link");
+	}
+
+	if (currentElement.length <= 0) {
+		currentElement = $(".nav-link.active");
+	}
+
+	let downOneLevelElement = currentElement
+		.siblings("ul")
+		.css({
+			display: "",
+		})
+		.find(".nav-link")
+		.first();
+
+	if (downOneLevelElement.length > 0) {
+		currentElement.removeClass("selected-link hover");
+		currentElement.parent(".nav-item").addClass("menu-open");
+		downOneLevelElement.addClass("hover");
+	}
+}
+
+function fillSearchMenuInput() {
+	let currentElement = $(".nav-link.hover").first();
+
+	if (currentElement.length <= 0) {
+		currentElement = $(".nav-link.selected-link");
+	}
+
+	if (currentElement.length <= 0) {
+		currentElement = $(".nav-link.active");
+	}
+
+	$("#search").val(currentElement.attr("id"));
+}
+
+function detectDeviceType() {
+	const ua = navigator.userAgent;
+	if (/(tablet|ipad|playbook|silk)|(android(?!.*mobi))/i.test(ua)) {
+		return "tablet";
+	} else if (
+		/Mobile|Android|iP(hone|od)|IEMobile|BlackBerry|Kindle|Silk-Accelerated|(hpw|web)OS|Opera M(obi|ini)/.test(
+			ua
+		)
+	) {
+		return "mobile";
+	}
+	return "desktop";
+}
+
+/**
+ * FUNGSI PINTASAN KEYBOARD (ACCESSIBILITY)
+ * Menangani kombinasi ALT+A, ALT+E, ALT+D dengan proteksi Hak Akses
+ */
+// function setupKeyboardShortcuts() {
+// 	$(window).off('keydown.globalShortcut').on('keydown.globalShortcut', function (e) {
+
+
+// 		// Pastikan pengguna tidak sedang mengetik di dalam input/textarea/select
+// 		// agar ALT+A tidak terpicu saat mereka sedang mengisi form!
+// 		let isInputActive = $(e.target).is('input, textarea, select');
+// 		if (isInputActive) return;
+
+// 		// Kombinasi ALT + A (ADD)
+// 		if (e.altKey && e.key.toLowerCase() === 'a') {
+// 			e.preventDefault(); // Cegah browser melakukan aksi default
+
+// 			// Cek permission dari object accessRights global Anda
+// 			if (typeof accessRights !== 'undefined' && accessRights.add) {
+// 				console.log('Shortcut Terpicu: ALT + A (Add)');
+// 				$('#add').click(); // Simulasikan klik tombol Add
+// 			} else {
+// 				if (typeof showDialog === "function") showDialog('error', 'Anda tidak memiliki akses untuk menambah data.');
+// 			}
+// 		}
+
+// 		// Kombinasi ALT + E (EDIT)
+// 		if (e.altKey && e.key.toLowerCase() === 'e') {
+// 			e.preventDefault();
+
+// 			if (typeof accessRights !== 'undefined' && accessRights.edit) {
+// 				console.log('Shortcut Terpicu: ALT + E (Edit)');
+// 				$('#edit').click(); // Simulasikan klik tombol Edit
+// 			} else {
+// 				if (typeof showDialog === "function") showDialog('error', 'Anda tidak memiliki akses untuk mengubah data.');
+// 			}
+// 		}
+
+// 		// Kombinasi ALT + D (DELETE)
+// 		if (e.altKey && e.key.toLowerCase() === 'd') {
+// 			e.preventDefault();
+
+// 			if (typeof accessRights !== 'undefined' && accessRights.delete) {
+// 				console.log('Shortcut Terpicu: ALT + D (Delete)');
+// 				$('#delete').click(); // Simulasikan klik tombol Delete
+// 			} else {
+// 				if (typeof showDialog === "function") showDialog('error', 'Anda tidak memiliki akses untuk menghapus data.');
+// 			}
+// 		}
+// 	});
+// }
+
+function setupKeyboardShortcuts() {
+
+	const shortcutMap = {};
+	$('[data-shortcut]').each(function () {
+		const key = $(this).data('shortcut').toLowerCase();
+		const right = $(this).data('right'); // opsional: 'add' | 'edit' | 'delete'
+		shortcutMap[key] = {
+			btn: $(this),
+			right: right || null
+		};
+	});
+
+	$(window).off('keydown.globalShortcut').on('keydown.globalShortcut', function (e) {
+
+		if ($(e.target).is('input, textarea, select')) return;
+		if (!e.altKey) return;
+
+		const key = e.key.toLowerCase();
+		const entry = shortcutMap[key];
+		if (!entry) return;
+
+		e.preventDefault();
+
+		// Cek permission jika ada
+		if (entry.right && typeof accessRights !== 'undefined') {
+			if (!accessRights[entry.right]) {
+				if (typeof showDialog === 'function') {
+					showDialog('error', 'Anda tidak memiliki akses untuk aksi ini.');
+				}
+				return;
+			}
+		}
+
+		entry.btn.click();
+	});
+
+	// $(document).on('keydown.focusSwitch', function (e) {
+	// 	// TAB untuk pindah fokus dari master ke detail yang aktif
+	// 	if (e.keyCode === 9 && !e.shiftKey) {
+	// 		let activeTabIndex = $("#tabs").tabs('option', 'active');
+	// 		let activeTabId = $("#tabs .ui-tabs-panel").eq(activeTabIndex).attr('id');
+
+	// 		if (activeGrid && activeGrid[0] === $(masterGrid)[0]) {
+	// 			// Pindah dari master ke detail
+	// 			e.preventDefault();
+	// 			if (activeTabId === 'role-tab') {
+	// 				activeGrid = $('#userRoleGrid');
+	// 				let selrow = activeGrid.getGridParam('selrow') || activeGrid.getDataIDs()[0];
+	// 				if (selrow) activeGrid.setSelection(selrow);
+	// 			} else if (activeTabId === 'acl-tab') {
+	// 				activeGrid = $('#userAclGrid');
+	// 				let selrow = activeGrid.getGridParam('selrow') || activeGrid.getDataIDs()[0];
+	// 				if (selrow) activeGrid.setSelection(selrow);
+	// 			}
+	// 		} else {
+	// 			// Pindah balik dari detail ke master
+	// 			e.preventDefault();
+	// 			activeGrid = $(masterGrid);
+	// 			let selrow = activeGrid.getGridParam('selrow') || activeGrid.getDataIDs()[0];
+	// 			if (selrow) {
+	// 				activeGrid.setSelection(selrow);
+	// 				$(`${masterGrid} tr[id="${selrow}"]`).focus();
+	// 			}
+	// 		}
+	// 	}
+	// });
+}
+
+
+// Helper Function untuk sinkronisasi filter toolbar
+function syncActiveFilterWithSelectedRow(grid, rowId) {
+	let gridEl = $(grid);
+	let activeEl = $(document.activeElement);
+
+	// Cek apakah kursor benar-benar sedang berada di dalam baris pencarian (filter toolbar)
+	if (activeEl.length && activeEl.closest('.ui-search-toolbar').length) {
+
 		// Ambil nama kolom dari atribut 'name' milik input pencarian tersebut
 		let colName = activeEl.attr('name');
 
@@ -1583,4 +1854,14 @@ function syncActiveFilterWithSelectedRow(grid, rowId) {
 			activeEl.val(cleanText);
 		}
 	}
+}
+
+// Replace icon jqgrid bootstrap
+function replaceJqgridBootstrapIcon() {
+    setInterval(function() {
+        if ($('.fa-caret-up').length || $('.fa-caret-down').length) {
+            $('.fa-caret-up').removeClass('fa-caret-up').addClass('fa-arrow-up');
+            $('.fa-caret-down').removeClass('fa-caret-down').addClass('fa-arrow-down');
+        }
+    }, 100);
 }

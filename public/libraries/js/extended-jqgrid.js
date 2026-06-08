@@ -160,15 +160,10 @@ $.jgrid.extend({
 
 					// page up
 					if (event.which == 33) {
+						if (hasLoader) return;
 						console.log("ketekan toolbarbindkeys page up")
-						if (hasLoader) {
-							if (loader.currentViewPage > 1) {
-								loader.loadGridData($(element).jqGrid("getGridParam", "postData"), loader.currentViewPage - 1, loader.rowsPerPage, 'up', 'jump', function () { focusRow('first'); });
-							}
-						} else {
-							if (currentPage > 1) {
-								$(element).jqGrid("setGridParam", { page: $(element).getGridParam("page") - 1 }).trigger("reloadGrid");
-							}
+						if (currentPage > 1) {
+							$(element).jqGrid("setGridParam", { page: $(element).getGridParam("page") - 1 }).trigger("reloadGrid");
 						}
 						$(element).jqGrid("setGridParam", { triggerClick: true });
 						event.preventDefault();
@@ -180,15 +175,10 @@ $.jgrid.extend({
 
 					// page down
 					if (event.which == 34) {
+						if (hasLoader) return;
 						console.log("ketekan toolbarbindkeys page down")
-						if (hasLoader) {
-							if (loader.currentViewPage < loader.totalPages) {
-								loader.loadGridData($(element).jqGrid("getGridParam", "postData"), loader.currentViewPage + 1, loader.rowsPerPage, 'down', 'jump', function () { focusRow('first'); });
-							}
-						} else {
-							if (currentPage !== lastPage) {
-								$(element).jqGrid("setGridParam", { page: $(element).getGridParam("page") + 1 }).trigger("reloadGrid");
-							}
+						if (currentPage !== lastPage) {
+							$(element).jqGrid("setGridParam", { page: $(element).getGridParam("page") + 1 }).trigger("reloadGrid");
 						}
 						$(element).jqGrid("setGridParam", { triggerClick: true });
 						event.preventDefault();
@@ -200,22 +190,15 @@ $.jgrid.extend({
 
 					// end
 					if (event.which == 35) {
+						if (hasLoader) return;
 						console.log("ketekan toolbarbindkeys end")
-						if (hasLoader) {
-							if (loader.currentViewPage !== loader.totalPages) {
-								loader.loadGridData($(element).jqGrid("getGridParam", "postData"), loader.totalPages, loader.rowsPerPage, 'down', 'jump', function () { focusRow('last'); });
-							} else {
-								focusRow('last');
-							}
-						} else {
-							if (currentPage !== lastPage) {
-								$(element).jqGrid("setGridParam", { page: lastPage }).trigger("reloadGrid");
-							}
-							let ids = $(element).getDataIDs();
-							if (ids.length > 0) {
-								$(element).jqGrid("setSelection", ids[ids.length - 1], true, event);
-								if (typeof scrollGridSelectionIntoView !== "undefined") scrollGridSelectionIntoView(element, ids[ids.length - 1]);
-							}
+						if (currentPage !== lastPage) {
+							$(element).jqGrid("setGridParam", { page: lastPage }).trigger("reloadGrid");
+						}
+						let ids = $(element).getDataIDs();
+						if (ids.length > 0) {
+							$(element).jqGrid("setSelection", ids[ids.length - 1], true, event);
+							if (typeof scrollGridSelectionIntoView !== "undefined") scrollGridSelectionIntoView(element, ids[ids.length - 1]);
 						}
 						$(element).jqGrid("setGridParam", { triggerClick: true });
 						event.preventDefault();
@@ -227,22 +210,15 @@ $.jgrid.extend({
 
 					// home
 					if (event.which == 36) {
+						if (hasLoader) return;
 						console.log("ketekan toolbarbindkeys home")
-						if (hasLoader) {
-							if (loader.currentViewPage > 1) {
-								loader.loadGridData($(element).jqGrid("getGridParam", "postData"), 1, loader.rowsPerPage, 'up', 'jump', function () { focusRow('first'); });
-							} else {
-								focusRow('first');
-							}
-						} else {
-							if (currentPage > 1) {
-								$(element).jqGrid("setGridParam", { page: 1 }).trigger("reloadGrid");
-							}
-							let ids = $(element).getDataIDs();
-							if (ids.length > 0) {
-								$(element).jqGrid("setSelection", ids[0], true, event);
-								if (typeof scrollGridSelectionIntoView !== "undefined") scrollGridSelectionIntoView(element, ids[0]);
-							}
+						if (currentPage > 1) {
+							$(element).jqGrid("setGridParam", { page: 1 }).trigger("reloadGrid");
+						}
+						let ids = $(element).getDataIDs();
+						if (ids.length > 0) {
+							$(element).jqGrid("setSelection", ids[0], true, event);
+							if (typeof scrollGridSelectionIntoView !== "undefined") scrollGridSelectionIntoView(element, ids[0]);
 						}
 						$(element).jqGrid("setGridParam", { triggerClick: true });
 						event.preventDefault();

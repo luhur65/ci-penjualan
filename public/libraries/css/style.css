@@ -100,9 +100,9 @@ body {
 /* START PADDING GRID */
 .jqgrow td {
 	padding-top: 5px!important;
-	padding-left: 3px;
-	padding-right: 3px;
-	padding-bottom: 3px;
+	padding-left: 5px;
+	padding-right: 5px;
+	padding-bottom: 5px;
 }
 
 .ui-jqgrid-labels th{
@@ -1512,7 +1512,7 @@ span.textCard {
    } 
  
 	#sidebarButton {
-		padding-left: 0.5rem !important;
+		/* padding-left: 0.5rem !important; */
 		padding-right: 0.5rem !important;
 		font-size: 1.4rem;
 	}
@@ -1529,7 +1529,7 @@ span.textCard {
 		margin:0 10px!important;
 	}
 	#sidebarButton {
-		padding-left: 1.5rem !important;
+		/* padding-left: 1.5rem !important; */
 		padding-right: 1.5rem !important;
 		font-size: 1.4rem;
 	}
@@ -2103,4 +2103,59 @@ body.dark-mode .table-scroll tfoot td {
     text-decoration: underline;
     text-underline-offset: 2px;
     font-style: normal;
+}
+/* Hide disabled sort icons so only the active arrow is shown */
+th.ui-th-column .ui-grid-ico-sort.ui-disabled { display: none !important; }
+
+
+
+/* Navbar ICON */
+.navbar-expand .navbar-nav .nav-link {
+    padding-right: 1rem;
+    padding-left: .7rem !important;
+}
+
+/* --- Custom Filter Toolbar Styles --- */
+.ui-search-table tr {
+		position: relative;
+}
+
+/* Style the X clear button as a red circle inside the input */
+.clearsearchclass {
+		position: absolute !important;
+		right: 10px;
+		top: 50%;
+		transform: translateY(-50%);
+		background-color: #ff0000 !important;
+		color: #fff !important;
+		width: 18px;
+		height: 18px;
+		border-radius: 50%;
+		display: none !important; /* Managed by JS */
+		align-items: center;
+		justify-content: center;
+		font-size: 11px;
+		line-height: 1;
+		cursor: pointer;
+		z-index: 100;
+		text-decoration: none !important;
+		font-weight: bold;
+		border: none;
+		padding: 0 !important;
+		margin: 0 !important;
+}
+
+/* Hide the extra TD space for the clear button */
+.ui-jqgrid .ui-search-table td.ui-search-clear {
+		width: 0px !important;
+		padding: 0 !important;
+}
+
+.clearsearchclass:hover {
+		background-color: #cc0000 !important;
+}
+
+/* Add padding so text doesn't go under the X */
+.ui-search-input input {
+		padding-right: 25px !important;
 }
