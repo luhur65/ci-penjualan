@@ -227,6 +227,10 @@ const GridPreferenceManager = (function () {
       if (CONFIG.mode === 'server') return saveServer(gridName, prefs);
     },
 
+    loadSync(gridName) {
+      return loadLocal(gridName);
+    },
+
     apply: applyToColModel,
     extract: extractFromGrid,
     extractFromDom,

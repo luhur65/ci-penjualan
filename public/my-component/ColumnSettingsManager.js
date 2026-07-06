@@ -18,13 +18,24 @@
 const ColumnSettingsManager = (function () {
 
   // ─── State internal UI ────────────────────────────────────────
-  let _gridSelector = '';
-  let _prefKey = '';
-  let _baseColModel = [];
+  const _states = {};
   let _activeGridId = null;
 
   // Kolom sistem jqGrid — tidak boleh di-hide/reorder oleh user
   const LOCKED_COLS = ['id', 'rn', 'cb', 'subgrid'];
+
+  function _isLocked(gridId, colName) {
+    if (!colName) return false;
+    if (LOCKED_COLS.includes(colName.toLowerCase())) return true;
+
+    const state = _states[gridId];
+    if (state && state.baseColModel) {
+      const col = state.baseColModel.find(c => c.name === colName);
+      if (col && col.key === true) return true;
+    }
+
+    return false;
+  }
 
   // ─── Delegasi ke GridPreferenceManager ───────────────────────
 
@@ -34,14 +45,17 @@ const ColumnSettingsManager = (function () {
    * State yang disimpan adalah gabungan: hidden (dari panel UI) + width & order
    * (dari jqGrid saat ini) — satu sumber kebenaran.
    */
-  function _saveViaGPM(colStates) {
+  function _saveViaGPM(gridId, colStates) {
     if (typeof GridPreferenceManager === 'undefined') {
       console.warn('[ColVis] GridPreferenceManager tidak ditemukan, skip save.');
       return;
     }
 
+    const state = _states[gridId];
+    if (!state) return;
+
     // Ambil lebar & urutan kolom dari grid saat ini
-    const cm = $(_gridSelector).jqGrid('getGridParam', 'colModel');
+    const cm = $(state.selector).jqGrid('getGridParam', 'colModel');
 
     // Buat map name→hidden dari panel UI (yang baru diubah user)
     const hiddenMap = {};
@@ -59,51 +73,60 @@ const ColumnSettingsManager = (function () {
     });
 
     // Simpan via GPM — dia yang urus cache + server
-    GridPreferenceManager.save(_prefKey, merged);
+    GridPreferenceManager.save(state.prefKey, merged);
   }
 
   /**
    * Muat state dari GridPreferenceManager (sinkron dari cache localStorage).
    * Kalau belum ada, ambil dari state grid saat ini.
    */
-  function _loadViaGPM() {
+  function _loadViaGPM(gridId) {
+    const state = _states[gridId];
+    if (!state) return [];
+
     if (typeof GridPreferenceManager === 'undefined') {
-      return _getCurrentColStateFromGrid();
+      return _getCurrentColStateFromGrid(gridId);
     }
 
     // GPM.load() adalah async (server), tapi cache lokal bisa dibaca sinkron
     // lewat cara ini: baca langsung dari localStorage dengan key GPM
     try {
-      const key = (GridPreferenceManager._localKey || (() => `grid_pref_${_prefKey}`))(_prefKey);
+      const key = (GridPreferenceManager._localKey || (() => `grid_pref_${state.prefKey}`))(state.prefKey);
       const raw = localStorage.getItem(key);
       if (raw) {
         const parsed = JSON.parse(raw);
         // Filter hanya field yang dibutuhkan panel
         return parsed
-          .filter(c => !LOCKED_COLS.includes(c.name))
+          .filter(c => !_isLocked(gridId, c.name))
           .map(c => ({ name: c.name, hidden: c.hidden || false }));
       }
     } catch { /* fallthrough */ }
 
-    return _getCurrentColStateFromGrid();
+    return _getCurrentColStateFromGrid(gridId);
   }
 
   /** Ambil state kolom dari jqGrid sebagai fallback */
-  function _getCurrentColStateFromGrid() {
-    const cm = $(_gridSelector).jqGrid('getGridParam', 'colModel');
+  function _getCurrentColStateFromGrid(gridId) {
+    const state = _states[gridId];
+    if (!state) return [];
+
+    const cm = $(state.selector).jqGrid('getGridParam', 'colModel');
     return cm
-      .filter(c => !LOCKED_COLS.includes(c.name))
+      .filter(c => !_isLocked(gridId, c.name))
       .map(c => ({ name: c.name, hidden: c.hidden || false }));
   }
 
   // ─── Apply ke jqGrid ─────────────────────────────────────────
 
-  function _applyVisibility(colStates) {
+  function _applyVisibility(gridId, colStates) {
+    const state = _states[gridId];
+    if (!state) return;
+
     colStates.forEach(({ name, hidden }) => {
-      if (LOCKED_COLS.includes(name)) return;
+      if (_isLocked(gridId, name)) return;
       hidden
-        ? $(_gridSelector).jqGrid('hideCol', name)
-        : $(_gridSelector).jqGrid('showCol', name);
+        ? $(state.selector).jqGrid('hideCol', name)
+        : $(state.selector).jqGrid('showCol', name);
     });
   }
 
@@ -111,8 +134,11 @@ const ColumnSettingsManager = (function () {
    * Terapkan urutan kolom ke jqGrid menggunakan remapColumns.
    * colStates sudah dalam urutan yang diinginkan (hasil drag dari panel).
    */
-  function _applyOrder(colStates) {
-    const grid = $(_gridSelector);
+  function _applyOrder(gridId, colStates) {
+    const state = _states[gridId];
+    if (!state) return;
+
+    const grid = $(state.selector);
     const cm = grid.jqGrid('getGridParam', 'colModel');
     const stateNames = colStates.map(s => s.name);
 
@@ -138,23 +164,25 @@ const ColumnSettingsManager = (function () {
   // ─── Badge ───────────────────────────────────────────────────
 
   function renderBadge(gridSelector) {
-    const cm = $(gridSelector).jqGrid('getGridParam', 'colModel');
-    const hidden = cm.filter(c => !LOCKED_COLS.includes(c.name) && c.hidden).length;
     const gridId = $(gridSelector).getGridParam('id');
+    const cm = $(gridSelector).jqGrid('getGridParam', 'colModel');
+    const hidden = cm.filter(c => !_isLocked(gridId, c.name) && c.hidden).length;
     const badge = document.getElementById(`colvis_badge_${gridId}`);
     if (!badge) return;
     badge.textContent = hidden;
     badge.style.display = hidden > 0 ? 'inline-flex' : 'none';
   }
 
-  function _getLabel(colName) {
-    const found = _baseColModel.find(c => c.name === colName);
+  function _getLabel(gridId, colName) {
+    const state = _states[gridId];
+    if (!state) return colName;
+    const found = state.baseColModel.find(c => c.name === colName);
     return found ? (found.label || colName) : colName;
   }
 
   // ─── HTML ─────────────────────────────────────────────────────
 
-  function _buildItemHTML(col) {
+  function _buildItemHTML(gridId, col) {
     const isHidden = col.hidden;
     return `
       <div class="colvis-item ${isHidden ? 'colvis-item--hidden' : ''}"
@@ -166,14 +194,21 @@ const ColumnSettingsManager = (function () {
           <span class="colvis-track"></span>
           <span class="colvis-thumb"></span>
         </label>
-        <span class="colvis-label">${_getLabel(col.name)}</span>
+        <span class="colvis-label">${_getLabel(gridId, col.name)}</span>
       </div>`;
   }
 
   function _buildPanel(gridId, colStates) {
     document.getElementById(`colvis_panel_${gridId}`)?.remove();
 
-    const valid = colStates.filter(c => !LOCKED_COLS.includes(c.name));
+    const state = _states[gridId];
+    if (!state) return;
+
+    const valid = colStates.filter(c => !_isLocked(gridId, c.name));
+
+    // Cari kolom apa saja di baseColModel yang statusnya locked
+    const lockedCols = state.baseColModel.filter(c => _isLocked(gridId, c.name));
+
     const el = document.createElement('div');
     el.className = 'colvis-panel';
     el.id = `colvis_panel_${gridId}`;
@@ -193,17 +228,19 @@ const ColumnSettingsManager = (function () {
                oninput="ColumnSettingsManager._filterItems()">
       </div>
       <div class="colvis-list" id="colvis_list_${gridId}">
-        ${valid.map(c => _buildItemHTML(c)).join('')}
-        <div class="colvis-item" style="opacity:.35;pointer-events:none">
-          <span class="colvis-drag" style="opacity:0">⠿</span>
-          <label class="colvis-toggle">
-            <input type="checkbox" checked disabled>
-            <span class="colvis-track"></span>
-            <span class="colvis-thumb"></span>
-          </label>
-          <span class="colvis-label">ID</span>
-          <span class="colvis-locked-badge">system</span>
-        </div>
+        ${valid.map(c => _buildItemHTML(gridId, c)).join('')}
+        ${lockedCols.map(c => `
+          <div class="colvis-item" style="opacity:.35;pointer-events:none">
+            <span class="colvis-drag" style="opacity:0">⠿</span>
+            <label class="colvis-toggle">
+              <input type="checkbox" checked disabled>
+              <span class="colvis-track"></span>
+              <span class="colvis-thumb"></span>
+            </label>
+            <span class="colvis-label">${_getLabel(gridId, c.name)}</span>
+            <span class="colvis-locked-badge">system</span>
+          </div>
+        `).join('')}
       </div>
       <div class="colvis-footer">
         <div style="display:flex;align-items:center;gap:8px">
@@ -442,10 +479,13 @@ const ColumnSettingsManager = (function () {
     const list = document.getElementById(`colvis_list_${gridId}`);
     if (!list) return;
 
+    const state = _states[gridId];
+    if (!state) return;
+
     // Ambil urutan kolom aktual dari jqGrid sekarang
-    const cm = $(_gridSelector).jqGrid('getGridParam', 'colModel');
+    const cm = $(state.selector).jqGrid('getGridParam', 'colModel');
     const gridOrder = cm
-      .filter(c => !LOCKED_COLS.includes(c.name))
+      .filter(c => !_isLocked(gridId, c.name))
       .map(c => c.name);
 
     // Ambil semua item yang ada di panel (kecuali item sistem/locked)
@@ -571,13 +611,13 @@ const ColumnSettingsManager = (function () {
     const states = _collectState(g);
 
     // 1. Terapkan urutan (drag-and-drop) ke jqGrid
-    _applyOrder(states);
+    _applyOrder(g, states);
 
     // 2. Terapkan visibility ke jqGrid
-    _applyVisibility(states);
+    _applyVisibility(g, states);
 
     // 3. Simpan via GridPreferenceManager (dia urus localStorage + server)
-    _saveViaGPM(states);
+    _saveViaGPM(g, states);
 
     _updateStatus(g, states);
     _closePanel(g);
@@ -587,22 +627,24 @@ const ColumnSettingsManager = (function () {
 
   function _reset() {
     const g = _activeGridId; if (!g) return;
+    const state = _states[g];
+    if (!state) return;
 
     // Ambil definisi default dari baseColModel
-    const initialState = _baseColModel
-      .filter(c => !LOCKED_COLS.includes(c.name))
+    const initialState = state.baseColModel
+      .filter(c => !_isLocked(g, c.name))
       .map(c => ({ name: c.name, hidden: c.hidden || false }));
 
     // Bangun ulang panel dengan urutan & visibility default
     _buildPanel(g, initialState);
 
     // Terapkan ke grid
-    _applyOrder(initialState);
-    _applyVisibility(initialState);
+    _applyOrder(g, initialState);
+    _applyVisibility(g, initialState);
 
     // Hapus dari GridPreferenceManager — dia yang urus clear localStorage + server
     if (typeof GridPreferenceManager !== 'undefined') {
-      GridPreferenceManager.reset(_prefKey);
+      GridPreferenceManager.reset(state.prefKey);
     }
 
     _updateStatus(g, initialState);
@@ -623,16 +665,20 @@ const ColumnSettingsManager = (function () {
      * @param {Array}  baseColModel  dari getBaseColModel()
      */
     init(gridSelector, prefKey, baseColModel) {
-      _gridSelector = gridSelector;
-      _prefKey = prefKey;
-      _baseColModel = baseColModel;
+      const gridId = $(gridSelector).getGridParam('id');
+      if (!gridId) return;
+
+      _states[gridId] = {
+        selector: gridSelector,
+        prefKey: prefKey,
+        baseColModel: baseColModel
+      };
 
       _injectStyles();
       _injectButton(gridSelector);
 
       // Buat panel — baca state dari GPM (via cache localStorage)
-      const gridId = $(gridSelector).getGridParam('id');
-      const savedState = _loadViaGPM();
+      const savedState = _loadViaGPM(gridId);
       _buildPanel(gridId, savedState);
       _updateStatus(gridId, savedState);
       renderBadge(gridSelector);

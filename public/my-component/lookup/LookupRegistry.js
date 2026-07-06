@@ -56,6 +56,16 @@ class LookupRegistry {
 
     return {
 
+      pelanggan: {
+        url: `${API_URL}/pelanggan`,
+        sortname: 'nama_pelanggan',
+        sortorder: 'asc',
+        column: [
+          { label: 'ID', name: 'id', hidden: true, search: false },
+          { label: 'NAMA PELANGGAN', name: 'nama_pelanggan', width: (detectDeviceType() == "desktop") ? md_dekstop_1 : md_mobile_1 }
+        ]
+      },
+
       parameterAllV4: {
         url: `${API_URL}/parameters`,
         sortname: 'grp',
