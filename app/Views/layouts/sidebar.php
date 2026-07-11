@@ -26,7 +26,17 @@
     <nav class="mt-2">
       <ul class="nav nav-pills nav-sidebar flex-column nav-child-indent" data-widget="treeview" role="menu" data-accordion="false">
         <!-- Tempat menu list -->
-        <?= session()->get('menu') ?>
+        <?php if(session()->get('menu')): ?>
+          <?= session()->get('menu') ?>
+        <?php else: ?>
+          <!-- Mock Menu saat Bypass Login -->
+          <!-- <li class="nav-item">
+            <a href="<?= base_url('testingmasterdetail') ?>" class="nav-link active">
+              <i class="nav-icon fas fa-flask"></i>
+              <p>Testing Master Detail</p>
+            </a>
+          </li> -->
+        <?php endif; ?>
 
         <li class="nav-item">
           <a href="<?= base_url('logout') ?>" class="nav-link">

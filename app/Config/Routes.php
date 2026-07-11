@@ -48,7 +48,7 @@ $routes->group('', ['filter' => ['authenticated', 'acl'], 'csrf' => true], funct
     $routes->get('/penjualan', [PenjualanController::class, 'index'], ['as' => 'penjualan.index']);
     $routes->get('/parameter', [ParameterController::class, 'index'], ['as' => 'parameter.index']);
     $routes->get('/error', [ErrorController::class, 'index'], ['as' => 'error.index']);
-    
     $routes->get('testingmasterdetail', [\App\Controllers\TestingmasterdetailController::class, 'index'], ['as' => 'testingmasterdetail.index']);
-});
+    $routes->get('alatbayar', [\App\Controllers\AlatbayarController::class, 'index'], ['as' => 'alatbayar.index']);
     
+});

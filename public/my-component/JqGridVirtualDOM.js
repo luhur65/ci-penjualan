@@ -1,4 +1,129 @@
 // --- JqGrid Lazy Loader ---
+class LazyGridIDB {
+  static _db = null;
+  static IDB_NAME    = 'jqgrid_cache';
+  static IDB_VERSION = 1;
+  static IDB_STORE   = 'pages';
+
+  static open() {
+    if (LazyGridIDB._db) return Promise.resolve(LazyGridIDB._db);
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(LazyGridIDB.IDB_NAME, LazyGridIDB.IDB_VERSION);
+      req.onupgradeneeded = (e) => {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains(LazyGridIDB.IDB_STORE)) {
+          const store = db.createObjectStore(LazyGridIDB.IDB_STORE, { keyPath: 'key' });
+          store.createIndex('moduleName', 'moduleName', { unique: false });
+          store.createIndex('timestamp',  'timestamp',  { unique: false });
+        }
+      };
+      req.onsuccess = (e) => {
+        LazyGridIDB._db = e.target.result;
+        LazyGridIDB._db.onversionchange = () => {
+          LazyGridIDB._db.close();
+          LazyGridIDB._db = null;
+        };
+        resolve(LazyGridIDB._db);
+      };
+      req.onerror = (e) => reject(e.target.error);
+    });
+  }
+
+  static tx(mode, callback) {
+    return LazyGridIDB.open().then(db =>
+      new Promise((resolve, reject) => {
+        try {
+          const tx = db.transaction(LazyGridIDB.IDB_STORE, mode);
+          const store = tx.objectStore(LazyGridIDB.IDB_STORE);
+          callback(store, resolve, reject);
+          tx.onerror = (e) => reject(e.target.error);
+        } catch (e) {
+          reject(e);
+        }
+      })
+    );
+  }
+
+  static savePage(moduleName, pageNumber, data, filterKey) {
+    const key = LazyGridUtils.buildCacheKey(moduleName, pageNumber, filterKey);
+    const entry = { key, moduleName, pageNumber, filterKey, data, timestamp: Date.now() };
+    return LazyGridIDB.tx('readwrite', (store, resolve) => {
+      const req = store.put(entry);
+      req.onsuccess = () => resolve();
+      req.onerror = () => {
+        LazyGridIDB.clearModule(moduleName).then(() =>
+          LazyGridIDB.tx('readwrite', (s2, res2) => {
+            const r2 = s2.put(entry);
+            r2.onsuccess = () => res2();
+            r2.onerror = () => res2();
+          })
+        ).then(resolve).catch(resolve);
+      };
+    }).catch(e => console.warn('[IDB] savePage error:', e));
+  }
+
+  static loadPage(moduleName, pageNumber, filterKey, maxAgeMs) {
+    const key = LazyGridUtils.buildCacheKey(moduleName, pageNumber, filterKey);
+    return LazyGridIDB.tx('readonly', (store, resolve) => {
+      const req = store.get(key);
+      req.onsuccess = (e) => {
+        const entry = e.target.result;
+        if (!entry) { resolve(null); return; }
+        if (Date.now() - entry.timestamp > maxAgeMs) {
+          LazyGridIDB.open().then(db =>
+            db.transaction(LazyGridIDB.IDB_STORE, 'readwrite')
+              .objectStore(LazyGridIDB.IDB_STORE).delete(key)
+          );
+          resolve(null);
+          return;
+        }
+        resolve(entry.data);
+      };
+      req.onerror = () => resolve(null);
+    }).catch(() => null);
+  }
+
+  static clearModule(moduleName) {
+    return LazyGridIDB.open().then(db =>
+      new Promise(resolve => {
+        const tx = db.transaction(LazyGridIDB.IDB_STORE, 'readwrite');
+        const store = tx.objectStore(LazyGridIDB.IDB_STORE);
+        const index = store.index('moduleName');
+        const req = index.openCursor(IDBKeyRange.only(moduleName));
+        req.onsuccess = (e) => {
+          const cursor = e.target.result;
+          if (!cursor) { resolve(); return; }
+          cursor.delete();
+          cursor.continue();
+        };
+        req.onerror = () => resolve();
+      })
+    ).catch(e => console.warn('[IDB] clearModule error:', e));
+  }
+}
+
+class LazyGridUtils {
+  static buildFilterKey(filters) {
+    const str = (filters == null) ? '' : String(filters);
+    let hash = 5381;
+    for (let i = 0; i < str.length; i++) {
+      hash = ((hash << 5) + hash) + str.charCodeAt(i);
+      hash = hash & hash;
+    }
+    return (hash >>> 0).toString(16);
+  }
+
+  static buildCacheKey(moduleName, pageNumber, filterKey) {
+    return moduleName + '_p' + pageNumber + '_f' + filterKey;
+  }
+
+  static getModuleNameFromApi(apiUrl) {
+    if (!apiUrl) return 'unknown_module';
+    const path = apiUrl.split('?')[0].replace(/^https?:\/\/[^\/]+/, '');
+    return path.replace(/[^a-zA-Z0-9]/g, '_').replace(/^_+|_+$/g, '');
+  }
+}
+
 class JqGridLazyLoader {
   constructor(gridId, apiUrl, accessToken, options = {}) {
     this.gridId = gridId;
@@ -57,7 +182,7 @@ class JqGridLazyLoader {
     // Initial load
     if (!this.paused) {
       let initialPostData = this.grid.jqGrid('getGridParam', 'postData');
-      this.loadGridData(initialPostData, 1, this.rowsPerPage, 'down', 'page');
+      this.loadGridData(initialPostData, 1, this.rowsPerPage, 'down', 'reload');
     }
   }
 
@@ -65,8 +190,12 @@ class JqGridLazyLoader {
   }
 
   hasFilterChanged() {
-    var rawNewFilters = this.grid.jqGrid('getGridParam', 'postData').filters;
-    var newFilters = (rawNewFilters === undefined || rawNewFilters === null) ? "" : rawNewFilters;
+    var postData = this.grid.jqGrid('getGridParam', 'postData');
+    var rawNewFilters = postData.filters;
+    var sidx = postData.sidx || '';
+    var sord = postData.sord || '';
+    
+    var newFilters = ((rawNewFilters === undefined || rawNewFilters === null) ? "" : rawNewFilters) + '|' + sidx + '|' + sord;
     var oldFilters = (this.currentFilters === undefined || this.currentFilters === null) ? "" : this.currentFilters;
 
     if (this.currentFilters === null) {
@@ -88,9 +217,17 @@ class JqGridLazyLoader {
     this.lastScrollTop = 0;
     this.loading = false;
     this.loadingQueue = [];
+    if (this.prefetchedServerPages) {
+      this.prefetchedServerPages.clear();
+    }
 
     if (resetFilters) {
       this.currentFilters = null;
+    }
+
+    if (this.apiUrl) {
+      const moduleName = LazyGridUtils.getModuleNameFromApi(this.apiUrl);
+      LazyGridIDB.clearModule(moduleName);
     }
 
     this.grid.jqGrid('clearGridData');
@@ -105,6 +242,32 @@ class JqGridLazyLoader {
       var virtualPage = (serverPage - 1) * pagesPerFetch + 1;
 
       this.loadGridData(postData, virtualPage, rowsCount, 'down', 'page');
+    }
+  }
+
+  triggerPrefetchAhead(basePage, postData) {
+    var self = this;
+    var prefetchAhead = 3;
+    for (let ahead = 1; ahead <= prefetchAhead; ahead++) {
+      let target = basePage + ahead;
+      if (self.totalPages && target > self.totalPages) break;
+      if (self.cachedData[target]) continue;
+      if (self.prefetchedServerPages.has(target)) continue;
+
+      ((pg, delay) => {
+        const filterKey = LazyGridUtils.buildFilterKey(self.currentFilters);
+        const moduleName = LazyGridUtils.getModuleNameFromApi(self.apiUrl);
+        
+        LazyGridIDB.loadPage(moduleName, pg, filterKey, 15 * 60 * 1000).then(function(idbData) {
+          if (idbData && idbData.data && idbData.data.length > 0) return;
+          if (self.cachedData[pg] || self.prefetchedServerPages.has(pg)) return;
+          
+          self.prefetchedServerPages.add(pg);
+          setTimeout(function() {
+            self.loadGridData(postData, pg, self.rowsPerPage, 'down', 'page', null, true);
+          }, delay);
+        });
+      })(target, (ahead - 1) * 300);
     }
   }
 
@@ -124,7 +287,8 @@ class JqGridLazyLoader {
       this.resetGridState();
       this.minPageLoaded = pageNumber;
       this.maxPageLoaded = pageNumber;
-      this.currentFilters = this.grid.jqGrid('getGridParam', 'postData').filters;
+      var pd = this.grid.jqGrid('getGridParam', 'postData');
+      this.currentFilters = ((pd.filters || "") + '|' + (pd.sidx || '') + '|' + (pd.sord || ''));
       this.loading = false;
     }
 
@@ -132,7 +296,8 @@ class JqGridLazyLoader {
       this.grid.clearGridData();
       // this.grid.parents('.ui-jqgrid-bdiv').find('.loading').show();
 
-      this.currentFilters = this.grid.jqGrid('getGridParam', 'postData').filters;
+      var pd = this.grid.jqGrid('getGridParam', 'postData');
+      this.currentFilters = ((pd.filters || "") + '|' + (pd.sidx || '') + '|' + (pd.sord || ''));
       this.minPageLoaded = pageNumber;
       this.maxPageLoaded = pageNumber;
       this.lastScrollTop = 0;
@@ -182,71 +347,113 @@ class JqGridLazyLoader {
       limit: limitToSend,
     });
 
-    $.ajax({
-      url: this.apiUrl,
-      type: "GET",
-      headers: {
-        'Authorization': `Bearer ${this.accessToken}`
-      },
-      data: fullPostData,
-      success: function (res) {
-        self.grid.parents('.ui-jqgrid-bdiv').find('.loading').hide();
+    const filterKey = LazyGridUtils.buildFilterKey(this.currentFilters);
+    const moduleName = LazyGridUtils.getModuleNameFromApi(this.apiUrl);
+    const maxAgeMs = 15 * 60 * 1000; // 15 menit cache
 
-        self.totalRecord = (res.attributes && res.attributes.totalRows) || res.records || 0;
-        self.totalPages = Math.ceil(self.totalRecord / rowsCount);
+    const handleSuccess = (res) => {
+      self.grid.parents('.ui-jqgrid-bdiv').find('.loading').hide();
 
-        let dataArray = res.data || [];
-        if (!dataArray.length) {
-          self.loading = false;
-          return;
-        }
+      self.totalRecord = (res.attributes && res.attributes.totalRows) || res.records || 0;
+      self.totalPages = Math.ceil(self.totalRecord / rowsCount);
 
-        let startClientPage = (serverPage - 1) * pagesPerFetch + 1;
-        for (let i = 0; i < pagesPerFetch; i++) {
-          let currentVirtualPage = startClientPage + i;
-          let startIdx = i * rowsCount;
-          let endIdx = startIdx + parseInt(rowsCount);
-          let chunkData = dataArray.slice(startIdx, endIdx);
-
-          if (chunkData.length > 0) {
-            self.cachedData[currentVirtualPage] = chunkData;
-          }
-        }
-
-        if (!onlyCache) {
-          if (self.cachedData[pageNumber]) {
-            let renderDirection = (proses === 'jump') ? 'jump' : direction;
-            self.renderFromCache(self.cachedData[pageNumber], renderDirection, rowsCount, pageNumber);
-          }
-        }
-
-        if (proses === 'jump' && dataArray.length < rowsCount && serverPage > 1) {
-          var bDiv = self.grid.parents(".ui-jqgrid-bdiv");
-          var viewHeight = bDiv.height();
-          var rowHeight = self.grid.find('tr.jqgrow').first().height() || 30;
-          var contentHeight = dataArray.length * rowHeight;
-
-          if (contentHeight < viewHeight) {
-            setTimeout(() => {
-              self.loadGridData(postData, serverPage - 1, rowsCount, 'up', 'page');
-            }, 100);
-          }
-        }
-
-        self.grid.jqGrid('setGridParam', {
-          records: self.totalRecord
-        });
-        if (callback) callback();
-      },
-      error: function (xhr) {
-      },
-      complete: function () {
+      let dataArray = res.data || [];
+      if (!dataArray.length) {
         self.loading = false;
-        $('#processingLoader').addClass('d-none');
-        var freshNextPostData = self.grid.jqGrid('getGridParam', 'postData');
-        self.processLoadingQueue(freshNextPostData, rowsCount);
+        return;
       }
-    });
+
+      let startClientPage = (serverPage - 1) * pagesPerFetch + 1;
+      for (let i = 0; i < pagesPerFetch; i++) {
+        let currentVirtualPage = startClientPage + i;
+        let startIdx = i * rowsCount;
+        let endIdx = startIdx + parseInt(rowsCount);
+        let chunkData = dataArray.slice(startIdx, endIdx);
+
+        if (chunkData.length > 0) {
+          self.cachedData[currentVirtualPage] = chunkData;
+        }
+      }
+
+      if (!onlyCache) {
+        if (self.cachedData[pageNumber]) {
+          let renderDirection = (proses === 'jump') ? 'jump' : direction;
+          self.renderFromCache(self.cachedData[pageNumber], renderDirection, rowsCount, pageNumber);
+        }
+      }
+
+      if (proses === 'jump' && dataArray.length < rowsCount && serverPage > 1) {
+        var bDiv = self.grid.parents(".ui-jqgrid-bdiv");
+        var viewHeight = bDiv.height();
+        var rowHeight = self.grid.find('tr.jqgrow').first().height() || 30;
+        var contentHeight = dataArray.length * rowHeight;
+
+        if (contentHeight < viewHeight) {
+          setTimeout(() => {
+            self.loadGridData(postData, serverPage - 1, rowsCount, 'up', 'page');
+          }, 100);
+        }
+      }
+
+      self.grid.jqGrid('setGridParam', {
+        records: self.totalRecord
+      });
+      if (callback) callback();
+      
+      if (!onlyCache && direction === 'down') {
+         self.triggerPrefetchAhead(serverPage, postData);
+      }
+    };
+
+    const handleComplete = (xhr, textStatus) => {
+      if (textStatus === 'abort') return;
+      self.loading = false;
+      $('#processingLoader').addClass('d-none');
+      var freshNextPostData = self.grid.jqGrid('getGridParam', 'postData');
+      self.processLoadingQueue(freshNextPostData, rowsCount);
+    };
+
+    const fetchFromServer = () => {
+      if (typeof abortGridLastRequest === 'function') {
+        abortGridLastRequest(self.grid);
+      }
+
+      var jqXHR = $.ajax({
+        url: self.apiUrl,
+        type: "GET",
+        headers: {
+          'Authorization': `Bearer ${self.accessToken}`
+        },
+        data: fullPostData,
+        success: function (res) {
+          if (res.data && res.data.length > 0) {
+            LazyGridIDB.savePage(moduleName, serverPage, res, filterKey);
+          }
+          handleSuccess(res);
+        },
+        error: function (xhr) {
+        },
+        complete: handleComplete
+      });
+
+      if (typeof setGridLastRequest === 'function') {
+        setGridLastRequest(self.grid, jqXHR);
+      }
+    };
+
+    // --- IDB CACHE INTERCEPT ---
+    if (proses === 'page') {
+      LazyGridIDB.loadPage(moduleName, serverPage, filterKey, maxAgeMs).then(idbData => {
+        if (idbData && idbData.data && idbData.data.length > 0) {
+          handleSuccess(idbData);
+          handleComplete(null, 'success');
+        } else {
+          fetchFromServer();
+        }
+      });
+    } else {
+      fetchFromServer();
+    }
   }
 
   setupLazyLoadScrollHandler() {
@@ -277,23 +484,11 @@ class JqGridLazyLoader {
         if (nextPage <= self.totalPages) {
           if (self.cachedData[nextPage]) {
             self.renderFromCache(self.cachedData[nextPage], 'down', self.rowsPerPage, nextPage);
-
-            var pagePlusOne = nextPage + 1;
-            var pagePlusTwo = nextPage + 2;
-            var targetPrefetch = null;
-
-            if (!self.cachedData[pagePlusOne]) {
-              targetPrefetch = pagePlusOne;
-            } else if (!self.cachedData[pagePlusTwo]) {
-              targetPrefetch = pagePlusTwo;
-            }
-
-            if (!self.loading && targetPrefetch && targetPrefetch <= self.totalPages && !self.cachedData[targetPrefetch]) {
-              self.loadGridData(currentPostData, targetPrefetch, self.rowsPerPage, 'down', 'page', null, true);
-            }
           } else {
             self.loadGridData(currentPostData, nextPage, self.rowsPerPage, 'down', 'page');
           }
+
+          self.triggerPrefetchAhead(nextPage, currentPostData);
         }
       }
 
@@ -311,7 +506,7 @@ class JqGridLazyLoader {
         }
       }
 
-      self.lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
+      self.lastScrollTop = bDivEl.scrollTop() <= 0 ? 0 : bDivEl.scrollTop();
       self.updateGridInfoFast();
 
     }, 150);
@@ -401,11 +596,18 @@ class JqGridLazyLoader {
     var pagesRemoved = Math.floor(excess / rowsPerPage);
     if (pagesRemoved < 1) pagesRemoved = 1;
 
+    var scrollDiv = this.grid.parents('.ui-jqgrid-bdiv');
+    var prevScroll = scrollDiv.scrollTop();
+    var rowHeight = this.grid.find('tr[id]').height() || 30;
+
     if (direction === 'down') {
       for (let i = 0; i < excess; i++) {
         this.grid.jqGrid('delRowData', ids[i]);
       }
       this.minPageLoaded += pagesRemoved;
+      
+      // Adjust scroll position after removing top rows to prevent visual jump
+      scrollDiv.scrollTop(prevScroll - (excess * rowHeight));
     }
 
     if (direction === 'up') {

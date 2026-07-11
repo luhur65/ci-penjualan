@@ -727,7 +727,7 @@ class LookupV6 {
     const rawVal = displayCol ? (rawRowData[displayCol.name] ?? '') : '';
     const displayVal = stripHtml(rawVal);
 
-    this.element.val(displayVal);
+    this.element.val(displayVal).trigger('change');
     this.currentValue = displayVal;
     this.element.data('currentValue', displayVal);
 
