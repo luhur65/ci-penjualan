@@ -39,7 +39,7 @@
               <div class="form-group row">
                 <label class="col-sm-4 col-form-label">Tanggal <span class="text-danger">*</span></label>
                 <div class="col-sm-8">
-                  <input type="date" name="tgl_bukti" id="tgl_bukti" class="form-control">
+                  <input type="text" name="tgl_bukti" id="tgl_bukti" class="form-control datepicker">
                 </div>
               </div>
 
@@ -47,7 +47,8 @@
               <div class="form-group row">
                 <label class="col-sm-4 col-form-label">Pelanggan <span class="text-danger">*</span></label>
                 <div class="col-sm-8">
-                  <select name="pelanggan_id" id="pelanggan_id" class="select2bs4 form-select w-100"></select>
+                  <input type="hidden" name="pelanggan_id" id="pelanggan_id">
+                  <input type="text" name="nama_pelanggan" id="nama_pelanggan" class="form-control" placeholder="Ketik atau Pilih Pelanggan">
                 </div>
               </div>
 
@@ -137,15 +138,12 @@
           </div>
           <div class="row form-group">
             <div class="col-3"><label class="col-form-label">Qty <span class="text-danger">*</span></label></div>
-            <div class="col-9"><input type="number" name="qty" id="qty" class="form-control" min="1" value="1"></div>
+            <div class="col-9"><input type="text" name="qty" id="qty" class="form-control text-right" value="1"></div>
           </div>
           <div class="row form-group">
             <div class="col-3"><label class="col-form-label">Harga <span class="text-danger">*</span></label></div>
             <div class="col-9">
-              <div class="input-group">
-                <div class="input-group-prepend"><span class="input-group-text">Rp</span></div>
-                <input type="number" name="harga" id="harga" class="form-control" min="0" step="100" placeholder="0">
-              </div>
+              <input type="text" name="harga" id="harga" class="form-control text-right" placeholder="0">
             </div>
           </div>
           <div class="row form-group">
@@ -167,35 +165,27 @@
 
 <style>
 /* tabel item inline */
-/* #tableItemDetail thead th { font-size: 0.78rem; white-space: nowrap; } */
 #tableItemDetail tbody td { vertical-align: middle; padding: 3px 5px; }
-/* #tableItemDetail input.form-control-sm { font-size: 0.82rem; } */
 .item-row-number { font-weight: 600; color: #6c757d; }
 .btn-hapus-baris { line-height:1; padding: 2px 6px; }
 </style>
 
 <script>
   let draftManager;
-  // GLOBAL scope supaya accessible dari index.php
-  window.modalBody       = $('#crudModal').find('.modal-body').html();
-  window.detailModalBody = $('#detailModal').find('.modal-body').html();
+  let modalBody       = $('#crudModal').find('.modal-body').html();
+  let detailModalBody = $('#detailModal').find('.modal-body').html();
 
   draftManager = new DraftFormManager('#crudForm', {
     debug: false,
-    expiry: 1000 * 60 * 60 * 24
+    expiry: 1000 * 60 * 60 * 2,
+    detailExtractors: {
+      items: function() { return getItemsFromTable(); }
+    },
+    detailRestorers: {
+      items: function(dataArray) { populateItemTable(dataArray); }
+    }
   });
 
-  /* ============================================================
-   * HELPER: Format Rupiah
-   * ============================================================ */
-  function formatRupiah(angka) {
-    const num = parseFloat(angka) || 0;
-    return 'Rp ' + num.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-  }
-
-  function parseRupiah(str) {
-    return parseFloat(String(str).replace(/[^0-9.-]/g, '')) || 0;
-  }
 
   /* ============================================================
    * TABEL DETAIL INLINE - Builder
@@ -212,9 +202,9 @@
     tr.innerHTML = `
       <td class="text-center item-row-number">${no}</td>
       <td><input type="text"   class="form-control form-control-sm item-nama-barang" placeholder="nama barang" value="${namaBarang}" ${disabled} maxlength="255"></td>
-      <td><input type="number" class="form-control form-control-sm item-qty text-right" placeholder="0" min="1" value="${qty}" ${disabled}></td>
-      <td><input type="number" class="form-control form-control-sm item-harga text-right" placeholder="0" min="0" step="100" value="${harga}" ${disabled}></td>
-      <td class="text-right item-subtotal text-success font-weight-bold" style="white-space:nowrap">${subtotal ? formatRupiah(subtotal) : '-'}</td>
+      <td><input type="text" class="form-control form-control-sm item-qty text-right" placeholder="0" value="${qty}" ${disabled}></td>
+      <td><input type="text" class="form-control form-control-sm item-harga text-right" placeholder="0" value="${harga}" ${disabled}></td>
+      <td class="text-right item-subtotal text-success font-weight-bold" style="white-space:nowrap">${subtotal ? currencyFormat(subtotal, 'Rp ') : '-'}</td>
       <td class="text-center">
         ${disabled ? '' : `<button type="button" class="btn btn-sm btn-outline-danger btn-hapus-baris" title="Hapus baris">
           <i class="fa fa-times"></i>
@@ -228,14 +218,20 @@
     const subCell    = tr.querySelector('.item-subtotal');
 
     function recalcRow() {
-      const q = parseFloat(qtyInput.value)   || 0;
-      const h = parseFloat(hargaInput.value) || 0;
+      const q = currencyUnformat(qtyInput.value)   || 0;
+      const h = currencyUnformat(hargaInput.value) || 0;
       const s = q * h;
-      subCell.textContent = s ? formatRupiah(s) : '-';
+      subCell.textContent = s ? currencyFormat(s, 'Rp ') : '-';
       recalcGrandTotal();
+      if(typeof draftManager !== 'undefined') draftManager.triggerSave();
     }
     qtyInput.addEventListener('input',   recalcRow);
     hargaInput.addEventListener('input', recalcRow);
+    
+    const namaInput = tr.querySelector('.item-nama-barang');
+    namaInput.addEventListener('input', function() {
+      if(typeof draftManager !== 'undefined') draftManager.triggerSave();
+    });
 
     // Event: hapus baris
     const btnHapus = tr.querySelector('.btn-hapus-baris');
@@ -249,12 +245,24 @@
           tr.querySelector('.item-nama-barang').value = '';
           subCell.textContent = '-';
           recalcGrandTotal();
+          if(typeof draftManager !== 'undefined') draftManager.triggerSave();
           return;
         }
         tr.remove();
         renumberRows();
         recalcGrandTotal();
+        if(typeof draftManager !== 'undefined') draftManager.triggerSave();
       });
+    }
+
+    // init autonumeric
+    if (!disabled) {
+      new AutoNumeric(qtyInput, {
+        digitGroupSeparator: ',',
+        decimalCharacter: '.',
+        decimalPlaces: 0
+      });
+      initAutoNumeric(hargaInput);
     }
 
     return tr;
@@ -274,20 +282,20 @@
   function recalcGrandTotal() {
     let total = 0;
     document.querySelectorAll('#tbodyItemDetail tr').forEach(row => {
-      const q = parseFloat(row.querySelector('.item-qty')?.value)   || 0;
-      const h = parseFloat(row.querySelector('.item-harga')?.value) || 0;
+      const q = currencyUnformat(row.querySelector('.item-qty')?.value)   || 0;
+      const h = currencyUnformat(row.querySelector('.item-harga')?.value) || 0;
       total += q * h;
     });
-    document.getElementById('grandTotalPreview').textContent = formatRupiah(total);
+    document.getElementById('grandTotalPreview').textContent = currencyFormat(total, 'Rp ');
   }
 
   function getItemsFromTable() {
     const items = [];
     document.querySelectorAll('#tbodyItemDetail tr').forEach(row => {
       const nama  = (row.querySelector('.item-nama-barang')?.value || '').trim();
-      const qty   = parseFloat(row.querySelector('.item-qty')?.value)   || 0;
-      const harga = parseFloat(row.querySelector('.item-harga')?.value) || 0;
-      if (nama) items.push({ nama_barang: nama, qty, harga });
+      const qty   = currencyUnformat(row.querySelector('.item-qty')?.value)   || 0;
+      const harga = currencyUnformat(row.querySelector('.item-harga')?.value) || 0;
+      if (nama || qty || harga) items.push({ nama_barang: nama, qty, harga });
     });
     return items;
   }
@@ -314,18 +322,45 @@
     renumberRows();
   }
 
+  function initLookup() {
+    $('#nama_pelanggan').lookupV6({
+      title: 'Pilih Pelanggan',
+      lookupKey: 'pelanggan',
+      lookupName: 'nama_pelanggan',
+      searching: ['nama_pelanggan'],
+      filterToolbar: true,
+      onSelectRow: (rowData, element) => {
+        $('#pelanggan_id').val(rowData.id).trigger('change');
+        element.val(rowData.nama_pelanggan).trigger('change');
+      },
+      onClear: (element) => {
+        $('#pelanggan_id').val('').trigger('change');
+        element.val('').trigger('change');
+      }
+    });
+  }
+
   /* ============================================================
    * EVENT: Tombol Tambah Baris
    * ============================================================ */
   $(document).ready(function() {
 
-    $('#btnTambahItem').on('click', function() {
+    // Init AutoNumeric pada modal detail
+    new AutoNumeric(document.getElementById('qty'), {
+      digitGroupSeparator: ',',
+      decimalCharacter: '.',
+      decimalPlaces: 0
+    });
+    initAutoNumeric(document.getElementById('harga'));
+
+    $(document).on('click', '#btnTambahItem', function() {
       const tbody = document.getElementById('tbodyItemDetail');
       const no    = tbody.rows.length + 1;
       tbody.appendChild(buildItemRow(no));
       renumberRows();
+      if(typeof draftManager !== 'undefined') draftManager.triggerSave();
       // Fokus ke nama barang baris baru
-      tbody.lastElementChild?.querySelector('.item-nama-barang')?.focus();
+      $(tbody.lastElementChild).find('.item-nama-barang').focus();
     });
 
     // =====================================================
@@ -340,7 +375,7 @@
 
       const data = {
         no_bukti:     form.find('[name=no_bukti]').val(),
-        tgl_bukti:    form.find('[name=tgl_bukti]').val(),
+        tgl_bukti:    unFormatDate(form.find('[name=tgl_bukti]').val()),
         pelanggan_id: form.find('[name=pelanggan_id]').val(),
         page:         parseInt($('#jqGrid').getGridParam('page')),
         limit:        parseInt($('#jqGrid').getGridParam('rowNum')),
@@ -436,8 +471,8 @@
       const data = {
         penjualan_id: selectedMasterId,
         nama_barang:  form.find('[name=nama_barang]').val(),
-        qty:          form.find('[name=qty]').val(),
-        harga:        form.find('[name=harga]').val(),
+        qty:          currencyUnformat(form.find('[name=qty]').val()),
+        harga:        currencyUnformat(form.find('[name=harga]').val()),
         page:         parseInt($(detailGrid).getGridParam('page')),
         limit:        parseInt($(detailGrid).getGridParam('rowNum')),
         sortIndex:    $(detailGrid).getGridParam('sortname'),
@@ -501,7 +536,23 @@
     $('#qty, #harga').on('input', function() {
       const q = parseFloat($('#qty').val())   || 0;
       const h = parseFloat($('#harga').val()) || 0;
-      $('#subtotalPreview').text(formatRupiah(q * h));
+      $('#subtotalPreview').text(currencyFormat(q * h, 'Rp '));
+    });
+
+    document.getElementById('crudModal').addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && document.activeElement && document.activeElement.tagName === 'INPUT') {
+        e.stopPropagation();
+        document.activeElement.blur();
+        $('#crudModal').modal('hide');
+      }
+    }, true);
+
+    // Save draft before modal closes
+    $('#crudModal').on('hide.bs.modal', function() {
+      if (document.activeElement) {
+        $(document.activeElement).blur();
+      }
+      if (typeof draftManager !== 'undefined') draftManager.triggerSave();
     });
 
     // Reset item table saat modal ditutup
@@ -536,20 +587,16 @@
 
     $('.modal-loader').removeClass('d-none');
 
-    // Fetch next number + pelanggan options secara paralel
+    // Fetch next number
     try {
-      const [pelanggan, nextNoResp] = await Promise.all([
-        setPelangganOptions(form),
-        ajaxWithRefresh({ url: `${API_URL}/testingmasterdetail/nextnumber`, method: 'GET', dataType: 'JSON' })
-      ]);
+      const nextNoResp = await ajaxWithRefresh({ url: `${API_URL}/testingmasterdetail/nextnumber`, method: 'GET', dataType: 'JSON' });
       noBuktiInput.val(nextNoResp.next_number || '');
     } catch (e) {
       noBuktiInput.val('');
-      await setPelangganOptions(form);
     }
 
     const today = new Date().toISOString().split('T')[0];
-    form.find('[name=tgl_bukti]').val(today);
+    form.find('[name=tgl_bukti]').val(formatDate(today));
 
     if (localStorage.getItem(draftManager.getKey())) draftManager.restore();
 
@@ -576,10 +623,11 @@
     $('.modal-loader').removeClass('d-none');
 
     try {
-      const [_, response] = await Promise.all([
-        setPelangganOptions(form),
-        ajaxWithRefresh({ url: `${API_URL}/testingmasterdetail/${masterId}`, method: 'GET', dataType: 'JSON' })
-      ]);
+      const response = await ajaxWithRefresh({ url: `${API_URL}/testingmasterdetail/${masterId}`, method: 'GET', dataType: 'JSON' });
+
+      if (response.tgl_bukti) {
+        response.tgl_bukti = formatDate(response.tgl_bukti);
+      }
 
       populateForm(form, response);
 
@@ -625,10 +673,11 @@
     $('.modal-loader').removeClass('d-none');
 
     try {
-      const [_, response] = await Promise.all([
-        setPelangganOptions(form),
-        ajaxWithRefresh({ url: `${API_URL}/testingmasterdetail/${masterId}`, method: 'GET', dataType: 'JSON' })
-      ]);
+      const response = await ajaxWithRefresh({ url: `${API_URL}/testingmasterdetail/${masterId}`, method: 'GET', dataType: 'JSON' });
+
+      if (response.tgl_bukti) {
+        response.tgl_bukti = formatDate(response.tgl_bukti);
+      }
 
       populateForm(form, response);
       $('#deletePreviewNoBukti').text(response.no_bukti ?? '');
@@ -695,10 +744,10 @@
       form.find('#detail_id').val(response.id);
       form.find('#detail_penjualan_id').val(response.penjualan_id);
       form.find('#nama_barang').val(response.nama_barang);
-      form.find('#qty').val(response.qty);
-      form.find('#harga').val(response.harga);
+      AutoNumeric.getAutoNumericElement(form.find('#qty')[0]).set(response.qty);
+      AutoNumeric.getAutoNumericElement(form.find('#harga')[0]).set(response.harga);
       const sub = (response.qty || 0) * (response.harga || 0);
-      $('#subtotalPreview').text(formatRupiah(sub));
+      $('#subtotalPreview').text(currencyFormat(sub, 'Rp '));
       $('#detailModal').modal('show');
     } catch (error) { showDialog('error', getErrorMessage(error)); }
   }
@@ -723,8 +772,8 @@
       form.find('#detail_id').val(response.id);
       form.find('#detail_penjualan_id').val(response.penjualan_id);
       form.find('#nama_barang').val(response.nama_barang);
-      form.find('#qty').val(response.qty);
-      form.find('#harga').val(response.harga);
+      AutoNumeric.getAutoNumericElement(form.find('#qty')[0]).set(response.qty);
+      AutoNumeric.getAutoNumericElement(form.find('#harga')[0]).set(response.harga);
       const sub = (response.qty || 0) * (response.harga || 0);
       $('#subtotalPreview').text(formatRupiah(sub));
       $('.detail-delete-preview').show();
@@ -732,28 +781,5 @@
     } catch (error) { showDialog('error', getErrorMessage(error)); }
   }
 
-  /* ============================================================
-   * HELPER: Load Pelanggan ke Select2
-   * ============================================================ */
-  async function setPelangganOptions(relatedForm) {
-    try {
-      relatedForm.find('[name="pelanggan_id"]').empty();
 
-      const response = await ajaxWithRefresh({
-        url: `${API_URL}/pelanggan`, method: 'GET', dataType: 'JSON',
-      });
-
-      relatedForm.find('[name="pelanggan_id"]').append(new Option('-- Pilih Pelanggan --', '', true, true));
-      const items = response.data || [];
-      items.forEach(item => {
-        relatedForm.find('[name="pelanggan_id"]').append(new Option(item.nama_pelanggan, item.id));
-      });
-      relatedForm.find('[name="pelanggan_id"]').trigger('change');
-
-    } catch (error) {
-      relatedForm.find('[name="pelanggan_id"]')
-        .append(new Option('(Data pelanggan tidak tersedia)', '', true, true))
-        .trigger('change');
-    }
-  }
 </script>

@@ -542,13 +542,13 @@
       searching: ['grp', 'subgrp', 'kelompok', 'text'],
       filterToolbar: true,
       onSelectRow: (parameter, element) => {
-        $('#crudForm [name="type"]').val(parameter.id);
+        $('#crudForm [name="type"]').val(parameter.id).trigger('change');
         element.val(parameter.grp);
         element.data('currentValue', element.val());
       },
       onClear: (element) => {
         element.val('')
-        $('#crudForm [name="type"]').val('');
+        $('#crudForm [name="type"]').val('').trigger('change');
         element.data('currentValue', element.val())
       },
       onCancel: (element) => {

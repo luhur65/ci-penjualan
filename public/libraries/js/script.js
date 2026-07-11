@@ -727,7 +727,7 @@ function initDatepicker(element) {
 			</div>
 		`
 		)
-		.addClass("btn btn-primary").html(`
+		.addClass("btn btn-easyui text-easyui-dark").html(`
 			<i class="fa fa-calendar-alt"></i>
 		`);
 
@@ -778,23 +778,16 @@ function unFormatDate(value) {
 	return `${year}-${month}-${day}`;
 }
 
-function currencyFormat(value) {
-	let result = parseFloat(value).toLocaleString("en-US", {
-		minimumFractionDigits: 2,
-		maximumFractionDigits: 2,
+function currencyFormat(value, prefix = '') {
+	let num = parseFloat(value) || 0;
+	return prefix + num.toLocaleString("id-ID", {
+		minimumFractionDigits: 0,
+		maximumFractionDigits: 0,
 	});
-
-	result = result.replace(/\./g, "*");
-	result = result.replace(/,/g, ",");
-	result = result.replace(/\*/g, ".");
-
-	return result;
 }
 
 function currencyUnformat(value) {
-	let result = parseFloat(value.replaceAll(",", ""));
-
-	return result;
+	return parseFloat(String(value).replace(/[^0-9.-]/g, '')) || 0;
 }
 
 function openMenuParents() {
@@ -894,8 +887,9 @@ function setCustomBindKeysLazy(grid) {
 
 	setSidebarBindKeys();
 
-	// var ns = 'lazyBind_' + grid.replace(/[^a-zA-Z0-9]/g, '');
-	$(document).off('keydown.lazyGrid').on('keydown.lazyGrid', function (e) {
+	// Menggunakan namespace event unik per grid agar tidak saling timpa
+	var ns = 'lazyGrid_' + $(grid).attr('id');
+	$(document).off('keydown.' + ns).on('keydown.' + ns, function (e) {
 
 		var isFromInput = $(e.target).is("input, textarea, select");
 		var isPageKey = [33, 34, 35, 36].includes(e.keyCode);

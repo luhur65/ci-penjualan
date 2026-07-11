@@ -51,8 +51,11 @@ $.jgrid.extend({
 									var prevId = ids[currIndex - 1];
 									$(element).jqGrid("setSelection", prevId, o.onSelectRow, event);
 
-									indexRow = currIndex - 1; // Update variabel global indexRow Anda
-
+									if (element.id !== 'detailGrid' && typeof indexRow !== 'undefined') {
+										indexRow = currIndex - 1;
+									} else if (element.id === 'detailGrid' && typeof detailIndexRow !== 'undefined') {
+										detailIndexRow = currIndex - 1;
+									}
 									if (typeof scrollGridSelectionIntoView !== "undefined") {
 										scrollGridSelectionIntoView(element, prevId);
 									}
@@ -71,8 +74,11 @@ $.jgrid.extend({
 									$(element).jqGrid("setSelection", nextId, o.onSelectRow, event);
 
 									// Update indexRow agar loadComplete tidak menarik balik posisinya
-									indexRow = currIndex + 1;
-
+									if (element.id !== 'detailGrid' && typeof indexRow !== 'undefined') {
+										indexRow = currIndex + 1;
+									} else if (element.id === 'detailGrid' && typeof detailIndexRow !== 'undefined') {
+										detailIndexRow = currIndex + 1;
+									}
 									if (typeof scrollGridSelectionIntoView !== "undefined") {
 										scrollGridSelectionIntoView(element, nextId);
 									}

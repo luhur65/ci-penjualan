@@ -393,6 +393,28 @@
         loadBeforeSend: function(jqXHR) {
           jqXHR.setRequestHeader('Authorization', `Bearer ${ACCESS_TOKEN}`);
           setGridLastRequest($(this), jqXHR);
+        },
+        onSortCol: function(index, iCol, sortorder) {
+          if (isLazy) {
+            const gridEl = $(this);
+            let postData = gridEl.jqGrid('getGridParam', 'postData') || {};
+            postData.sidx = index;
+            postData.sord = sortorder;
+            
+            gridEl.jqGrid('setGridParam', {
+              postData: postData,
+              sortname: index,
+              sortorder: sortorder
+            });
+
+            gridEl.jqGrid('clearGridData');
+            
+            let loader = gridEl.data('lazyLoader');
+            if (loader) {
+              loader.loadGridData(postData, 1, loader.rowsPerPage, 'down', 'reload');
+            }
+            return 'stop';
+          }
         }
       };
 

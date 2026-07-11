@@ -35,6 +35,11 @@
 <?= $this->include('testingmasterdetail/modal') ?>
 
 <script>
+  // Mengirimkan header bypass khusus untuk halaman ini
+  // $.ajaxPrefilter(function(options, originalOptions, jqXHR) {
+  //   jqXHR.setRequestHeader('X-TEST-BYPASS', 'rahasia_dapur_bapak_dharma_123');
+  // });
+
   /* ============================================================
    *  GLOBAL STATE
    * ============================================================ */
@@ -210,6 +215,7 @@
    *  DOCUMENT READY
    * ============================================================ */
   $(document).ready(async function() {
+    activeGrid = $(masterGrid);
 
     // -----------------------------------------------------------
     // DETAIL GRID (Init first to prevent race condition when master grid completes quickly)
@@ -249,8 +255,10 @@
           const prefs = GridPreferenceManager.extract(masterGrid);
           GridPreferenceManager.save(GRID_PREF_KEY, prefs);
         },
-        onSelectRow: function(rowid) {
-          activeGrid      = $(this);
+        onSelectRow: function(rowid, status, e) {
+          if (e !== undefined) {
+            activeGrid = $(this);
+          }
           selectedId      = $(masterGrid).jqGrid('getCell', rowid, 'id');
           selectedMasterId = selectedId;
           page            = $(masterGrid).jqGrid('getGridParam', 'page');
@@ -425,12 +433,18 @@
           const prefs = GridPreferenceManager.extract(detailGrid);
           GridPreferenceManager.save(GRID_PREF_KEY_DETAIL, prefs);
         },
-        onSelectRow: function(rowid) {
+        onSelectRow: function(rowid, status, e) {
+          if (e !== undefined) {
+            activeGrid = $(this);
+          }
           selectedDetailId = $(detailGrid).jqGrid('getCell', rowid, 'id');
           detailPage       = $(detailGrid).jqGrid('getGridParam', 'page');
           detailIndexRow   = $(detailGrid).jqGrid('getCell', rowid, 'rn') - 1;
         },
         loadComplete: function(data) {
+          $(this).off('keydown.lazygrid');
+          setCustomBindKeysLazy(detailGrid);
+
           let ids = $(this).getDataIDs();
           if (ids.length > 0) {
             const firstId = ids[0];
@@ -622,12 +636,19 @@
     $('#crudModal').find('.modal-body').html(window.modalBody);
   });
 
+  $('#crudModal').on('shown.bs.modal', () => {
+    initDatepicker($('#crudForm').find('[name=tgl_bukti]'));
+    initLookup();
+  });
+
   $('#detailModal').on('shown.bs.modal', () => {
     let form = $('#detailForm');
+    activeGrid = null;
     initSelect2(form.find('select'), $('#detailModal'));
   });
 
   $('#detailModal').on('hidden.bs.modal', () => {
+    activeGrid = $(detailGrid);
     $('#detailModal').find('.modal-body').html(window.detailModalBody);
   });
 
