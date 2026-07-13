@@ -201,7 +201,10 @@
     tr.dataset.rowIndex = no;
     tr.innerHTML = `
       <td class="text-center item-row-number">${no}</td>
-      <td><input type="text"   class="form-control form-control-sm item-nama-barang" placeholder="nama barang" value="${namaBarang}" ${disabled} maxlength="255"></td>
+      <td>
+        <input type="hidden" class="item-id" value="${data.id || ''}">
+        <input type="text"   class="form-control form-control-sm item-nama-barang" placeholder="nama barang" value="${namaBarang}" ${disabled} maxlength="255">
+      </td>
       <td><input type="text" class="form-control form-control-sm item-qty text-right" placeholder="0" value="${qty}" ${disabled}></td>
       <td><input type="text" class="form-control form-control-sm item-harga text-right" placeholder="0" value="${harga}" ${disabled}></td>
       <td class="text-right item-subtotal text-success font-weight-bold" style="white-space:nowrap">${subtotal ? currencyFormat(subtotal, 'Rp ') : '-'}</td>
@@ -292,10 +295,11 @@
   function getItemsFromTable() {
     const items = [];
     document.querySelectorAll('#tbodyItemDetail tr').forEach(row => {
+      const id    = row.querySelector('.item-id')?.value || '';
       const nama  = (row.querySelector('.item-nama-barang')?.value || '').trim();
       const qty   = currencyUnformat(row.querySelector('.item-qty')?.value)   || 0;
       const harga = currencyUnformat(row.querySelector('.item-harga')?.value) || 0;
-      if (nama || qty || harga) items.push({ nama_barang: nama, qty, harga });
+      if (nama || qty || harga) items.push({ id, nama_barang: nama, qty, harga });
     });
     return items;
   }
@@ -641,6 +645,7 @@
         dataType: 'JSON'
       });
       const existingItems = (detailResp.data || []).map(d => ({
+        id:          d.id,
         nama_barang: d.nama_barang,
         qty:         d.qty,
         harga:       d.harga,
