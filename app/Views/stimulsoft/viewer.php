@@ -28,7 +28,6 @@
 
     // Bikin report kosong untuk ngetes license key
     var report = new Stimulsoft.Report.StiReport();
-    report.createNewReport();
     
     // Assign report to viewer
     viewer.report = report;
