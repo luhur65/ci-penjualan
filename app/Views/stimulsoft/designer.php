@@ -31,6 +31,11 @@
 
     var designer = new Stimulsoft.Designer.StiDesigner(options, "StiDesigner", false);
 
+    // ==========================================
+    // MASUKKAN LICENSE KEY STIMULSOFT ANDA DISINI
+    // ==========================================
+    Stimulsoft.Base.StiLicense.key = "YOUR_LICENSE_KEY_HERE";
+
     // Bikin report kosong untuk ngetes license key
     var report = new Stimulsoft.Report.StiReport();
     

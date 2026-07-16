@@ -26,6 +26,11 @@
     var options = new Stimulsoft.Viewer.StiViewerOptions();
     var viewer = new Stimulsoft.Viewer.StiViewer(options, "StiViewer", false);
 
+    // ==========================================
+    // MASUKKAN LICENSE KEY STIMULSOFT ANDA DISINI
+    // ==========================================
+    Stimulsoft.Base.StiLicense.key = "YOUR_LICENSE_KEY_HERE";
+
     // Bikin report kosong untuk ngetes license key
     var report = new Stimulsoft.Report.StiReport();
     
