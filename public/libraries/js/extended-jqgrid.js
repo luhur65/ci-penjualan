@@ -570,6 +570,10 @@ $.jgrid.extend({
 			element.click(function () {
 				highlightSearch = "";
 
+				const $input = $(this);
+				const $clearBtn = $input.closest('tr').find('.clearsearchclass');
+				$clearBtn.hide();
+
 				$.fn.jqGrid.clearGlobalSearch.call(self);
 				$.fn.jqGrid.clearFilterToolbar.call(self);
 

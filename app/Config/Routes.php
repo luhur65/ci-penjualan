@@ -37,6 +37,10 @@ $routes->get('/reset-password/success', function() {
 $routes->group('', ['filter' => 'authenticated'], function($routes) {
     $routes->get('dashboard', [DashboardController::class, 'index'], ['as' => 'dashboard.index']);
     $routes->get('/transaksi', [OverviewController::class, 'transaksi'], ['as' => 'overview.transaksi']);
+    
+    // Stimulsoft Test Routes
+    $routes->get('stimulsoft/viewer', [\App\Controllers\StimulsoftController::class, 'viewer'], ['as' => 'stimulsoft.viewer']);
+    $routes->get('stimulsoft/designer', [\App\Controllers\StimulsoftController::class, 'designer'], ['as' => 'stimulsoft.designer']);
 });
 
 // Protected Routes with ACL Filter
